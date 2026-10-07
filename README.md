@@ -1,9 +1,22 @@
 # Quiver
 
-Prototipo di una "scrivania" da richiamare con una scorciatoia, al posto del desktop di Windows.
+Una "scrivania" da richiamare con una scorciatoia, al posto del desktop di Windows.
 Idea, regole dell'archivio e piano delle versioni sono in [PROGETTO.md](PROGETTO.md).
 
-## Avvio
+## Installazione
+
+Scarica **Quiver-win-Setup.exe** dalle [release](https://github.com/caste9612/Quiver/releases) e lancialo.
+- Quiver si installa per il tuo utente, senza permessi di amministratore, in `%LOCALAPPDATA%\Quiver`, con il collegamento nel menu Start.
+- Parte con Windows; si disattiva dal menu dell'icona nella tray.
+- Serve il runtime .NET 10 Desktop: se manca, l'installer lo scarica.
+- L'installer non è firmato, quindi Windows può avvisare: **Ulteriori informazioni**, poi **Esegui comunque**.
+- Si disinstalla da **Impostazioni > App**; l'archivio, con i tuoi file, resta dov'è.
+
+Al primo avvio si apre la finestra **Archivi**: crea un archivio nuovo o usa una cartella che hai già.
+
+Per preparare l'installer dal codice: `.\scripts\New-Installer.ps1`; con `-Publish` lo pubblica anche come release su GitHub, con le note di `novita\<versione>.md`. La versione è quella di `src\Quiver.App\Quiver.App.csproj`.
+
+## Sviluppo
 
 Serve Windows 11 con l'SDK di .NET 10.
 
@@ -12,22 +25,15 @@ dotnet build Quiver.slnx
 dotnet run --project src/Quiver.App
 ```
 
-Al primo avvio Quiver chiede quale cartella usare come archivio. Per provarlo senza i tuoi file:
+Per provarlo senza i tuoi file:
 
 ```powershell
 .\scripts\New-DemoArchive.ps1 -Path D:\ArchivioDemo
-dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo
+dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\DesktopDiProva
 ```
 
-`--archive` vale solo per quell'avvio: non cambia l'archivio salvato nelle impostazioni. Con un archivio di prova conviene aggiungere `--desktop <cartella>`: **Da smistare** mostra quella cartella al posto del Desktop vero, così trascinando non si spostano i propri file nell'archivio di prova.
-
-Per usarlo tutti i giorni conviene installarne una copia a parte, così lo sviluppo può andare avanti mentre quella resta aperta:
-
-```powershell
-.\scripts\Install-Quiver.ps1
-```
-
-Lo script pubblica Quiver in `%LOCALAPPDATA%\Programs\Quiver` e lo avvia, dopo aver chiuso quello eventualmente aperto. Per aggiornarlo basta rilanciarlo. **Avvia con Windows** si attiva dall'icona nella tray della copia installata.
+- `--archive` vale solo per quell'avvio: non cambia l'archivio in uso nelle impostazioni.
+- `--desktop <cartella>` fa mostrare a **Da smistare** quella cartella al posto del Desktop vero. Così trascinando non si spostano i propri file nell'archivio di prova.
 
 ## Uso
 
@@ -62,25 +68,34 @@ Lo script pubblica Quiver in `%LOCALAPPDATA%\Programs\Quiver` e lo avvia, dopo a
 
   Come «Nuova cartella» sul desktop, il nuovo elemento nasce con il nome pronto da scrivere.
 - **Riquadri e argomenti**: dal menu di un riquadro puoi scegliere **Promuovi ad argomento**; da quello di un argomento annidato, **Riporta a riquadro**.
-- **Tray**: dall'icona puoi aprire il pannello, cambiare archivio, attivare **Avvia con Windows** o uscire.
+- **Archivi**, come i vault di Obsidian: si aprono dal nome dell'archivio in alto nel pannello, o da **Archivi…** nel menu della tray.
+  - Ogni archivio è una cartella normale; la cartella nascosta `.quiver` lo segna come archivio e ne tiene la disposizione.
+  - Puoi crearne uno nuovo, usare come archivio una cartella che hai già, passare dall'uno all'altro, rinominarli e toglierli dall'elenco. Togliere dall'elenco non tocca i file.
+  - **Sposta…** porta l'archivio in un'altra cartella. Sullo stesso disco è un attimo. Su un altro disco Quiver lo copia, confronta la copia con l'originale byte per byte, passa alla copia solo se sono identiche e poi chiede se mandare la cartella vecchia nel Cestino.
+  - Non possono fare da archivio un disco intero, il Desktop, la cartella del tuo utente o quelle di Windows e dei programmi. Un archivio non può stare dentro un altro.
+- **Tray**: dall'icona puoi aprire il pannello o l'archivio in Explorer, gestire gli archivi, attivare **Avvia con Windows** o uscire.
 
 ## Aspetto
 
 L'interfaccia usa Brace, il design system di riferimento: colori, caratteri (Inter e Cascadia Mono), icone Fluent e componenti. I file sono copiati in `src/Quiver.App/Brace` e `src/Quiver.App/Fonts`; da dove vengono e come si aggiornano è scritto in `src/Quiver.App/Brace/PROVENIENZA.md`.
 
-L'icona è una bacheca: tre riquadri, uno dei quali ambra, come un riquadro selezionato. Si rigenera con `python scripts/genera-icona.py`.
+Cartelle e file comuni hanno l'icona di Brace del loro tipo: PDF, Word, fogli di calcolo, presentazioni, immagini, video, audio, archivi compressi, codice, posta, pagine web e modelli 3D. Come vuole il design system sono monocromatiche: il tipo si riconosce dal disegno. Lo stesso vale per i file che nessun programma del PC apre. I programmi, i collegamenti e i file dei programmi installati tengono l'icona di Windows, che per loro fa da logo.
+
+L'icona di Quiver è una bacheca: tre riquadri, uno dei quali ambra, come un riquadro selezionato. Si rigenera con `python scripts/genera-icona.py`.
 
 ## Riga di comando
 
 - `Quiver.exe --toggle | --show | --hide | --exit` passa il comando all'istanza già aperta, ad esempio da una scorciatoia di GlazeWM.
 - `Quiver.exe --archive <cartella> --render-preview <file.png> [--topic Lavoro/Clienti] [--query testo] [--prompt | --prompt-link] [--inbox [--desktop <cartella>]]` disegna il pannello in un'immagine senza aprire finestre. Serve per i controlli automatici:
   - `--prompt` aggiunge una richiesta di conferma, `--prompt-link` la domanda di **Nuovo collegamento…** con un errore;
-  - `--inbox` mostra **Da smistare**, e `--desktop` usa una cartella al posto del Desktop vero, come nelle prove.
+  - `--inbox` mostra **Da smistare**, e `--desktop` usa una cartella al posto del Desktop vero, come nelle prove;
+  - `--archives` disegna la finestra **Archivi**, e con `--welcome` com'è al primo avvio.
 
 ## Test e diagnostica
 
 - `dotnet test` esegue tre gruppi di test:
-  - le regole dell'archivio, la ricerca, i metadati, Da smistare e il ripristino dal Cestino (su un Cestino finto, costruito dal test);
+  - le regole dell'archivio, la ricerca, i metadati, Da smistare, i tipi di file, il ripristino dal Cestino (su un Cestino finto, costruito dal test) e il confronto byte per byte di una copia;
   - le operazioni sui file: spostare, copiare, rinominare, i collegamenti e i file trascinati da Outlook e dal browser. Il Cestino vero è escluso, per non riempirlo;
-  - il pannello: rinomina sul posto, selezione dopo spostamenti e ricaricamenti, nuove cartelle e nuovi riquadri, ordine dei riquadri, `Ctrl+Z`.
+  - il pannello: rinomina sul posto, selezione dopo spostamenti e ricaricamenti, nuove cartelle e nuovi riquadri, ordine dei riquadri, `Ctrl+Z`;
+  - la finestra Archivi: creare, aprire una cartella, rinominare e spostare l'archivio in uso, anche su un altro disco.
 - Il log si trova in `%LOCALAPPDATA%\Quiver\quiver.log`. Registra il tempo di apertura del pannello, perché si chiude e quale finestra gli toglie il focus.

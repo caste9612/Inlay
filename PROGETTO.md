@@ -1,6 +1,6 @@
 # Quiver — documento di progetto
 
-*Stato: v0.1 completa nel codice, con l'interfaccia rifatta su Brace e i gesti del desktop. Della v0.2 sono già pronti `Ctrl+Z`, il Desktop in «Da smistare» e i collegamenti. Tutto da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 7 ottobre 2026.*
+*Stato: versione 0.2.0, con l'installer. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 7 ottobre 2026.*
 
 ## 1. Il problema
 
@@ -33,9 +33,21 @@ Un'app dedicata che **sostituisce il desktop** come posto dove tenere e ritrovar
 
 ## 4. Come è organizzato l'archivio
 
+### Archivi, come i vault di Obsidian
+
+- Un archivio è una cartella normale. La cartella nascosta `.quiver` dentro la segna come archivio e ne tiene i metadati, così l'archivio si porta dietro la sua disposizione dovunque vada.
+- Se ne possono avere più di uno. Le impostazioni del PC tengono l'elenco e quello in uso.
+- La finestra **Archivi** li gestisce:
+  - al primo avvio dà il benvenuto e chiede di crearne uno o di usare una cartella che si ha già;
+  - poi si apre dal nome dell'archivio in alto nel pannello o dal menu della tray;
+  - permette di passare da un archivio all'altro, rinominarli, spostarli e toglierli dall'elenco, senza toccare i file.
+- Spostare un archivio sullo stesso disco è un attimo: cambia solo il percorso della cartella. Su un altro disco Quiver lo copia, confronta la copia con l'originale byte per byte e passa alla copia solo se sono identiche. La cartella vecchia va nel Cestino solo se lo dice l'utente.
+- Non possono essere archivi un disco intero, il Desktop (è tra le cose da smistare), la cartella dell'utente, quelle di Windows e dei programmi. Un archivio non sta dentro un altro né ne contiene uno.
+- Il posto consigliato è sullo stesso disco del Desktop, per esempio `C:\Users\<utente>\Archivio`. Così spostare nell'archivio i file del Desktop è istantaneo, senza copie.
+
 ### Struttura
 
-La radice è configurabile (es. `D:\Archivio`):
+Ogni archivio è organizzato così (es. `D:\Archivio`):
 
 ```
 D:\Archivio\
@@ -99,7 +111,7 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
 - `"kind": "topic"` serve solo sotto il primo livello, perché le cartelle nella radice sono già argomenti.
 - Se una cartella viene rinominata o spostata dall'app, i metadati si aggiornano subito. Se succede da Explorer con l'app aperta, l'app se ne accorge. Se succede ad app chiusa, i metadati rimasti senza cartella vengono riallineati all'avvio. Nel caso peggiore si perdono la posizione e il colore di un riquadro, mai i file.
 
-Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti dell'inbox, tema) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio.
+Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio.
 
 ## 5. Interfaccia
 
@@ -123,14 +135,15 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-- **In alto**: il logo, la ricerca su tutto l'archivio e il pulsante per chiudere.
+- **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre la finestra **Archivi**) e il pulsante per chiudere.
 - **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare.
-- **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona di Windows e la data di modifica.
+- **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica.
 - **Barra di stato**: l'archivio e quanti elementi contiene, oppure l'esito dell'ultima operazione, e i tasti principali.
 
 ### Aspetto
 
 - **Brace**, il design system personale, dà colori (tema scuro), caratteri (Inter, Cascadia Mono), icone (Fluent) e componenti. La sua versione WPF è copiata in `src/Quiver.App/Brace` e non si modifica lì: le correzioni vanno fatte in Brace, così valgono per tutti i software che lo usano.
+- **Icone dei file**: cartelle e tipi comuni hanno l'icona di Brace del loro concetto, dal suo dizionario «un concetto, un'icona». Ci sono PDF, Word, fogli di calcolo, presentazioni, immagini, video, audio, archivi compressi, codice, posta, pagine web e modelli 3D. Le icone sono monocromatiche come tutte quelle di Brace; quelle che mancavano sono state aggiunte a Brace stesso. I file che nessun programma del PC apre hanno il documento di Brace. I programmi, i collegamenti e i file dei programmi installati tengono l'icona di Windows, che per loro è un logo.
 - **Icona**: una bacheca con tre riquadri, uno dei quali ambra come un riquadro selezionato. È disegnata in `scripts/genera-icona.py`; il logo nel pannello è lo stesso disegno, in `Themes/Quiver.xaml`.
 
 ### Due modalità, stessa interfaccia
@@ -249,8 +262,8 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
   - `Quiver.Core`: la logica, senza interfaccia grafica. Contiene il modello dell'archivio e di «Da smistare», i metadati, le regole per spostare, copiare o collegare, il registro per annullare, il ripristino dal Cestino, l'indice per la ricerca e il controllo delle modifiche fatte da fuori. Si può testare in automatico.
   - `Quiver.App`: l'interfaccia WPF. Contiene finestre (pannello e Home), viste e view model, tray, impostazioni, il collegamento con le funzioni di Windows (icone, operazioni sui file della shell, collegamenti `.lnk`, file trascinati da Outlook e dal browser, menu contestuale, posizione delle icone sul desktop, scorciatoia globale) e il client IPC di GlazeWM.
   - `Quiver.Tests`: i test di `Quiver.Core`.
-  - `Quiver.App.Tests`: i test delle operazioni sui file fatte dalla shell e del view model del pannello, su archivi temporanei.
-- **Librerie**: CommunityToolkit.Mvvm (MVVM), H.NotifyIcon (icona nella tray), System.Text.Json. L'aspetto viene da Brace (vedi "Aspetto"). Le poche chiamate alle API di Windows per ora sono scritte a mano; CsWin32 resta candidata per quando l'integrazione crescerà.
+  - `Quiver.App.Tests`: i test delle operazioni sui file fatte dalla shell e dei view model del pannello e degli archivi, su archivi temporanei.
+- **Librerie**: CommunityToolkit.Mvvm (MVVM), H.NotifyIcon (icona nella tray), Velopack (installer), System.Text.Json. L'aspetto viene da Brace (vedi "Aspetto"). Le poche chiamate alle API di Windows per ora sono scritte a mano; CsWin32 resta candidata per quando l'integrazione crescerà.
 - **Istanza unica**: se l'app viene lanciata una seconda volta (`Quiver.exe --toggle`), passa il comando all'istanza già aperta tramite una named pipe e si chiude.
 - **Operazioni sui file**: passano tutte dalla shell di Windows, con le sue finestre di avanzamento e di conflitto, e usano il Cestino. Ognuna lascia un passo nel registro per annullarla, con quello che serve a rifarla al contrario, metadati compresi: dove sono finiti gli elementi, come si chiamavano, quando sono andati nel Cestino.
 - **Ripristino dal Cestino**: il Cestino di ogni disco tiene ogni elemento come due file, `$R…` con il contenuto e `$I…` con il percorso originale e la data.
@@ -258,7 +271,12 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
   - `Ctrl+Z` rimette al loro posto esattamente quegli elementi, anche se nel frattempo ne sono stati eliminati altri con lo stesso percorso, e toglie i `$I…`, come fa «Ripristina».
   - Provato due volte sul Cestino vero, con un file e una cartella di prova; i test automatici usano un Cestino finto.
 - **Annullare senza perdere dati**: un annullamento non sovrascrive mai niente. Elimina definitivamente solo una cartella vuota creata da Quiver; il resto passa dal Cestino e, sui dischi che non ce l'hanno, l'annullamento non si fa. Se un file è aperto in un altro programma, il passo resta e `Ctrl+Z` si può ripetere.
-- **Installazione**: `scripts\Install-Quiver.ps1` pubblica una copia in `%LOCALAPPDATA%\Programs\Quiver`, separata da quella di sviluppo.
+- **Installazione**: l'installer è fatto con Velopack (`scripts\New-Installer.ps1`, strumento `vpk` nel manifesto `dotnet-tools.json`).
+  - Installa per l'utente, senza amministratore, in `%LOCALAPPDATA%\Quiver`, con il collegamento nel menu Start. Sul Desktop non mette niente.
+  - Dopo l'installazione Quiver parte con Windows; alla disinstallazione l'avvio automatico si toglie.
+  - Il runtime .NET 10 Desktop, se manca, lo scarica l'installer.
+  - `Program.Main` fa passare prima Velopack, che durante installazione e disinstallazione chiude il processo prima di qualunque finestra.
+  - Le release stanno su GitHub, con le note in `novita\<versione>.md`. Velopack potrà anche aggiornare Quiver da lì; con il repository privato serve un token, quindi gli aggiornamenti automatici sono rimandati.
 - **Obiettivi di prestazioni**: pannello visibile in meno di 100 ms dalla scorciatoia (la finestra è già creata e solo nascosta); ricerca su 50.000 file in meno di 50 ms; meno di 100 MB di memoria a riposo.
 - **Convenzioni**: codice e commenti in inglese; interfaccia in italiano, con i testi in file di risorse per eventuali traduzioni.
 
@@ -268,16 +286,18 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 - **Cartelle di rete e OneDrive**: il controllo delle modifiche è meno affidabile, e sulle cartelle di rete il Cestino non esiste. Prima di eliminare lì serve una conferma esplicita.
 - **Focus**: Windows limita le app che si portano in primo piano da sole. Una scorciatoia registrata dall'app lo consente, ma va provato bene con GlazeWM e con più monitor.
 - **Archivio su più PC**: possibili conflitti su `archive.json` e programmi installati in percorsi diversi. Per ora è rimandato.
-- **Da decidere**: se rinominare la cartella `aaa` in `Quiver`; dove mettere la radice (disco locale o OneDrive); se includere Download nell'inbox (per ora è un'impostazione, spenta).
+- **Installer non firmato**: Windows avvisa al primo avvio (SmartScreen). Una firma del codice costa e per ora non serve.
+- **Da decidere**: se rinominare la cartella `aaa` in `Quiver`; se includere Download nell'inbox (per ora è un'impostazione, spenta). Dove mettere l'archivio lo sceglie l'utente nella finestra Archivi; il consiglio è lo stesso disco del Desktop.
 
 ## 10. Prossimi passi
 
 Fatto:
 - la soluzione .NET 10 con il repository git, il prototipo del pannello, la v0.1 e l'interfaccia rifatta con Brace;
 - della v0.2: `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti (anche «Nuovo collegamento…»), i file trascinati da Outlook e dal browser;
-- lo script per installare la copia di tutti i giorni;
-- con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`.
+- la prova dal vivo dei gesti del pannello, su un archivio di prova: ha trovato e fatto correggere il pannello che si nascondeva durante un trascinamento;
+- le icone di Brace per i tipi di file, gli archivi come i vault di Obsidian, l'installer e la release 0.2.0 su GitHub;
+- con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`, e che la finestra Archivi resta libera perché non si ridimensiona.
 
-1. Installare la copia di tutti i giorni (`scripts\Install-Quiver.ps1`) e provare il pannello: gesti del desktop, trascinamenti da e verso Explorer e Outlook, rinomina sul posto, `Ctrl+Z`.
-2. Provarlo con GlazeWM: focus, più monitor.
+1. Installare la 0.2.0 dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta.
+2. Provare dal vivo la finestra Archivi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
 3. Poi il resto della v0.2, partendo da quello che manca di più nell'uso.

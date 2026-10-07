@@ -13,6 +13,11 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Required by the [LibraryImport] source generator. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Program.Main, not the one WPF generates: Velopack must run before anything else. -->
+    <StartupObject>Quiver.App.Program</StartupObject>
+    <Version>0.2.0</Version>
+    <Product>Quiver</Product>
+    <Authors>Antonio Castellucci</Authors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -44,6 +49,7 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
 </Project>
