@@ -1,6 +1,6 @@
 # Brace in Quiver
 
-I file di questa cartella vengono dal design system Brace (`brace-design-system`, commit `92373a4` del 7 ottobre 2026):
+I file di questa cartella vengono dal design system Brace (`brace-design-system`, commit `fe39818` del 7 ottobre 2026, con le icone dei tipi di file):
 `piattaforme/wpf/` qui, `fonts/desktop/` e `fonts/licenze/` in `../Fonts/`, e la licenza delle icone Fluent.
 
 Sono generati da Brace: non si modificano qui. Per aggiornarli si ricopiano dal repository di Brace; le correzioni

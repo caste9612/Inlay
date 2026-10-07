@@ -15,11 +15,17 @@ namespace Quiver.App.Services;
 internal static class PreviewRenderer
 {
     private static readonly Size PanelSize = new(1240, 780);
+    private static readonly Size ArchivesSize = new(864, 611);
 
     public static void Render(CommandLineOptions options)
     {
         var output = options.PreviewOutput ?? throw new ArgumentException("Manca il file di destinazione.");
         var root = options.ArchiveRoot ?? throw new ArgumentException("--render-preview richiede anche --archive <cartella>.");
+        if (options.PreviewArchives)
+        {
+            RenderArchives(root, options.PreviewWelcome, output);
+            return;
+        }
 
         // The real Desktop stays out of previews: a folder can stand in for it.
         IReadOnlyList<InboxSource> sources = options.DesktopStandIn is { } desktop ? [new InboxSource("Desktop", [desktop])] : [];
@@ -42,13 +48,33 @@ internal static class PreviewRenderer
             viewModel.Prompt.ConfirmCommand.Execute(null);
         }
 
-        var view = new PanelView { DataContext = viewModel };
+        Save(new PanelView { DataContext = viewModel }, PanelSize, output);
+    }
+
+    /// <summary>
+    /// The window of the archives, with the archive as the one in use and a second one that is not there; the first time,
+    /// with no archive yet. The settings are a copy in memory: nothing is saved.
+    /// </summary>
+    private static void RenderArchives(string root, bool welcome, string output)
+    {
+        var settings = new AppSettings { SavePath = Path.Combine(Path.GetTempPath(), "quiver-preview-settings.json") };
+        if (!welcome)
+        {
+            settings.Archives.Add(Path.Combine(Path.GetPathRoot(root)!, "Archivio vecchio"));
+            settings.UseArchive(root);
+        }
+        var viewModel = new ArchivesViewModel(settings, new PreviewHost(welcome ? null : root), WindowsFolders.ReservedForArchives());
+        Save(new ArchivesView { DataContext = viewModel }, ArchivesSize, output);
+    }
+
+    private static void Save(FrameworkElement view, Size size, string output)
+    {
         Settle(view);
-        view.Measure(PanelSize);
-        view.Arrange(new Rect(PanelSize));
+        view.Measure(size);
+        view.Arrange(new Rect(size));
         Settle(view);
 
-        var bitmap = new RenderTargetBitmap((int)PanelSize.Width, (int)PanelSize.Height, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(view);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -61,5 +87,18 @@ internal static class PreviewRenderer
     {
         view.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
         view.UpdateLayout();
+    }
+
+    private sealed class PreviewHost(string? root) : IArchiveHost
+    {
+        public string? CurrentRoot => root;
+
+        public void Use(string archive)
+        {
+        }
+
+        public void Release()
+        {
+        }
     }
 }

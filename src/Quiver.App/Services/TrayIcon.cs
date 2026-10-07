@@ -12,12 +12,12 @@ internal sealed class TrayIcon : IDisposable
     private readonly TaskbarIcon _taskbarIcon;
     private readonly System.Drawing.Icon _icon;
 
-    public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action changeArchive, Action exit)
+    public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action exit)
     {
         var menu = new ContextMenu();
         menu.Items.Add(CreateItem("Apri Quiver", showPanel, shortcut));
         menu.Items.Add(CreateItem("Apri l'archivio in Explorer", openArchiveFolder));
-        menu.Items.Add(CreateItem("Cambia archivio…", changeArchive));
+        menu.Items.Add(CreateItem("Archivi…", showArchives));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateAutostartItem());
         menu.Items.Add(new Separator());

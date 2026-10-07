@@ -57,6 +57,9 @@ public partial class PanelView : UserControl
     /// <summary>Something dragged from the panel went outside it: the panel should make way for the drop target.</summary>
     public event EventHandler? DragLeftPanel;
 
+    /// <summary>The name of the archive was clicked: the window of the archives should open.</summary>
+    public event EventHandler? ArchivesRequested;
+
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
     public void FocusSearch()
@@ -948,6 +951,8 @@ public partial class PanelView : UserControl
     // ---- Menus and buttons ----
 
     private void Close_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
+
+    private void Archives_Click(object sender, RoutedEventArgs e) => ArchivesRequested?.Invoke(this, EventArgs.Empty);
 
     private void NewTopic_Click(object sender, RoutedEventArgs e) => ViewModel.NewTopic(null);
 

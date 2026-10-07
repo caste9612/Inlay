@@ -24,6 +24,7 @@ public partial class PanelWindow : Window
         InitializeComponent();
         DataContext = _viewModel = viewModel;
         View.CloseRequested += (_, _) => HidePanel("Esc", returnFocus: true);
+        View.ArchivesRequested += (_, _) => ArchivesRequested?.Invoke(this, EventArgs.Empty);
         View.DragLeftPanel += (_, _) => HidePanel("drag left the panel");
         viewModel.ItemOpened += (_, _) => HidePanel("item opened");
         viewModel.FileOperationCompleted += (_, _) =>
@@ -40,6 +41,9 @@ public partial class PanelWindow : Window
         };
         SourceInitialized += (_, _) => ConfigureNativeWindow();
     }
+
+    /// <summary>The name of the archive was clicked: the window of the archives should open.</summary>
+    public event EventHandler? ArchivesRequested;
 
     /// <summary>Creates the native window without showing it.</summary>
     public void Prepare()

@@ -178,8 +178,11 @@
                         </Style.Triggers>
                     </Style>
                 </DockPanel.Style>
-                <Image DockPanel.Dock="Left" Width="16" Height="16" Margin="0,0,8,0" Source="{Binding Icon}"
-                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <!-- The icon of Brace for the common kinds of file, the one of Windows for programs and the rest. -->
+                <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,0,8,0">
+                    <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <Path Style="{StaticResource Kind}" Data="{Binding Glyph}" />
+                </Grid>
                 <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="11"
                            Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding DateText}" />
                 <Grid>
@@ -215,6 +218,16 @@
                         <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton}" ToolTip="Chiudi (Esc)"
                                 AutomationProperties.Name="Chiudi" Click="Close_Click">
                             <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
+                        </Button>
+                        <!-- The archive in use, as the vault in Obsidian: a click opens the window of the archives. -->
+                        <Button DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center" Style="{StaticResource Brace.Button.Ghost}"
+                                ToolTip="Archivi: cambia, crea, rinomina o sposta l'archivio" AutomationProperties.Name="Archivi"
+                                Click="Archives_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Folder16}" />
+                                <TextBlock VerticalAlignment="Center" MaxWidth="220" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
+                                <Path Margin="6,0,0,0" Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ChevronDown16}" />
+                            </StackPanel>
                         </Button>
                         <TextBox x:Name="SearchBox" Width="440" HorizontalAlignment="Left" VerticalAlignment="Center"
                                  Tag="Cerca in tutto l'archivio" AutomationProperties.Name="Cerca in tutto l'archivio"
@@ -425,8 +438,10 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:SearchResultViewModel}">
                                         <DockPanel Margin="0,3" Background="Transparent" ToolTip="{Binding ToolTip}">
-                                            <Image DockPanel.Dock="Left" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Top"
-                                                   Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                                            <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Top">
+                                                <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                <Path Style="{StaticResource Kind}" Data="{Binding Glyph}" />
+                                            </Grid>
                                             <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}"
                                                        Text="{Binding DateText}" />
                                             <StackPanel>
@@ -457,12 +472,13 @@
                                  Visibility="{Binding HasInput, Converter={StaticResource Visible}}" />
                         <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource Brace.Danger}" Text="{Binding Error}" TextWrapping="Wrap"
                                    Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+                        <!-- In the order of Windows, as in Brace: the action first, then Annulla. -->
                         <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
-                            <Button Margin="0,0,8,0" Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
-                            <Button x:Name="PromptConfirm" Style="{StaticResource Brace.Button.Primary}" Content="{Binding ConfirmLabel}"
+                            <Button x:Name="PromptConfirm" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}" Content="{Binding ConfirmLabel}"
                                     Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Hidden}}" />
-                            <Button x:Name="PromptConfirmDanger" Style="{StaticResource Brace.Button.Danger}" Content="{Binding ConfirmLabel}"
+                            <Button x:Name="PromptConfirmDanger" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Danger}" Content="{Binding ConfirmLabel}"
                                     Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Visible}}" />
+                            <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

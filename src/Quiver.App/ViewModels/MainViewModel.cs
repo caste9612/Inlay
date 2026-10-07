@@ -107,6 +107,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public string Root => _root;
 
+    /// <summary>The name of the archive in use: that of its folder.</summary>
+    public string ArchiveName => Path.GetFileName(_root);
+
     public string InboxPath => _reader.InboxPath;
 
     /// <summary>The folder the board shows: files pasted or dropped on its background go there.</summary>
@@ -160,12 +163,24 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _history.Clear();
         NotifyHistoryChanged();
         IsInboxShown = false;
+        OnPropertyChanged(nameof(ArchiveName));
         UpdateStatus();
         Reload();
         if (!_live)
             return;
         RebuildIndex();
         StartWatching();
+    }
+
+    /// <summary>
+    /// Lets go of the archive's folder, no longer watched nor indexed, so that it can be renamed or moved.
+    /// <see cref="LoadArchive"/> opens it again, from wherever it is.
+    /// </summary>
+    public void ReleaseArchive()
+    {
+        _indexing?.Cancel();
+        _watcher?.Dispose();
+        _watcher = null;
     }
 
     public void SelectTopicByPath(string relativePath)
