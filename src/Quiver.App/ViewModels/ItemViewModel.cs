@@ -10,8 +10,10 @@ namespace Quiver.App.ViewModels;
 public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
 {
     private ImageSource? _icon;
-    private bool _iconLoaded;
-    private Geometry? _glyph;
+    private bool _iconRequested;
+    private bool _iconOnItsWay;
+    private Geometry? _braceGlyph;
+    private bool _braceGlyphKnown;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -39,26 +41,61 @@ public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
 
     /// <summary>
     /// The icon of Brace for folders, the common kinds of file and those no program opens; null for programs, shortcuts
-    /// and the files of an installed program, which keep the icon of Windows.
+    /// and the files of an installed program, which keep the icon of Windows. While that icon is on its way, the
+    /// document of Brace stands in for it.
     /// </summary>
-    public Geometry? Glyph => _glyph ??= FileGlyphs.For(Kind) ??
-        (Kind == FileKind.Other && !FileAssociations.IsKnown(Path.GetExtension(Item.Name)) ? FileGlyphs.Unknown : null);
+    public Geometry? Glyph
+    {
+        get
+        {
+            RequestIcon();
+            return BraceGlyph ?? (_iconOnItsWay ? FileGlyphs.Unknown : null);
+        }
+    }
 
     /// <summary>
-    /// The icon of Windows, for programs, shortcuts and the other files: for them it is a logo. Loaded on first use, so only
-    /// the items actually displayed pay for it.
+    /// The icon of Windows, for programs, shortcuts and the other files: for them it is a logo. Read on first use, so only
+    /// the items actually displayed pay for it, and on a thread of its own, so a slow one never holds the panel.
     /// </summary>
     public ImageSource? Icon
     {
         get
         {
-            if (!_iconLoaded)
-            {
-                _icon = Glyph is null ? ShellIcons.Get(Item.FullPath, Item.IsFolder) : null;
-                _iconLoaded = true;
-            }
+            RequestIcon();
             return _icon;
         }
+    }
+
+    private Geometry? BraceGlyph
+    {
+        get
+        {
+            if (!_braceGlyphKnown)
+            {
+                _braceGlyph = FileGlyphs.For(Kind) ??
+                    (Kind == FileKind.Other && !FileAssociations.IsKnown(Path.GetExtension(Item.Name)) ? FileGlyphs.Unknown : null);
+                _braceGlyphKnown = true;
+            }
+            return _braceGlyph;
+        }
+    }
+
+    /// <summary>Asks Windows for the icon once, the first time either the glyph or the icon is shown.</summary>
+    private void RequestIcon()
+    {
+        if (_iconRequested)
+            return;
+        _iconRequested = true;
+        if (BraceGlyph is not null || ShellIcons.TryGet(Item.FullPath, Item.IsFolder, out _icon))
+            return;
+        _iconOnItsWay = true;
+        ShellIcons.Load(Item.FullPath, Item.IsFolder, icon =>
+        {
+            _icon = icon;
+            _iconOnItsWay = false;
+            OnPropertyChanged(nameof(Icon));
+            OnPropertyChanged(nameof(Glyph));
+        });
     }
 }
 

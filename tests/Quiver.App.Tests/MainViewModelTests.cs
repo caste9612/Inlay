@@ -464,6 +464,19 @@ public sealed class MainViewModelTests : IDisposable
         Assert.StartsWith(_root, viewModel.Status);
     });
 
+    [Fact]
+    public void OpeningThePanel_ReadsTheBoardAgain() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        Assert.DoesNotContain(viewModel.Tiles.SelectMany(tile => tile.Items), item => item.Name == "nuovo.txt");
+        // A file that arrived while the panel was hidden, on a drive without a watcher to report it.
+        AddFile("Lavoro/Documenti/nuovo.txt");
+
+        viewModel.OnPanelShowing();
+
+        Assert.Contains(viewModel.Tiles.SelectMany(tile => tile.Items), item => item.Name == "nuovo.txt");
+    });
+
     private MainViewModel Open() => new(_root, live: false);
 
     private static ItemViewModel Item(MainViewModel viewModel, string name) =>

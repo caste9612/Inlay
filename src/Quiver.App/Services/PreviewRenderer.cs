@@ -21,6 +21,8 @@ internal static class PreviewRenderer
     {
         var output = options.PreviewOutput ?? throw new ArgumentException("Manca il file di destinazione.");
         var root = options.ArchiveRoot ?? throw new ArgumentException("--render-preview richiede anche --archive <cartella>.");
+        // No window drives the dispatcher here: the icons of Windows are read at once, on this thread.
+        ShellIcons.Synchronous = true;
         if (options.PreviewArchives)
         {
             RenderArchives(root, options.PreviewWelcome, output);

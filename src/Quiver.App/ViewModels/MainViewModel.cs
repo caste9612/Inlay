@@ -196,9 +196,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Prompt = null;
         // The message about the last operation was for the previous time.
         Status = _summary;
-        // Without a watcher (unsupported drive) there is no other way to notice changes.
-        if (_reloadPending || _watcher is null)
-            Reload();
+        // Read again every time: the watcher reports names only, so a file saved meanwhile would show its old date,
+        // and on a drive it cannot watch nothing else would notice the changes. A board is read in a moment.
+        Reload();
     }
 
     public void OnPanelHidden()

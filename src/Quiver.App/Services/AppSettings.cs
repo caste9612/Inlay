@@ -56,7 +56,10 @@ internal sealed class AppSettings
     public void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(SavePath)!);
-        File.WriteAllText(SavePath, JsonSerializer.Serialize(this, Options));
+        // Written to a temporary file first, as the metadata of the archive are: a crash never leaves half a file.
+        var temporary = SavePath + ".tmp";
+        File.WriteAllText(temporary, JsonSerializer.Serialize(this, Options));
+        File.Move(temporary, SavePath, overwrite: true);
     }
 
     /// <summary>The archive becomes the one in use, and the first of the list.</summary>
