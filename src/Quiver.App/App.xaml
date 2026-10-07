@@ -5,7 +5,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Themes/Dark.xaml" />
+                <ResourceDictionary Source="Brace/Brace.xaml" />
+                <ResourceDictionary Source="Themes/Quiver.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

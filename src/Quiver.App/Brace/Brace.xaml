@@ -1,0 +1,9 @@
+<!-- GENERATO da strumenti/genera_piattaforme.py a partire da strumenti/modelli/wpf/Brace.xaml: modifica quello, non questo file. -->
+<!-- Brace per WPF: il dizionario da unire in App.xaml. Contiene token, icone e stili dei controlli;
+     per la densità touch aggiungi Brace.Touch.xaml dopo questo, nell'app o in una sua parte. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="Brace.Controls.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+</ResourceDictionary>

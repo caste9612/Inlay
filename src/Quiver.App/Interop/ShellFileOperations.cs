@@ -15,7 +15,9 @@ internal static class ShellFileOperations
     private const uint FO_DELETE = 0x0003;
     private const uint FO_RENAME = 0x0004;
 
+    private const ushort FOF_MULTIDESTFILES = 0x0001;
     private const ushort FOF_SILENT = 0x0004;
+    private const ushort FOF_RENAMEONCOLLISION = 0x0008;
     private const ushort FOF_NOCONFIRMATION = 0x0010;
     private const ushort FOF_ALLOWUNDO = 0x0040;
     private const ushort FOF_NOCONFIRMMKDIR = 0x0200;
@@ -48,8 +50,16 @@ internal static class ShellFileOperations
     public static bool Move(IReadOnlyList<string> paths, string destinationFolder, nint owner, bool interactive = true) =>
         Run(FO_MOVE, paths, destinationFolder, owner, FOF_ALLOWUNDO | FOF_NOCONFIRMMKDIR, interactive);
 
-    public static bool Copy(IReadOnlyList<string> paths, string destinationFolder, nint owner, bool interactive = true) =>
-        Run(FO_COPY, paths, destinationFolder, owner, FOF_ALLOWUNDO | FOF_NOCONFIRMMKDIR, interactive);
+    /// <summary>Moves each item to its own full path, folders included: this is how things are put back where they were.</summary>
+    /// <param name="destinations">One path for each of <paramref name="paths"/>, in the same order.</param>
+    public static bool MoveEach(IReadOnlyList<string> paths, IReadOnlyList<string> destinations, nint owner, bool interactive = true) =>
+        Run(FO_MOVE, paths, string.Join('\0', destinations), owner, FOF_ALLOWUNDO | FOF_NOCONFIRMMKDIR | FOF_MULTIDESTFILES, interactive);
+
+    /// <param name="renameOnCollision">A copy into the folder the files come from gets "- Copia" names, as in Explorer.</param>
+    public static bool Copy(IReadOnlyList<string> paths, string destinationFolder, nint owner, bool interactive = true,
+        bool renameOnCollision = false) =>
+        Run(FO_COPY, paths, destinationFolder, owner,
+            (ushort)(FOF_ALLOWUNDO | FOF_NOCONFIRMMKDIR | (renameOnCollision ? FOF_RENAMEONCOLLISION : 0)), interactive);
 
     public static bool Rename(string path, string newPath, nint owner, bool interactive = true) =>
         Run(FO_RENAME, [path], newPath, owner, FOF_ALLOWUNDO, interactive);

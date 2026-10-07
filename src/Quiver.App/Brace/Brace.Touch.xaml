@@ -1,0 +1,22 @@
+<!-- GENERATO da strumenti/genera_piattaforme.py a partire da strumenti/modelli/wpf/Brace.Touch.xaml: modifica quello, non questo file. -->
+<!-- Brace per WPF, densità touch: uniscilo dopo Brace.xaml nell'app, o nelle Resources di una sua parte,
+     per avere controlli e righe da 44 px, icone da 20 e testo da 15. È l'equivalente di data-density="touch". -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceDictionary Source="Brace.Density.Touch.xaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <!-- Misure dei singoli controlli in densità touch (le compatte sono in Brace.Controls.xaml). -->
+  <Thickness x:Key="Brace.ButtonPadding">16,0</Thickness>
+  <sys:Double x:Key="Brace.CheckSize">20</sys:Double>
+  <sys:Double x:Key="Brace.RadioDot">8</sys:Double>
+  <sys:Double x:Key="Brace.SwitchWidth">40</sys:Double>
+  <sys:Double x:Key="Brace.SwitchHeight">22</sys:Double>
+  <sys:Double x:Key="Brace.SwitchThumb">16</sys:Double>
+  <sys:Double x:Key="Brace.TabTextSize">14</sys:Double>
+  <Thickness x:Key="Brace.SegmentPadding">12,0</Thickness>
+  <sys:Double x:Key="Brace.StatusBarHeight">44</sys:Double>
+  <sys:Double x:Key="Brace.StatusBarTextSize">13</sys:Double>
+</ResourceDictionary>

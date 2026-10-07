@@ -33,7 +33,8 @@ internal static class ShellIcons
     private static ImageSource? Load(string path, bool byExtension)
     {
         var info = new NativeMethods.SHFILEINFO();
-        var flags = NativeMethods.SHGFI_ICON | NativeMethods.SHGFI_LARGEICON;
+        // Small icons: 16 px at 100% scaling, 24 px at 150%, so they stay sharp in 16-pixel rows.
+        var flags = NativeMethods.SHGFI_ICON | NativeMethods.SHGFI_SMALLICON;
         if (byExtension)
             flags |= NativeMethods.SHGFI_USEFILEATTRIBUTES; // from the extension alone, without opening the file
         var found = NativeMethods.SHGetFileInfo(

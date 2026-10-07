@@ -98,6 +98,20 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
+    public void TileOrder_IsRemembered_AndTravelsWithARenamedFolder()
+    {
+        var metadata = new ArchiveMetadata();
+
+        Assert.True(metadata.SetTileOrder(["Rossi/B", "Rossi/A"]));
+        Assert.False(metadata.SetTileOrder(["Rossi/B", "Rossi/A"]));
+        metadata.MoveFolder("Rossi/B", "Rossi/Bozze");
+
+        Assert.Equal(0, metadata.OrderOf("Rossi/Bozze"));
+        Assert.Equal(1, metadata.OrderOf("Rossi/A"));
+        Assert.Null(metadata.OrderOf("Rossi/B"));
+    }
+
+    [Fact]
     public void UnreadableFile_IsSetAside_AndEmptyMetadataIsUsed()
     {
         var path = _archive.AddFile($"{ArchiveLayout.MetadataFolderName}/{ArchiveLayout.MetadataFileName}", "{ not json");

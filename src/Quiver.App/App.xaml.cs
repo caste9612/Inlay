@@ -3,6 +3,7 @@ using System.Windows.Threading;
 using Microsoft.Win32;
 using Quiver.App.Services;
 using Quiver.App.ViewModels;
+using Quiver.Core;
 
 namespace Quiver.App;
 
@@ -59,7 +60,11 @@ public partial class App : Application
             SaveArchiveRoot(root);
         }
 
-        _viewModel = new MainViewModel(root);
+        // A trial with a demo archive can use a stand-in Desktop, so that dragging never moves the user's own files there.
+        IReadOnlyList<InboxSource> inboxSources = options.DesktopStandIn is { } desktop
+            ? [new InboxSource("Desktop", [desktop])]
+            : WindowsFolders.InboxSources(_settings);
+        _viewModel = new MainViewModel(root, inboxSources: inboxSources);
         _panel = new PanelWindow(_viewModel);
         _panel.Prepare();
 
@@ -98,7 +103,7 @@ public partial class App : Application
         {
             case Commands.Toggle: _panel?.Toggle(); break;
             case Commands.Show: _panel?.ShowPanel(); break;
-            case Commands.Hide: _panel?.HidePanel("--hide command"); break;
+            case Commands.Hide: _panel?.HidePanel("--hide command", returnFocus: true); break;
             case Commands.Exit: Shutdown(); break;
             default: Log.Write($"Unknown command: {command}"); break;
         }
@@ -143,8 +148,9 @@ public partial class App : Application
         {
             MessageBox.Show(
                 "Scegli la cartella che fa da archivio: ogni sua sottocartella diventa un argomento.\n\n" +
-                "Puoi crearne una nuova, ad esempio D:\\Archivio, oppure provare con una cartella che hai già: " +
-                "questa versione non sposta e non cancella i tuoi file.",
+                "Puoi crearne una nuova, ad esempio D:\\Archivio, oppure usare una cartella che hai già. " +
+                "Quiver lavora sui file veri: quello che sposti o rinomini qui cambia anche in Explorer. " +
+                "Ciò che elimini va nel Cestino, e Ctrl+Z annulla l'ultima operazione.",
                 "Benvenuto in Quiver", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         var dialog = new OpenFolderDialog { Title = "Scegli la cartella dell'archivio" };

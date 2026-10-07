@@ -30,6 +30,18 @@ public sealed class SearchIndexTests : IDisposable
     }
 
     [Fact]
+    public void Results_KnowWhenTheyLastChanged()
+    {
+        var file = _archive.AddFile("Lavoro/Offerta.docx");
+        var changed = new DateTime(2026, 10, 5, 14, 32, 0, DateTimeKind.Local);
+        File.SetLastWriteTime(file, changed);
+
+        var hit = Assert.Single(SearchIndex.Build(_archive.Root).Search("offerta"));
+
+        Assert.Equal(changed, hit.Item.Modified);
+    }
+
+    [Fact]
     public void EveryWordMustMatch_InTheNameOrInTheFolderPath()
     {
         var rossi = _archive.AddFile("Rossi/Offerta.docx");
@@ -91,5 +103,24 @@ public sealed class SearchIndexTests : IDisposable
             _archive.AddFile($"Lavoro/file{i}.txt");
 
         Assert.Equal(10, SearchIndex.Build(_archive.Root).Search("file", maxResults: 10).Count);
+    }
+
+    [Fact]
+    public void TheDesktop_IsSearchedToo_ButOnlyWhatItsTileShows()
+    {
+        // The archive is a folder on the Desktop, which also holds a project with its own files.
+        var desktop = _archive.AddFolder("Desktop");
+        var root = _archive.AddFolder("Desktop/Archivio");
+        _archive.AddFile("Desktop/preventivo.pdf");
+        _archive.AddFile("Desktop/Progetto/preventivo vecchio.pdf");
+        _archive.AddFile("Desktop/Archivio/Lavoro/preventivo firmato.pdf");
+
+        var index = SearchIndex.Build(root, [new InboxSource("Desktop", [desktop])]);
+
+        Assert.Equal(new[] { "preventivo firmato.pdf", "preventivo.pdf" },
+            index.Search("preventivo").Select(hit => hit.Item.Name).Order(StringComparer.Ordinal));
+        Assert.Equal("Desktop", Assert.Single(index.Search("preventivo.pdf")).RelativeDirectory);
+        Assert.Single(index.Search("progetto"));
+        Assert.Empty(index.Search("archivio"));
     }
 }

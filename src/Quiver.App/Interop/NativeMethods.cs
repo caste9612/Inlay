@@ -24,11 +24,16 @@ internal static partial class NativeMethods
     public const uint MONITOR_DEFAULTTONEAREST = 2;
     public const int MDT_EFFECTIVE_DPI = 0;
 
+    public const int DWMWA_CLOAKED = 14;
     public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     public const int DWMWCP_ROUND = 2;
 
+    public const int SHCNE_RENAMEITEM = 0x00000001;
+    public const int SHCNE_RENAMEFOLDER = 0x00020000;
+    public const uint SHCNF_PATHW = 0x0005;
+
     public const uint SHGFI_ICON = 0x000000100;
-    public const uint SHGFI_LARGEICON = 0x000000000;
+    public const uint SHGFI_SMALLICON = 0x000000001;
     public const uint SHGFI_USEFILEATTRIBUTES = 0x000000010;
     public const uint FILE_ATTRIBUTE_NORMAL = 0x00000080;
 
@@ -129,13 +134,48 @@ internal static partial class NativeMethods
     public static partial bool GetCursorPos(out POINT lpPoint);
 
     [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetWindowRect(nint hWnd, out RECT lpRect);
+
+    [LibraryImport("user32.dll")]
+    public static partial nint WindowFromPoint(POINT point);
+
+    // A StringBuilder buffer, which [LibraryImport] cannot marshal.
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetClassName(nint hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+
+    [LibraryImport("user32.dll")]
     public static partial uint GetDpiForSystem();
+
+    [LibraryImport("user32.dll")]
+    public static partial uint GetDoubleClickTime();
 
     [LibraryImport("shcore.dll")]
     public static partial int GetDpiForMonitor(nint hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
     [LibraryImport("dwmapi.dll")]
     public static partial int DwmSetWindowAttribute(nint hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+    [LibraryImport("dwmapi.dll")]
+    public static partial int DwmGetWindowAttribute(nint hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsWindow(nint hWnd);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsWindowVisible(nint hWnd);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsIconic(nint hWnd);
+
+    [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial void SHChangeNotify(int wEventId, uint uFlags, string? dwItem1, string? dwItem2);
+
+    [LibraryImport("shell32.dll")]
+    public static partial void SHUpdateRecycleBinIcon();
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

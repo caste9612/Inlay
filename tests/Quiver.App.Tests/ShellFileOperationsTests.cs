@@ -1,4 +1,5 @@
-using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using Quiver.App.Interop;
 
 namespace Quiver.App.Tests;
@@ -21,11 +22,28 @@ public sealed class ShellFileOperationsTests : IDisposable
         var folder = AddFile("A/Sotto/due.txt");
         var destination = Directory.CreateDirectory(Path.Combine(_root, "B")).FullName;
 
-        Assert.True(OnStaThread(() => ShellFileOperations.Move([file, Path.GetDirectoryName(folder)!], destination, 0, interactive: false)));
+        Assert.True(StaThread.Run(() => ShellFileOperations.Move([file, Path.GetDirectoryName(folder)!], destination, 0, interactive: false)));
 
         Assert.False(File.Exists(file));
         Assert.True(File.Exists(Path.Combine(destination, "uno.txt")));
         Assert.True(File.Exists(Path.Combine(destination, "Sotto", "due.txt")));
+    }
+
+    [Fact]
+    public void OnTheSameDrive_AMoveOnlyChangesThePath_TheContentIsNeitherCopiedNorRewritten()
+    {
+        var file = AddFile("A/grande.bin", "contenuto");
+        var before = FileId(file);
+        var destination = Directory.CreateDirectory(Path.Combine(_root, "B")).FullName;
+
+        Assert.True(StaThread.Run(() => ShellFileOperations.Move([file], destination, 0, interactive: false)));
+
+        // Same file on the disk, under a new path: what NTFS calls the file index does not change.
+        var moved = Path.Combine(destination, "grande.bin");
+        Assert.Equal(before, FileId(moved));
+        // A copy instead is another file, with an index of its own.
+        File.Copy(moved, Path.Combine(destination, "copia.bin"));
+        Assert.NotEqual(before, FileId(Path.Combine(destination, "copia.bin")));
     }
 
     [Fact]
@@ -34,7 +52,7 @@ public sealed class ShellFileOperationsTests : IDisposable
         var file = AddFile("A/uno.txt", "contenuto");
         var destination = Directory.CreateDirectory(Path.Combine(_root, "B")).FullName;
 
-        Assert.True(OnStaThread(() => ShellFileOperations.Copy([file], destination, 0, interactive: false)));
+        Assert.True(StaThread.Run(() => ShellFileOperations.Copy([file], destination, 0, interactive: false)));
 
         Assert.True(File.Exists(file));
         Assert.Equal("contenuto", File.ReadAllText(Path.Combine(destination, "uno.txt")));
@@ -46,8 +64,8 @@ public sealed class ShellFileOperationsTests : IDisposable
         var file = AddFile("A/vecchio.txt");
         var folder = Path.Combine(_root, "A");
 
-        Assert.True(OnStaThread(() => ShellFileOperations.Rename(file, Path.Combine(folder, "nuovo.txt"), 0, interactive: false)));
-        Assert.True(OnStaThread(() => ShellFileOperations.Rename(folder, Path.Combine(_root, "a"), 0, interactive: false)));
+        Assert.True(StaThread.Run(() => ShellFileOperations.Rename(file, Path.Combine(folder, "nuovo.txt"), 0, interactive: false)));
+        Assert.True(StaThread.Run(() => ShellFileOperations.Rename(folder, Path.Combine(_root, "a"), 0, interactive: false)));
 
         Assert.Equal(new[] { "a" }, Directory.GetDirectories(_root).Select(Path.GetFileName));
         Assert.True(File.Exists(Path.Combine(_root, "a", "nuovo.txt")));
@@ -61,26 +79,31 @@ public sealed class ShellFileOperationsTests : IDisposable
         return path;
     }
 
-    /// <summary>The shell wants a single-threaded apartment, like the UI thread of the app.</summary>
-    private static T OnStaThread<T>(Func<T> action)
+    /// <summary>The volume and the index NTFS gives the file: the same pair means the same file on the disk.</summary>
+    private static (uint Volume, ulong Index) FileId(string path)
     {
-        T result = default!;
-        ExceptionDispatchInfo? error = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                result = action();
-            }
-            catch (Exception e)
-            {
-                error = ExceptionDispatchInfo.Capture(e);
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        error?.Throw();
-        return result;
+        using var handle = File.OpenHandle(path);
+        Assert.True(GetFileInformationByHandle(handle, out var info));
+        return (info.VolumeSerialNumber, ((ulong)info.FileIndexHigh << 32) | info.FileIndexLow);
     }
+
+    // The FILETIMEs are pairs of 32-bit values in Windows: aligned to 4 bytes, not 8.
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct BY_HANDLE_FILE_INFORMATION
+    {
+        public uint FileAttributes;
+        public long CreationTime;
+        public long LastAccessTime;
+        public long LastWriteTime;
+        public uint VolumeSerialNumber;
+        public uint FileSizeHigh;
+        public uint FileSizeLow;
+        public uint NumberOfLinks;
+        public uint FileIndexHigh;
+        public uint FileIndexLow;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetFileInformationByHandle(SafeFileHandle file, out BY_HANDLE_FILE_INFORMATION information);
 }

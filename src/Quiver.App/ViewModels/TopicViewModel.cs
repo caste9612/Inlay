@@ -5,7 +5,7 @@ using Quiver.Core;
 namespace Quiver.App.ViewModels;
 
 /// <summary>A topic in the sidebar tree.</summary>
-public sealed partial class TopicViewModel : ObservableObject
+public sealed partial class TopicViewModel : RenameableViewModel
 {
     [ObservableProperty]
     private bool _isExpanded;
@@ -32,6 +32,10 @@ public sealed partial class TopicViewModel : ObservableObject
     /// <summary>Only nested topics can go back to being tiles: folders in the root are always topics.</summary>
     [MemberNotNullWhen(true, nameof(Parent))]
     public bool CanDemote => Parent is not null;
+
+    public override string RenamePath => Topic.FullPath;
+
+    protected override bool RenamesFolder => true;
 
     public IEnumerable<TopicViewModel> Ancestors()
     {

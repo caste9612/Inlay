@@ -17,12 +17,13 @@ public partial class PanelWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private nint _hwnd;
+    private nint _previousWindow;
 
     public PanelWindow(MainViewModel viewModel)
     {
         InitializeComponent();
         DataContext = _viewModel = viewModel;
-        View.CloseRequested += (_, _) => HidePanel("Esc");
+        View.CloseRequested += (_, _) => HidePanel("Esc", returnFocus: true);
         View.DragLeftPanel += (_, _) => HidePanel("drag left the panel");
         viewModel.ItemOpened += (_, _) => HidePanel("item opened");
         viewModel.FileOperationCompleted += (_, _) =>
@@ -52,7 +53,7 @@ public partial class PanelWindow : Window
     public void Toggle()
     {
         if (IsVisible)
-            HidePanel("shortcut");
+            HidePanel("shortcut", returnFocus: true);
         else
             ShowPanel();
     }
@@ -65,6 +66,8 @@ public partial class PanelWindow : Window
             return;
         }
         var started = Stopwatch.GetTimestamp();
+        var foreground = NativeMethods.GetForegroundWindow();
+        _previousWindow = foreground != _hwnd ? foreground : 0;
         PlaceOnActiveMonitor();
         _viewModel.OnPanelShowing();
         Show();
@@ -75,14 +78,25 @@ public partial class PanelWindow : Window
             DispatcherPriority.ContextIdle);
     }
 
-    public void HidePanel(string reason)
+    /// <param name="returnFocus">
+    /// The user closed the panel (Esc, the shortcut): the focus goes back to the window they were working in, instead of
+    /// the one Windows would pick, which with GlazeWM can be on another workspace and bring that forward.
+    /// </param>
+    public void HidePanel(string reason, bool returnFocus = false)
     {
         if (!IsVisible)
             return;
         Log.Write($"Panel hidden: {reason}");
         Hide();
         _viewModel.OnPanelHidden();
+        if (returnFocus && IsStillThere(_previousWindow))
+            NativeMethods.SetForegroundWindow(_previousWindow);
     }
+
+    /// <summary>Open, shown, not minimized, and not hidden on another workspace (GlazeWM "cloaks" those windows).</summary>
+    private static bool IsStillThere(nint window) =>
+        window != 0 && NativeMethods.IsWindow(window) && NativeMethods.IsWindowVisible(window) && !NativeMethods.IsIconic(window) &&
+        !(NativeMethods.DwmGetWindowAttribute(window, NativeMethods.DWMWA_CLOAKED, out var cloaked, sizeof(int)) == 0 && cloaked != 0);
 
     private void BringToFront()
     {
@@ -119,24 +133,7 @@ public partial class PanelWindow : Window
             Log.Write("The panel took the focus with the thread-input workaround");
     }
 
-    private static string DescribeForegroundWindow()
-    {
-        var window = NativeMethods.GetForegroundWindow();
-        NativeMethods.GetWindowThreadProcessId(window, out var processId);
-        var title = new char[256];
-        var length = NativeMethods.GetWindowText(window, title, title.Length);
-        string process;
-        try
-        {
-            using var owner = Process.GetProcessById((int)processId);
-            process = owner.ProcessName;
-        }
-        catch (ArgumentException)
-        {
-            process = "?";
-        }
-        return $"{process} \"{new string(title, 0, length)}\"";
-    }
+    private static string DescribeForegroundWindow() => WindowInfo.Describe(NativeMethods.GetForegroundWindow());
 
     private void ConfigureNativeWindow()
     {

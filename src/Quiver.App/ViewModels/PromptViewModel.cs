@@ -21,12 +21,14 @@ public sealed partial class PromptViewModel : ObservableObject
     /// <param name="confirm">Does the work with the typed text; returns a problem to show, or null when done.</param>
     /// <param name="initialText">Null for a plain confirmation, without a text box.</param>
     /// <param name="selectionLength">How much of the initial text starts selected; all of it by default.</param>
+    /// <param name="isDanger">The action destroys or removes something: the button is red, as in Brace.</param>
     public PromptViewModel(string title, string confirmLabel, Func<string, string?> confirm,
-        string? initialText = null, int? selectionLength = null, string? message = null)
+        string? initialText = null, int? selectionLength = null, string? message = null, bool isDanger = false)
     {
         Title = title;
         ConfirmLabel = confirmLabel;
         Message = message;
+        IsDanger = isDanger;
         HasInput = initialText is not null;
         Text = initialText ?? "";
         SelectionLength = selectionLength ?? Text.Length;
@@ -42,6 +44,8 @@ public sealed partial class PromptViewModel : ObservableObject
     public string? Message { get; }
 
     public bool HasInput { get; }
+
+    public bool IsDanger { get; }
 
     public int SelectionLength { get; }
 

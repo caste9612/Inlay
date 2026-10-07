@@ -29,4 +29,18 @@ public static class ArchiveNames
             return "Il nome è troppo lungo.";
         return null;
     }
+
+    /// <summary>A name not taken yet in the folder: the name itself, else "name (2)", "name (3)"… like Explorer.</summary>
+    /// <param name="extension">For files: kept at the end, as in "Offerta (2).lnk".</param>
+    public static string Unique(string folder, string name, string extension = "")
+    {
+        if (!Path.Exists(Path.Combine(folder, name + extension)))
+            return name + extension;
+        for (var n = 2; ; n++)
+        {
+            var candidate = $"{name} ({n}){extension}";
+            if (!Path.Exists(Path.Combine(folder, candidate)))
+                return candidate;
+        }
+    }
 }

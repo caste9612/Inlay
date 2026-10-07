@@ -25,6 +25,14 @@
     <Resource Include="Assets\quiver.ico" />
   </ItemGroup>
 
+  <!-- Brace: the theme in Brace\ and its fonts in Fonts\, copied from the design system (Brace\PROVENIENZA.md). -->
+  <ItemGroup>
+    <None Remove="Fonts\*.ttf" />
+    <Resource Include="Fonts\*.ttf" />
+    <None Update="Fonts\licenze\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Brace\LICENSE-FluentSystemIcons.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Quiver.App.Tests" />
   </ItemGroup>

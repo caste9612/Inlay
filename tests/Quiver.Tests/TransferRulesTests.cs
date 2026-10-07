@@ -40,4 +40,39 @@ public sealed class TransferRulesTests
     [Fact]
     public void ASimilarNameIsNotTheSameFolder() =>
         Assert.Equal(TransferKind.Move, TransferRules.Choose([@"D:\Archivio\A"], @"D:\Archivio\AB", false, false));
+
+    [Fact]
+    public void AltMakesAShortcut_AndSoDoCtrlAndShiftTogether()
+    {
+        Assert.Equal(TransferKind.Link, TransferRules.Choose([@"D:\Archivio\A\file.txt"], @"D:\Archivio\B", false, false, forceLink: true));
+        Assert.Equal(TransferKind.Link, TransferRules.Choose([@"D:\Archivio\A\file.txt"], @"D:\Archivio\B", forceCopy: true, forceMove: true));
+    }
+
+    [Fact]
+    public void InstalledPrograms_AndWhatIsOnTheNetwork_HaveAPlaceOfTheirOwn()
+    {
+        Assert.True(TransferRules.HasItsOwnPlace(@"C:\Program Files\App\app.exe", @"D:\Archivio"));
+        Assert.True(TransferRules.HasItsOwnPlace(@"\\server\commesse\2026\Rossi", @"D:\Archivio"));
+        Assert.False(TransferRules.HasItsOwnPlace(@"C:\Users\me\Downloads\offerta.pdf", @"D:\Archivio"));
+        // A program kept in the archive, like a portable one, is moved around like any other file.
+        Assert.False(TransferRules.HasItsOwnPlace(@"D:\Archivio\Strumenti\portable.exe", @"D:\Archivio"));
+    }
+
+    [Fact]
+    public void WhatWaitsToBeSorted_IsMoved_EvenToAnotherDrive_ButCtrlStillCopies()
+    {
+        string[] desktop = [@"C:\Users\me\Desktop\offerta.pdf"];
+        Assert.Equal(TransferKind.Move, TransferRules.Choose(desktop, @"D:\Archivio\Lavoro", false, false, preferMove: true));
+        Assert.Equal(TransferKind.Copy, TransferRules.Choose(desktop, @"D:\Archivio\Lavoro", forceCopy: true, forceMove: false, preferMove: true));
+        Assert.Equal(TransferKind.Link, TransferRules.Choose(desktop, @"D:\Archivio\Lavoro", false, false, forceLink: true, preferMove: true));
+    }
+
+    [Fact]
+    public void WhatHasItsOwnPlace_EntersAsAShortcut_UnlessAKeySaysOtherwise()
+    {
+        string[] program = [@"C:\Program Files\App\app.exe"];
+        Assert.Equal(TransferKind.Link, TransferRules.Choose(program, @"C:\Archivio\Programmi", false, false, preferLink: true));
+        Assert.Equal(TransferKind.Copy, TransferRules.Choose(program, @"C:\Archivio\Programmi", forceCopy: true, forceMove: false, preferLink: true));
+        Assert.Equal(TransferKind.Move, TransferRules.Choose(program, @"C:\Archivio\Programmi", forceCopy: false, forceMove: true, preferLink: true));
+    }
 }

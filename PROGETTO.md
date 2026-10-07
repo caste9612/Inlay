@@ -1,6 +1,6 @@
 # Quiver — documento di progetto
 
-*Stato: v0.1 completa nel codice, da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 7 ottobre 2026.*
+*Stato: v0.1 completa nel codice, con l'interfaccia rifatta su Brace e i gesti del desktop. Della v0.2 sono già pronti `Ctrl+Z`, il Desktop in «Da smistare» e i collegamenti. Tutto da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 7 ottobre 2026.*
 
 ## 1. Il problema
 
@@ -104,22 +104,34 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 ## 5. Interfaccia
 
 ```
-┌──────────────┬─────────────────────────────────────────┐
-│ Cerca...     │ Lavoro › Clienti › Rossi                │
-│              │ ┌─ Documenti ──────┐ ┌─ Programmi ────┐ │
-│ ▾ Lavoro     │ │ Offerta_v3.docx  │ │ SolidWorks     │ │
-│   ▾ Clienti  │ │ Commessa 2026\   │ │ TeamViewer     │ │
-│     ● Rossi  │ └──────────────────┘ └────────────────┘ │
-│     ○ Bianchi│ ┌─ Generale ───────┐                    │
-│   ○ Interni  │ │ Note.md          │                    │
-│ ○ Personale  │ └──────────────────┘                    │
-│ ○ Strumenti  │                                         │
-│ Da smistare 4│                                         │
-└──────────────┴─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│ ▣ Quiver   [ Cerca in tutto l'archivio          ]                 ✕ │
+├────────────────┬────────────────────────────────────────────────────┤
+│ Argomenti    + │ Lavoro › Clienti                                   │
+│ ▾ Lavoro       │ Rossi                           [+ Nuovo riquadro] │
+│   ▾ Clienti    │                                                    │
+│       Bianchi  │ ┌ Generale  1 …┐ ┌ Documenti 2 …┐ ┌ Programmi 2 …┐ │
+│     ▌ Rossi    │ │ Note.md      │ │ Commessa 2026│ │ SolidWorks   │ │
+│     Interni    │ └──────────────┘ │ Offerta_v3   │ │ TeamViewer   │ │
+│   Personale    │                  └──────────────┘ └──────────────┘ │
+│   Strumenti    │                                                    │
+│                │                                                    │
+│                │                                                    │
+│ ↓ Da smistare 4│                                                    │
+├────────────────┴────────────────────────────────────────────────────┤
+│ D:\Archivio · 1.240 elementi             Invio apri  F2 rinomina  … │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Barra laterale**: ricerca, albero degli argomenti, inbox con il numero di file da smistare.
-- **Bacheca**: il percorso dell'argomento selezionato e i suoi riquadri.
+- **In alto**: il logo, la ricerca su tutto l'archivio e il pulsante per chiudere.
+- **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare.
+- **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona di Windows e la data di modifica.
+- **Barra di stato**: l'archivio e quanti elementi contiene, oppure l'esito dell'ultima operazione, e i tasti principali.
+
+### Aspetto
+
+- **Brace**, il design system personale, dà colori (tema scuro), caratteri (Inter, Cascadia Mono), icone (Fluent) e componenti. La sua versione WPF è copiata in `src/Quiver.App/Brace` e non si modifica lì: le correzioni vanno fatte in Brace, così valgono per tutti i software che lo usano.
+- **Icona**: una bacheca con tre riquadri, uno dei quali ambra come un riquadro selezionato. È disegnata in `scripts/genera-icona.py`; il logo nel pannello è lo stesso disegno, in `Themes/Quiver.xaml`.
 
 ### Due modalità, stessa interfaccia
 
@@ -130,22 +142,35 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 
 | Tasto | Azione |
 |---|---|
-| scorciatoia globale (proposta: `Alt+E`) | apre/chiude il pannello |
+| `Alt+E` (scorciatoia globale) | apre e chiude il pannello |
 | scrivere | cerca in tutto l'archivio |
 | frecce, `Tab` | spostarsi tra argomenti, riquadri ed elementi |
-| `Invio` | apri |
-| `Ctrl+Invio` | apri in Explorer la cartella che lo contiene |
-| `F2` | rinomina |
+| `Invio` | apre (anche più elementi insieme) |
+| `Ctrl+Invio` | mostra l'elemento in Explorer |
+| `F2` | rinomina sul posto |
 | `Canc` | sposta nel Cestino |
-| `Ctrl+Z` | annulla l'ultima operazione |
-| `Ctrl+Shift+C` | copia il percorso |
+| `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | copia, taglia, incolla, anche con Explorer |
+| `Ctrl+A` | seleziona tutto il riquadro |
+| `Ctrl+Maiusc+N` | nuovo riquadro |
+| `Ctrl+Maiusc+C` | copia il percorso |
+| `Alt+Invio` | proprietà |
+| `Ctrl+Z` | annulla l'ultima operazione, anche più volte di seguito |
 | `Esc` | cancella la ricerca, poi chiude il pannello |
 
-### Mouse
+### Mouse: come sul desktop
 
-- Doppio clic per aprire, come sul desktop (si può impostare il clic singolo).
-- Il tasto destro mostra il menu di Windows (Apri con, Proprietà, 7-Zip…) più le azioni dell'app (Sposta in…, Promuovi ad argomento…).
-- Drag & drop: in entrata (da Explorer, dalla posta, dal browser), tra riquadri e argomenti, e in uscita (per esempio per allegare un file a una mail).
+- Un clic seleziona; con `Ctrl` e `Maiusc` se ne selezionano altri, con `Ctrl` anche da riquadri diversi. Un clic sul vuoto deseleziona.
+- Doppio clic per aprire.
+- Un secondo clic lento su un elemento già selezionato lo rinomina. Mentre si scrive il nome, un clic altrove lo conferma.
+- Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre Apri, Apri con…, Mostra in Explorer, Taglia, Copia, Copia percorso, Rinomina, Proprietà e Sposta nel Cestino. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
+- Drag & drop:
+  - in entrata, da Explorer, dalla posta (allegati e messaggi di Outlook) o dal browser (link e immagini);
+  - tra riquadri e argomenti: tenendo fermo l'elemento sopra un argomento, l'argomento si apre e lo si lascia nel riquadro giusto;
+  - in uscita, per esempio per allegare un file a una mail;
+  - i riquadri si riordinano trascinandoli per il titolo.
+- Spostare, copiare o collegare segue le regole di Explorer: sullo stesso disco si sposta, tra dischi diversi si copia; `Ctrl` copia, `Maiusc` sposta, `Alt` o `Ctrl+Maiusc` crea un collegamento. Con due eccezioni, coerenti con i principi:
+  - quello che ha già un suo posto (programmi `.exe`, cartelle e file in rete) entra come collegamento;
+  - quello che sta in «Da smistare» viene spostato anche su un altro disco.
 
 ## 6. Funzioni e versioni
 
@@ -153,21 +178,28 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 
 - Prima configurazione: scelta o creazione della radice dell'archivio.
 - Pannello con scorciatoia globale, icona nella tray, avvio con Windows.
-- Albero degli argomenti e bacheca con riquadri (disposti automaticamente) e "Generale".
-- Icone vere di file, cartelle e programmi.
-- Apri, apri la cartella che lo contiene, ricerca istantanea per nome.
-- Crea argomento o riquadro, rinomina, sposta nel Cestino.
-- Drag & drop in entrata e tra riquadri.
+- Albero degli argomenti e bacheca con riquadri (disposti in colonne, nell'ordine scelto trascinandoli) e "Generale".
+- Icone vere di file, cartelle e programmi, con la data di modifica.
+- Apri, Apri con…, mostra in Explorer, Proprietà, ricerca istantanea per nome.
+- Selezione come sul desktop, anche di più elementi.
+- Crea argomento, riquadro o cartella con il nome pronto da scrivere; rinomina sul posto; sposta nel Cestino.
+- Copia, taglia e incolla compatibili con Explorer.
+- Drag & drop in entrata (anche da Outlook e dal browser), tra riquadri e argomenti, e in uscita.
 - Aggiornamento immediato se l'archivio cambia da Explorer.
 
 ### v0.2 — gestione completa
 
-- Inbox: `_Da smistare`, il Desktop e, se si vuole, Download. Con un tasto un file va nel riquadro giusto; le destinazioni recenti compaiono in cima. Ci finiscono anche i collegamenti che gli installer mettono sul desktop, così un programma appena installato si aggiunge con un gesto.
-- Annulla (`Ctrl+Z`) per spostamenti, rinomine ed eliminazioni.
-- Menu contestuale di Windows.
-- Drag & drop in uscita.
-- Riquadri con posizione, dimensione e colore personalizzati.
-- Aggiunta di collegamenti a programmi, cartelle esterne e siti.
+- Inbox: `_Da smistare`, il Desktop e, se si vuole, Download. Ci finiscono anche i collegamenti che gli installer mettono sul desktop, così un programma appena installato si aggiunge con un gesto.
+  - **Fatto**: «Da smistare» mostra un riquadro per ogni provenienza, il Desktop comprende quello comune a tutti gli utenti, Download si attiva dalle impostazioni e la ricerca trova anche questi file.
+  - **Manca**: un tasto che manda un file nel riquadro giusto, con le destinazioni recenti in cima.
+- **Fatto**: annulla (`Ctrl+Z`) per spostamenti, copie, collegamenti, rinomine, nuove cartelle, ordine dei riquadri, promozioni ed eliminazioni. Quello che è andato nel Cestino torna al suo posto.
+- Menu contestuale completo di Windows (7-Zip e simili).
+- Riquadri con dimensione e colore personalizzati.
+- Selezione con il rettangolo, trascinando sul vuoto.
+- **Fatto**: aggiunta di collegamenti a programmi, cartelle esterne e siti:
+  - trascinando: i programmi e quello che è in rete diventano collegamenti da soli, con `Alt` qualunque cosa;
+  - con «Incolla collegamento» e con «Nuovo collegamento…», scrivendo un sito o un percorso;
+  - da Outlook e dal browser arrivano allegati, messaggi e link.
 
 ### v0.3 — trasloco e GlazeWM
 
@@ -186,18 +218,13 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 
 ## 7. Integrazione con GlazeWM
 
-- **Il pannello non va affiancato.** Nella regola `ignore` già presente in `config.yaml` va aggiunta la finestra del pannello (solo quella: la finestra Home invece deve essere gestita da GlazeWM). Prima va verificato se serve davvero, perché dipende da come GlazeWM tratta una finestra senza bordi sempre in primo piano.
+- **Il pannello non va affiancato, e GlazeWM lo lascia già stare: non serve nessuna regola.** Verificato il 7 ottobre 2026 su GlazeWM 3.9.1, quello installato, in due modi:
+  - nel codice di GlazeWM (`is_manageable` in `packages/wm-platform/src/native_window.rs`): non gestisce le finestre con lo stile `WS_EX_TOOLWINDOW`, né quelle che hanno un proprietario e nessuna barra del titolo;
+  - sulla finestra del pannello di Quiver in esecuzione: ha entrambe le caratteristiche.
 
-  ```yaml
-  window_rules:
-    - commands: ['ignore']
-      match:
-        - window_process: { equals: 'zebar' }
-        # ...regole esistenti...
-        - window_process: { equals: 'Quiver' }
-          window_title: { equals: 'Quiver' }
-  ```
-
+  La regola `ignore` servirà solo se un giorno il pannello cambierà tipo di finestra. La finestra Home invece dovrà essere gestita da GlazeWM.
+- **Focus**: quando chiudi il pannello con `Esc` o con la scorciatoia, Quiver ridà il focus alla finestra in cui stavi lavorando, invece di lasciarlo scegliere a Windows: con GlazeWM potrebbe finire su una finestra di un altro workspace, che verrebbe portato in primo piano. Le finestre nascoste da GlazeWM ("cloaked") sono escluse.
+- **Tasti già presi da GlazeWM** nel config attuale: `Alt+Invio` apre cmd, quindi in Quiver le Proprietà si aprono dal tasto destro, finché quel tasto resta a GlazeWM.
 - **Scorciatoia**: la registra l'app; `Alt+E` è libera nel config attuale. In alternativa può gestirla GlazeWM con `shell-exec`, lanciando `Quiver.exe --toggle`.
 - **Interfaccia di comando (IPC)**: GlazeWM espone un WebSocket su `127.0.0.1:6123` con messaggi JSON. Si possono inviare comandi (es. `focus --workspace 3`), fare interrogazioni (workspace attivo, finestre) e ricevere eventi (cambio di focus, workspace attivato). L'app lo usa per sapere qual è il workspace attivo, per passare al workspace di un argomento prima di aprirlo e, in modalità Home, per tornare al workspace precedente.
 - **Workspace Home** (indicativo, da provare): un workspace dedicato con una sua scorciatoia e una regola che ci manda la finestra principale dell'app.
@@ -219,12 +246,19 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 
 - **Piattaforma**: C# / .NET 10, WPF, Windows 11 x64.
 - **Struttura della soluzione**:
-  - `Quiver.Core`: la logica, senza interfaccia grafica. Contiene il modello dell'archivio, i metadati, le operazioni sui file con il registro per annullarle, l'indice per la ricerca e il controllo delle modifiche fatte da fuori. Si può testare in automatico.
-  - `Quiver.App`: l'interfaccia WPF. Contiene finestre (pannello e Home), viste e view model, tray, impostazioni, il collegamento con le funzioni di Windows (icone, menu contestuale, collegamenti, posizione delle icone sul desktop, scorciatoia globale) e il client IPC di GlazeWM.
+  - `Quiver.Core`: la logica, senza interfaccia grafica. Contiene il modello dell'archivio e di «Da smistare», i metadati, le regole per spostare, copiare o collegare, il registro per annullare, il ripristino dal Cestino, l'indice per la ricerca e il controllo delle modifiche fatte da fuori. Si può testare in automatico.
+  - `Quiver.App`: l'interfaccia WPF. Contiene finestre (pannello e Home), viste e view model, tray, impostazioni, il collegamento con le funzioni di Windows (icone, operazioni sui file della shell, collegamenti `.lnk`, file trascinati da Outlook e dal browser, menu contestuale, posizione delle icone sul desktop, scorciatoia globale) e il client IPC di GlazeWM.
   - `Quiver.Tests`: i test di `Quiver.Core`.
-- **Librerie**: CommunityToolkit.Mvvm (MVVM), H.NotifyIcon (icona nella tray), System.Text.Json. Le poche chiamate alle API di Windows per ora sono scritte a mano; WPF UI (stile Windows 11, Mica) e CsWin32 restano candidate per quando l'interfaccia e l'integrazione cresceranno.
+  - `Quiver.App.Tests`: i test delle operazioni sui file fatte dalla shell e del view model del pannello, su archivi temporanei.
+- **Librerie**: CommunityToolkit.Mvvm (MVVM), H.NotifyIcon (icona nella tray), System.Text.Json. L'aspetto viene da Brace (vedi "Aspetto"). Le poche chiamate alle API di Windows per ora sono scritte a mano; CsWin32 resta candidata per quando l'integrazione crescerà.
 - **Istanza unica**: se l'app viene lanciata una seconda volta (`Quiver.exe --toggle`), passa il comando all'istanza già aperta tramite una named pipe e si chiude.
-- **Operazioni sui file**: passano tutte da un unico servizio, che le registra per poterle annullare e usa il Cestino di Windows.
+- **Operazioni sui file**: passano tutte dalla shell di Windows, con le sue finestre di avanzamento e di conflitto, e usano il Cestino. Ognuna lascia un passo nel registro per annullarla, con quello che serve a rifarla al contrario, metadati compresi: dove sono finiti gli elementi, come si chiamavano, quando sono andati nel Cestino.
+- **Ripristino dal Cestino**: il Cestino di ogni disco tiene ogni elemento come due file, `$R…` con il contenuto e `$I…` con il percorso originale e la data.
+  - Subito dopo un'eliminazione, Quiver annota quali `$I…` sono i suoi.
+  - `Ctrl+Z` rimette al loro posto esattamente quegli elementi, anche se nel frattempo ne sono stati eliminati altri con lo stesso percorso, e toglie i `$I…`, come fa «Ripristina».
+  - Provato due volte sul Cestino vero, con un file e una cartella di prova; i test automatici usano un Cestino finto.
+- **Annullare senza perdere dati**: un annullamento non sovrascrive mai niente. Elimina definitivamente solo una cartella vuota creata da Quiver; il resto passa dal Cestino e, sui dischi che non ce l'hanno, l'annullamento non si fa. Se un file è aperto in un altro programma, il passo resta e `Ctrl+Z` si può ripetere.
+- **Installazione**: `scripts\Install-Quiver.ps1` pubblica una copia in `%LOCALAPPDATA%\Programs\Quiver`, separata da quella di sviluppo.
 - **Obiettivi di prestazioni**: pannello visibile in meno di 100 ms dalla scorciatoia (la finestra è già creata e solo nascosta); ricerca su 50.000 file in meno di 50 ms; meno di 100 MB di memoria a riposo.
 - **Convenzioni**: codice e commenti in inglese; interfaccia in italiano, con i testi in file di risorse per eventuali traduzioni.
 
@@ -234,10 +268,16 @@ Le impostazioni del singolo PC (percorso dell'archivio, scorciatoia, sorgenti de
 - **Cartelle di rete e OneDrive**: il controllo delle modifiche è meno affidabile, e sulle cartelle di rete il Cestino non esiste. Prima di eliminare lì serve una conferma esplicita.
 - **Focus**: Windows limita le app che si portano in primo piano da sole. Una scorciatoia registrata dall'app lo consente, ma va provato bene con GlazeWM e con più monitor.
 - **Archivio su più PC**: possibili conflitti su `archive.json` e programmi installati in percorsi diversi. Per ora è rimandato.
-- **Da decidere**: il nome definitivo (e rinominare la cartella `aaa`); dove mettere la radice (disco locale o OneDrive); clic singolo o doppio; se includere Download nell'inbox.
+- **Da decidere**: se rinominare la cartella `aaa` in `Quiver`; dove mettere la radice (disco locale o OneDrive); se includere Download nell'inbox (per ora è un'impostazione, spenta).
 
 ## 10. Prossimi passi
 
-1. Creare la soluzione .NET 10 (`Quiver.Core`, `Quiver.App`, `Quiver.Tests`) e il repository git.
-2. **Prototipo del pannello**: scorciatoia → finestra senza bordi sopra GlazeWM → contenuto vero di una cartella con le icone → apertura degli elementi. Serve a verificare subito i punti delicati: focus, GlazeWM e velocità.
-3. Completare l'MVP (v0.1) e usarlo davvero per qualche giorno prima di andare avanti.
+Fatto:
+- la soluzione .NET 10 con il repository git, il prototipo del pannello, la v0.1 e l'interfaccia rifatta con Brace;
+- della v0.2: `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti (anche «Nuovo collegamento…»), i file trascinati da Outlook e dal browser;
+- lo script per installare la copia di tutti i giorni;
+- con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`.
+
+1. Installare la copia di tutti i giorni (`scripts\Install-Quiver.ps1`) e provare il pannello: gesti del desktop, trascinamenti da e verso Explorer e Outlook, rinomina sul posto, `Ctrl+Z`.
+2. Provarlo con GlazeWM: focus, più monitor.
+3. Poi il resto della v0.2, partendo da quello che manca di più nell'uso.

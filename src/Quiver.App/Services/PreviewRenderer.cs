@@ -4,6 +4,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Quiver.App.ViewModels;
 using Quiver.App.Views;
+using Quiver.Core;
 
 namespace Quiver.App.Services;
 
@@ -20,14 +21,26 @@ internal static class PreviewRenderer
         var output = options.PreviewOutput ?? throw new ArgumentException("Manca il file di destinazione.");
         var root = options.ArchiveRoot ?? throw new ArgumentException("--render-preview richiede anche --archive <cartella>.");
 
-        using var viewModel = new MainViewModel(root, watchForChanges: false);
+        // The real Desktop stays out of previews: a folder can stand in for it.
+        IReadOnlyList<InboxSource> sources = options.DesktopStandIn is { } desktop ? [new InboxSource("Desktop", [desktop])] : [];
+        using var viewModel = new MainViewModel(root, live: false, inboxSources: sources);
         viewModel.BuildIndexNow();
         if (options.PreviewTopic is { } topic)
             viewModel.SelectTopicByPath(topic);
+        if (options.PreviewInbox)
+            viewModel.ShowInboxCommand.Execute(null);
         if (options.PreviewQuery is { } query)
             viewModel.Query = query;
-        if (options.PreviewPrompt)
-            viewModel.AskNewTile(null);
+        // A confirmation over the board: moving its first tile to the Recycle Bin.
+        if (options.PreviewPrompt && viewModel.Tiles.FirstOrDefault(tile => tile.IsOwnFolder) is { } tile)
+            viewModel.AskRecycle([tile.FolderPath]);
+        // A question with a field: a new shortcut, with something typed that is neither a path nor a site.
+        if (options.PreviewLinkPrompt && viewModel.BoardFolder is { } folder)
+        {
+            viewModel.AskNewLink(folder);
+            viewModel.Prompt!.Text = "rossi";
+            viewModel.Prompt.ConfirmCommand.Execute(null);
+        }
 
         var view = new PanelView { DataContext = viewModel };
         Settle(view);

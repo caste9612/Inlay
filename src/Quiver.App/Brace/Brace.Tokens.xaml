@@ -1,0 +1,302 @@
+<!-- Brace, token per WPF. GENERATO da strumenti/genera_piattaforme.py a partire da tokens.json: non modificarlo a mano. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    mc:Ignorable="po">
+
+  <!-- Colori: Brace.<Token>Color è il Color, Brace.<Token> il SolidColorBrush. -->
+  <!-- surface-sunken: Aree di lavoro incassate: editor, viewport immagini, fondo dei campi di input, blocchi di codice. -->
+  <Color x:Key="Brace.SurfaceSunkenColor">#FF101216</Color>
+  <SolidColorBrush x:Key="Brace.SurfaceSunken" Color="{StaticResource Brace.SurfaceSunkenColor}" po:Freeze="True" />
+  <!-- surface-base: Fondo della finestra e della pagina. -->
+  <Color x:Key="Brace.SurfaceBaseColor">#FF14171B</Color>
+  <SolidColorBrush x:Key="Brace.SurfaceBase" Color="{StaticResource Brace.SurfaceBaseColor}" po:Freeze="True" />
+  <!-- surface-raised: Pannelli, card, tabelle, metriche, finestre di dialogo. -->
+  <Color x:Key="Brace.SurfaceRaisedColor">#FF1B1F24</Color>
+  <SolidColorBrush x:Key="Brace.SurfaceRaised" Color="{StaticResource Brace.SurfaceRaisedColor}" po:Freeze="True" />
+  <!-- surface-overlay: Barre strumenti, intestazioni di pannello, menu, elenchi dei select, tooltip, notifiche, piè delle finestre di dialogo, pulsanti secondari. -->
+  <Color x:Key="Brace.SurfaceOverlayColor">#FF242931</Color>
+  <SolidColorBrush x:Key="Brace.SurfaceOverlay" Color="{StaticResource Brace.SurfaceOverlayColor}" po:Freeze="True" />
+  <!-- surface-hover: Fondo al passaggio del mouse su righe, voci di menu, pulsanti icona. -->
+  <Color x:Key="Brace.SurfaceHoverColor">#FF2B3038</Color>
+  <SolidColorBrush x:Key="Brace.SurfaceHover" Color="{StaticResource Brace.SurfaceHoverColor}" po:Freeze="True" />
+  <!-- surface-active: Fondo premuto; pulsante con il menu aperto; tracce di barre e interruttori spenti; LED spenti; celle a zero delle heatmap; contatori nelle schede. -->
+  <Color x:Key="Brace.SurfaceActiveColor">#FF333943</Color>
+  <SolidColorBrush x:Key="Brace.SurfaceActive" Color="{StaticResource Brace.SurfaceActiveColor}" po:Freeze="True" />
+  <!-- scrollbar-thumb: Cursore delle barre di scorrimento a riposo; la traccia resta trasparente. -->
+  <Color x:Key="Brace.ScrollbarThumbColor">#FF333943</Color>
+  <SolidColorBrush x:Key="Brace.ScrollbarThumb" Color="{StaticResource Brace.ScrollbarThumbColor}" po:Freeze="True" />
+  <!-- scrollbar-thumb-hover: Cursore delle barre di scorrimento al passaggio del mouse e durante il trascinamento. -->
+  <Color x:Key="Brace.ScrollbarThumbHoverColor">#FF6B7380</Color>
+  <SolidColorBrush x:Key="Brace.ScrollbarThumbHover" Color="{StaticResource Brace.ScrollbarThumbHoverColor}" po:Freeze="True" />
+  <!-- scrim: Velo dietro le finestre di dialogo modali: oscura la finestra sottostante senza nasconderla. -->
+  <Color x:Key="Brace.ScrimColor">#99000000</Color>
+  <SolidColorBrush x:Key="Brace.Scrim" Color="{StaticResource Brace.ScrimColor}" po:Freeze="True" />
+  <!-- border-subtle: Divisori tra righe e sezioni dentro un pannello. -->
+  <Color x:Key="Brace.BorderSubtleColor">#FF272C33</Color>
+  <SolidColorBrush x:Key="Brace.BorderSubtle" Color="{StaticResource Brace.BorderSubtleColor}" po:Freeze="True" />
+  <!-- border-default: Bordo di pannelli, barre strumenti, pulsanti secondari, schede. -->
+  <Color x:Key="Brace.BorderDefaultColor">#FF313741</Color>
+  <SolidColorBrush x:Key="Brace.BorderDefault" Color="{StaticResource Brace.BorderDefaultColor}" po:Freeze="True" />
+  <!-- border-control: Bordo di campi di input, caselle di spunta, interruttori: almeno 3:1 su sunken, base, raised e overlay. -->
+  <Color x:Key="Brace.BorderControlColor">#FF6B7380</Color>
+  <SolidColorBrush x:Key="Brace.BorderControl" Color="{StaticResource Brace.BorderControlColor}" po:Freeze="True" />
+  <!-- text-primary: Contenuti, valori, titoli. Leggibile su tutte le superfici, sui fondi tenui e sulle selezioni. -->
+  <Color x:Key="Brace.TextPrimaryColor">#FFE6E9ED</Color>
+  <SolidColorBrush x:Key="Brace.TextPrimary" Color="{StaticResource Brace.TextPrimaryColor}" po:Freeze="True" />
+  <!-- text-secondary: Etichette, descrizioni, icone a riposo. Leggibile su tutte le superfici, comprese hover e active, sui fondi tenui e sulle selezioni (almeno 6:1). -->
+  <Color x:Key="Brace.TextSecondaryColor">#FFBCC1C8</Color>
+  <SolidColorBrush x:Key="Brace.TextSecondary" Color="{StaticResource Brace.TextSecondaryColor}" po:Freeze="True" />
+  <!-- text-tertiary: Suggerimenti, metadati, orari, scorciatoie, numeri di riga, commenti. Leggibile su tutte le superfici, comprese hover e active, sui fondi tenui e sulle selezioni (almeno 4,5:1). -->
+  <Color x:Key="Brace.TextTertiaryColor">#FFA1A8B1</Color>
+  <SolidColorBrush x:Key="Brace.TextTertiary" Color="{StaticResource Brace.TextTertiaryColor}" po:Freeze="True" />
+  <!-- text-disabled: Solo testo e icone di controlli disattivati (esenti dal requisito di contrasto). -->
+  <Color x:Key="Brace.TextDisabledColor">#FF5C636D</Color>
+  <SolidColorBrush x:Key="Brace.TextDisabled" Color="{StaticResource Brace.TextDisabledColor}" po:Freeze="True" />
+  <!-- text-on-accent: Testo e icone sopra accent, accent-hover e accent-pressed. Mai bianco sull'ambra. -->
+  <Color x:Key="Brace.TextOnAccentColor">#FF1A1206</Color>
+  <SolidColorBrush x:Key="Brace.TextOnAccent" Color="{StaticResource Brace.TextOnAccentColor}" po:Freeze="True" />
+  <!-- accent: Ambra. Pulsante principale, strumento attivo, scheda selezionata, barre dei valori, caselle attive. Come testo su tutte le superfici. -->
+  <Color x:Key="Brace.AccentColor">#FFFFA133</Color>
+  <SolidColorBrush x:Key="Brace.Accent" Color="{StaticResource Brace.AccentColor}" po:Freeze="True" />
+  <!-- accent-hover: Pulsante principale al passaggio del mouse; colore delle funzioni nel codice. -->
+  <Color x:Key="Brace.AccentHoverColor">#FFFFB45C</Color>
+  <SolidColorBrush x:Key="Brace.AccentHover" Color="{StaticResource Brace.AccentHoverColor}" po:Freeze="True" />
+  <!-- accent-pressed: Pulsante principale premuto. -->
+  <Color x:Key="Brace.AccentPressedColor">#FFE88A1C</Color>
+  <SolidColorBrush x:Key="Brace.AccentPressed" Color="{StaticResource Brace.AccentPressedColor}" po:Freeze="True" />
+  <!-- accent-subtle: Fondo di selezione: righe, nodi dell'albero, strumento attivo. Il testo sopra resta text-primary. -->
+  <Color x:Key="Brace.AccentSubtleColor">#24FFA133</Color>
+  <SolidColorBrush x:Key="Brace.AccentSubtle" Color="{StaticResource Brace.AccentSubtleColor}" po:Freeze="True" />
+  <!-- selection-inactive: Selezione in un elenco, albero o tabella che non ha il focus: resta visibile senza competere con l'elemento attivo. Sopra il testo resta text-primary e le lettere di stato restano leggibili. -->
+  <Color x:Key="Brace.SelectionInactiveColor">#FF31363E</Color>
+  <SolidColorBrush x:Key="Brace.SelectionInactive" Color="{StaticResource Brace.SelectionInactiveColor}" po:Freeze="True" />
+  <!-- focus-ring: Anello di focus da tastiera, 2 px pieni a 2 px di distanza. Almeno 3:1 su ogni superficie. -->
+  <Color x:Key="Brace.FocusRingColor">#FFFFB45C</Color>
+  <SolidColorBrush x:Key="Brace.FocusRing" Color="{StaticResource Brace.FocusRingColor}" po:Freeze="True" />
+  <!-- link: Link nel testo, sottolineati al passaggio del mouse e con il focus. Leggibile su tutte le superfici. -->
+  <Color x:Key="Brace.LinkColor">#FFFFA133</Color>
+  <SolidColorBrush x:Key="Brace.Link" Color="{StaticResource Brace.LinkColor}" po:Freeze="True" />
+  <!-- success: Esito riuscito, servizio in linea, file aggiunto. Verde acqua per distinguersi da danger anche senza il rosso-verde. Sempre con icona o parola. Come testo su tutte le superfici e su success-subtle. -->
+  <Color x:Key="Brace.SuccessColor">#FF36CFB0</Color>
+  <SolidColorBrush x:Key="Brace.Success" Color="{StaticResource Brace.SuccessColor}" po:Freeze="True" />
+  <!-- success-subtle: Fondo di badge e messaggi di esito riuscito. -->
+  <Color x:Key="Brace.SuccessSubtleColor">#1F36CFB0</Color>
+  <SolidColorBrush x:Key="Brace.SuccessSubtle" Color="{StaticResource Brace.SuccessSubtleColor}" po:Freeze="True" />
+  <!-- warning: Avviso, soglia superata, file modificato. Giallo volutamente diverso dall'ambra: accent non segnala mai un problema. Sempre con icona o parola. Come testo su tutte le superfici e su warning-subtle. -->
+  <Color x:Key="Brace.WarningColor">#FFF2D24B</Color>
+  <SolidColorBrush x:Key="Brace.Warning" Color="{StaticResource Brace.WarningColor}" po:Freeze="True" />
+  <!-- warning-subtle: Fondo di badge e messaggi di avviso. -->
+  <Color x:Key="Brace.WarningSubtleColor">#1FF2D24B</Color>
+  <SolidColorBrush x:Key="Brace.WarningSubtle" Color="{StaticResource Brace.WarningSubtleColor}" po:Freeze="True" />
+  <!-- danger: Errore, servizio non raggiungibile, azione distruttiva. Sempre con icona o parola. Come testo su tutte le superfici tranne surface-active, e su danger-subtle. -->
+  <Color x:Key="Brace.DangerColor">#FFFF7272</Color>
+  <SolidColorBrush x:Key="Brace.Danger" Color="{StaticResource Brace.DangerColor}" po:Freeze="True" />
+  <!-- danger-subtle: Fondo di badge e messaggi di errore; hover del pulsante distruttivo. -->
+  <Color x:Key="Brace.DangerSubtleColor">#1FFF7272</Color>
+  <SolidColorBrush x:Key="Brace.DangerSubtle" Color="{StaticResource Brace.DangerSubtleColor}" po:Freeze="True" />
+  <!-- info: Informazione neutra, operazione in corso. Come testo su tutte le superfici e su info-subtle. -->
+  <Color x:Key="Brace.InfoColor">#FF6AA8FF</Color>
+  <SolidColorBrush x:Key="Brace.Info" Color="{StaticResource Brace.InfoColor}" po:Freeze="True" />
+  <!-- info-subtle: Fondo di badge e messaggi informativi. -->
+  <Color x:Key="Brace.InfoSubtleColor">#1F6AA8FF</Color>
+  <SolidColorBrush x:Key="Brace.InfoSubtle" Color="{StaticResource Brace.InfoSubtleColor}" po:Freeze="True" />
+  <!-- chart-1: Prima serie dei grafici: la misura principale. -->
+  <Color x:Key="Brace.Chart1Color">#FFFFA133</Color>
+  <SolidColorBrush x:Key="Brace.Chart1" Color="{StaticResource Brace.Chart1Color}" po:Freeze="True" />
+  <!-- chart-2: Seconda serie dei grafici. -->
+  <Color x:Key="Brace.Chart2Color">#FF5DA9FF</Color>
+  <SolidColorBrush x:Key="Brace.Chart2" Color="{StaticResource Brace.Chart2Color}" po:Freeze="True" />
+  <!-- chart-3: Terza serie dei grafici. -->
+  <Color x:Key="Brace.Chart3Color">#FFB48CFF</Color>
+  <SolidColorBrush x:Key="Brace.Chart3" Color="{StaticResource Brace.Chart3Color}" po:Freeze="True" />
+  <!-- chart-4: Quarta serie dei grafici. -->
+  <Color x:Key="Brace.Chart4Color">#FFFF7EB6</Color>
+  <SolidColorBrush x:Key="Brace.Chart4" Color="{StaticResource Brace.Chart4Color}" po:Freeze="True" />
+  <!-- chart-5: Quinta serie dei grafici; anche per 'altro' e totali. -->
+  <Color x:Key="Brace.Chart5Color">#FFC3CAD3</Color>
+  <SolidColorBrush x:Key="Brace.Chart5" Color="{StaticResource Brace.Chart5Color}" po:Freeze="True" />
+  <!-- heat-1: Heatmap (carico per core, attività), gradino più basso sopra lo zero. Lo zero usa surface-active; la heatmap ha sempre una scala e i valori in un tooltip o in una tabella. -->
+  <Color x:Key="Brace.Heat1Color">#FF5B4328</Color>
+  <SolidColorBrush x:Key="Brace.Heat1" Color="{StaticResource Brace.Heat1Color}" po:Freeze="True" />
+  <!-- heat-2: Heatmap, gradino 2. -->
+  <Color x:Key="Brace.Heat2Color">#FF7F582B</Color>
+  <SolidColorBrush x:Key="Brace.Heat2" Color="{StaticResource Brace.Heat2Color}" po:Freeze="True" />
+  <!-- heat-3: Heatmap, gradino 3. -->
+  <Color x:Key="Brace.Heat3Color">#FFA46D2D</Color>
+  <SolidColorBrush x:Key="Brace.Heat3" Color="{StaticResource Brace.Heat3Color}" po:Freeze="True" />
+  <!-- heat-4: Heatmap, gradino 4. -->
+  <Color x:Key="Brace.Heat4Color">#FFCD8430</Color>
+  <SolidColorBrush x:Key="Brace.Heat4" Color="{StaticResource Brace.Heat4Color}" po:Freeze="True" />
+  <!-- heat-5: Heatmap, gradino massimo. -->
+  <Color x:Key="Brace.Heat5Color">#FFFFA133</Color>
+  <SolidColorBrush x:Key="Brace.Heat5" Color="{StaticResource Brace.Heat5Color}" po:Freeze="True" />
+  <!-- syntax-keyword: Parole chiave nel codice, su surface-sunken. -->
+  <Color x:Key="Brace.SyntaxKeywordColor">#FF7FB4FF</Color>
+  <SolidColorBrush x:Key="Brace.SyntaxKeyword" Color="{StaticResource Brace.SyntaxKeywordColor}" po:Freeze="True" />
+  <!-- syntax-string: Stringhe nel codice, su surface-sunken. -->
+  <Color x:Key="Brace.SyntaxStringColor">#FFA8D98A</Color>
+  <SolidColorBrush x:Key="Brace.SyntaxString" Color="{StaticResource Brace.SyntaxStringColor}" po:Freeze="True" />
+  <!-- syntax-function: Nomi di funzioni e metodi, su surface-sunken. -->
+  <Color x:Key="Brace.SyntaxFunctionColor">#FFFFB45C</Color>
+  <SolidColorBrush x:Key="Brace.SyntaxFunction" Color="{StaticResource Brace.SyntaxFunctionColor}" po:Freeze="True" />
+  <!-- syntax-type: Tipi e classi, su surface-sunken. -->
+  <Color x:Key="Brace.SyntaxTypeColor">#FF5FD4D0</Color>
+  <SolidColorBrush x:Key="Brace.SyntaxType" Color="{StaticResource Brace.SyntaxTypeColor}" po:Freeze="True" />
+  <!-- syntax-number: Numeri e costanti, su surface-sunken. -->
+  <Color x:Key="Brace.SyntaxNumberColor">#FFD7A8FF</Color>
+  <SolidColorBrush x:Key="Brace.SyntaxNumber" Color="{StaticResource Brace.SyntaxNumberColor}" po:Freeze="True" />
+  <!-- syntax-comment: Commenti nel codice, su surface-sunken. -->
+  <Color x:Key="Brace.SyntaxCommentColor">#FFA1A8B1</Color>
+  <SolidColorBrush x:Key="Brace.SyntaxComment" Color="{StaticResource Brace.SyntaxCommentColor}" po:Freeze="True" />
+
+  <!-- Spazi in px: Brace.<Token> (Double) e Brace.<Token>Thickness (uniforme). -->
+  <!-- space-2xs: Gap tra pulsanti icona in una barra strumenti; padding della barra. -->
+  <sys:Double x:Key="Brace.Space2xs">2</sys:Double>
+  <Thickness x:Key="Brace.Space2xsThickness">2</Thickness>
+  <!-- space-xs: Gap tra etichetta e campo; margini minimi. -->
+  <sys:Double x:Key="Brace.SpaceXs">4</sys:Double>
+  <Thickness x:Key="Brace.SpaceXsThickness">4</Thickness>
+  <!-- space-sm: Gap tra icona e testo dentro un controllo; padding orizzontale dei badge. -->
+  <sys:Double x:Key="Brace.SpaceSm">6</sys:Double>
+  <Thickness x:Key="Brace.SpaceSmThickness">6</Thickness>
+  <!-- space-md: Padding orizzontale dei campi; gap tra controlli affiancati. -->
+  <sys:Double x:Key="Brace.SpaceMd">8</sys:Double>
+  <Thickness x:Key="Brace.SpaceMdThickness">8</Thickness>
+  <!-- space-lg: Padding orizzontale dei pulsanti; padding interno dei pannelli. -->
+  <sys:Double x:Key="Brace.SpaceLg">12</sys:Double>
+  <Thickness x:Key="Brace.SpaceLgThickness">12</Thickness>
+  <!-- space-xl: Gap tra pannelli; padding dei pulsanti in densità touch. -->
+  <sys:Double x:Key="Brace.SpaceXl">16</sys:Double>
+  <Thickness x:Key="Brace.SpaceXlThickness">16</Thickness>
+  <!-- space-2xl: Separazione tra gruppi di contenuto nella stessa vista. -->
+  <sys:Double x:Key="Brace.Space2xl">24</sys:Double>
+  <Thickness x:Key="Brace.Space2xlThickness">24</Thickness>
+  <!-- space-3xl: Margini di pagina e degli stati vuoti. -->
+  <sys:Double x:Key="Brace.Space3xl">32</sys:Double>
+  <Thickness x:Key="Brace.Space3xlThickness">32</Thickness>
+
+  <!-- Angoli: Brace.<Token> (CornerRadius) e Brace.<Token>Value (Double, per RadiusX e RadiusY). -->
+  <!-- radius-xs: Indicatori di stato, badge, caselle di spunta, barre dei valori, cursore degli interruttori. -->
+  <CornerRadius x:Key="Brace.RadiusXs">2</CornerRadius>
+  <sys:Double x:Key="Brace.RadiusXsValue">2</sys:Double>
+  <!-- radius-sm: Controlli: pulsanti, campi, schede, interruttori, righe e voci di menu, tooltip, blocchi di codice. -->
+  <CornerRadius x:Key="Brace.RadiusSm">4</CornerRadius>
+  <sys:Double x:Key="Brace.RadiusSmValue">4</sys:Double>
+  <!-- radius-md: Contenitori: pannelli, card, metriche, barre strumenti, menu, finestre di dialogo, notifiche. -->
+  <CornerRadius x:Key="Brace.RadiusMd">6</CornerRadius>
+  <sys:Double x:Key="Brace.RadiusMdValue">6</sys:Double>
+
+  <!-- Misure in px (Double). -->
+  <!-- control-sm: Altezza dei controlli piccoli e delle barre dense: pulsanti piccoli, piè dei pannelli, barra di stato. -->
+  <sys:Double x:Key="Brace.ControlSm">24</sys:Double>
+  <!-- control-md: Altezza standard di pulsanti, campi, select, schede e intestazioni di tabella. -->
+  <sys:Double x:Key="Brace.ControlMd">28</sys:Double>
+  <!-- control-touch: Altezza di controlli e righe in densità touch (data-density=touch). -->
+  <sys:Double x:Key="Brace.ControlTouch">44</sys:Double>
+  <!-- row-compact: Altezza delle righe di tabelle, alberi, menu, elenchi e property grid in densità compatta. -->
+  <sys:Double x:Key="Brace.RowCompact">22</sys:Double>
+  <!-- tabbar-height: Barra delle schede dei documenti nell'editor. -->
+  <sys:Double x:Key="Brace.TabbarHeight">32</sys:Double>
+  <!-- titlebar-height: Barra del titolo con i menu, nelle app con la finestra disegnata da sé. -->
+  <sys:Double x:Key="Brace.TitlebarHeight">32</sys:Double>
+  <!-- icon-sm: Icone nei controlli, nelle barre strumenti, negli alberi. -->
+  <sys:Double x:Key="Brace.IconSm">16</sys:Double>
+  <!-- icon-md: Icone in navigazione, nelle metriche e in densità touch. -->
+  <sys:Double x:Key="Brace.IconMd">20</sys:Double>
+  <!-- focus-width: Spessore dell'anello di focus da tastiera. -->
+  <sys:Double x:Key="Brace.FocusWidth">2</sys:Double>
+  <!-- focus-offset: Distanza dell'anello di focus dal controllo; nelle voci di elenco e di menu l'anello sta dentro la voce. -->
+  <sys:Double x:Key="Brace.FocusOffset">2</sys:Double>
+
+  <!-- Densità compatta, la predefinita. Brace.Density.Touch.xaml ridefinisce le stesse chiavi:
+       nei modelli si usano con DynamicResource. -->
+  <sys:Double x:Key="Brace.ControlHeight">28</sys:Double>
+  <sys:Double x:Key="Brace.RowHeight">22</sys:Double>
+  <sys:Double x:Key="Brace.IconSize">16</sys:Double>
+  <sys:Double x:Key="Brace.TextSize">13</sys:Double>
+  <sys:Double x:Key="Brace.ButtonTextSize">12</sys:Double>
+  <sys:Double x:Key="Brace.ButtonPaddingX">12</sys:Double>
+
+  <!-- Font: i file TTF di fonts/desktop vanno inclusi nel progetto come Resource nella cartella Fonts/. -->
+  <FontFamily x:Key="Brace.FontSans">pack://application:,,,/Fonts/#Inter, Segoe UI</FontFamily>
+  <FontFamily x:Key="Brace.FontMono">pack://application:,,,/Fonts/#Cascadia Mono, Cascadia Code, Consolas</FontFamily>
+
+  <!-- Stili di testo (TextBlock). WPF non ha la spaziatura tra lettere: display la ignora. -->
+  <Style x:Key="Brace.Text.Display" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontSans}" />
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="30" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+  <Style x:Key="Brace.Text.Title" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontSans}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="22" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+  <Style x:Key="Brace.Text.Heading" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontSans}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="18" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+  <Style x:Key="Brace.Text.Body" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontSans}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LineHeight" Value="20" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+  <Style x:Key="Brace.Text.Label" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontSans}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LineHeight" Value="16" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+  <Style x:Key="Brace.Text.Caption" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontSans}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LineHeight" Value="14" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+  <Style x:Key="Brace.Text.Code" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontMono}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LineHeight" Value="18" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+  <Style x:Key="Brace.Text.Data" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Brace.FontMono}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LineHeight" Value="16" />
+    <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+  </Style>
+
+  <!-- Movimento: Brace.<Durata> (Duration) e Brace.<Curva> (KeySpline, per SplineDoubleKeyFrame). -->
+  <!-- duration-fast: Cambi di colore: passaggio del mouse, pressione, focus. -->
+  <Duration x:Key="Brace.DurationFast">0:0:0.12</Duration>
+  <!-- duration-normal: Piccoli spostamenti e comparse: cursore dell'interruttore, menu, elenchi, tooltip. -->
+  <Duration x:Key="Brace.DurationNormal">0:0:0.16</Duration>
+  <!-- duration-slow: Elementi grandi che entrano: finestre di dialogo e notifiche. -->
+  <Duration x:Key="Brace.DurationSlow">0:0:0.24</Duration>
+  <!-- ease-standard: Cambi di stato e movimenti dentro la vista (è l'ease-out di CSS). -->
+  <KeySpline x:Key="Brace.EaseStandard" ControlPoint1="0,0" ControlPoint2="0.58,1" />
+  <!-- ease-enter: Elementi che entrano: menu, finestre di dialogo, notifiche. -->
+  <KeySpline x:Key="Brace.EaseEnter" ControlPoint1="0.1,0.9" ControlPoint2="0.2,1" />
+  <!-- ease-exit: Elementi che escono. -->
+  <KeySpline x:Key="Brace.EaseExit" ControlPoint1="0.7,0" ControlPoint2="1,0.5" />
+
+  <!-- Ombre: solo per gli elementi fluttuanti. -->
+  <!-- shadow-overlay: Solo elementi fluttuanti: menu, elenchi dei select, tooltip, finestre di dialogo, notifiche. Pannelli e card non hanno ombra. -->
+  <DropShadowEffect x:Key="Brace.ShadowOverlay" Color="#000000" Opacity="0.5" BlurRadius="24" ShadowDepth="8" Direction="270" po:Freeze="True" />
+</ResourceDictionary>

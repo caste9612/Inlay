@@ -1,20 +1,37 @@
 using System.Windows.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Quiver.App.Services;
 using Quiver.Core;
 
 namespace Quiver.App.ViewModels;
 
 /// <summary>A file, folder or shortcut inside a tile.</summary>
-public class ItemViewModel(ArchiveItem item)
+public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
 {
     private ImageSource? _icon;
     private bool _iconLoaded;
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    /// <summary>Cut with Ctrl+X and not pasted yet: shown faded, as in Explorer.</summary>
+    [ObservableProperty]
+    private bool _isCut;
 
     public ArchiveItem Item { get; } = item;
 
     public string Name => Item.DisplayName;
 
-    public string ToolTip => Item.FullPath;
+    public string DateText => DateLabel.For(Item.Modified);
+
+    public string ToolTip => Item.Modified is null ? Item.FullPath : $"{Item.FullPath}\nModificato: {DateLabel.Full(Item.Modified)}";
+
+    public override string RenamePath => Item.FullPath;
+
+    protected override bool RenamesFolder => Item.IsFolder;
+
+    // As in Explorer, a shortcut is renamed without seeing its .lnk or .url.
+    protected override string HiddenExtension => Name == Item.Name ? "" : Path.GetExtension(Item.Name);
 
     /// <summary>Loaded on first use, so only the items actually displayed pay for it.</summary>
     public ImageSource? Icon

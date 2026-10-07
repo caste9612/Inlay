@@ -25,4 +25,15 @@ public sealed class ArchiveNamesTests
     [InlineData("nul.txt")]
     [InlineData("com1")]
     public void RejectsNamesWindowsOrQuiverCannotUse(string name) => Assert.NotNull(ArchiveNames.Validate(name));
+
+    [Fact]
+    public void Unique_AddsANumberLikeExplorer()
+    {
+        using var archive = new TempArchive();
+
+        Assert.Equal("Nuovo riquadro", ArchiveNames.Unique(archive.Root, "Nuovo riquadro"));
+        archive.AddFolder("Nuovo riquadro");
+        archive.AddFolder("Nuovo riquadro (2)");
+        Assert.Equal("Nuovo riquadro (3)", ArchiveNames.Unique(archive.Root, "Nuovo riquadro"));
+    }
 }

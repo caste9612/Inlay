@@ -25,4 +25,9 @@ public static class ArchiveLayout
     /// <summary>Metadata key for a path: relative to the root, with forward slashes.</summary>
     public static string ToRelativeKey(string root, string fullPath) =>
         Path.GetRelativePath(root, fullPath).Replace('\\', '/');
+
+    /// <summary>Whether the metadata key <paramref name="key"/> is <paramref name="folderKey"/> itself or something inside it.</summary>
+    public static bool IsKeyAtOrBelow(string key, string folderKey) =>
+        key.Equals(folderKey, StringComparison.OrdinalIgnoreCase) ||
+        key.StartsWith(folderKey + "/", StringComparison.OrdinalIgnoreCase);
 }

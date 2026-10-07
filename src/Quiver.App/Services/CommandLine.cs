@@ -10,14 +10,21 @@ internal static class Commands
 }
 
 /// <param name="PreviewOutput">Diagnostics: draw the panel into this PNG file and exit.</param>
-/// <param name="PreviewPrompt">Diagnostics: draw the panel with the "new tile" question open.</param>
+/// <param name="PreviewPrompt">Diagnostics: draw the panel with a confirmation open (moving the first tile to the Recycle Bin).</param>
+/// <param name="PreviewLinkPrompt">Diagnostics: draw the panel asking for a new shortcut, with a name it cannot use.</param>
+/// <param name="PreviewInbox">Diagnostics: draw "Da smistare" instead of a topic.</param>
+/// <param name="DesktopStandIn">
+/// For trials and previews: a folder shown as the Desktop in "Da smistare" in place of the real one, so that a demo archive
+/// never takes the user's own files.
+/// </param>
 internal sealed record CommandLineOptions(
-    string? Command, string? ArchiveRoot, string? PreviewOutput, string? PreviewTopic, string? PreviewQuery, bool PreviewPrompt)
+    string? Command, string? ArchiveRoot, string? PreviewOutput, string? PreviewTopic, string? PreviewQuery, bool PreviewPrompt,
+    bool PreviewLinkPrompt, bool PreviewInbox, string? DesktopStandIn)
 {
     public static CommandLineOptions Parse(IReadOnlyList<string> args)
     {
-        string? command = null, archive = null, preview = null, topic = null, query = null;
-        var prompt = false;
+        string? command = null, archive = null, preview = null, topic = null, query = null, desktop = null;
+        bool prompt = false, linkPrompt = false, inbox = false;
         for (var i = 0; i < args.Count; i++)
         {
             var hasValue = i + 1 < args.Count;
@@ -32,8 +39,11 @@ internal sealed record CommandLineOptions(
                 case "--topic" when hasValue: topic = args[++i]; break;
                 case "--query" when hasValue: query = args[++i]; break;
                 case "--prompt": prompt = true; break;
+                case "--prompt-link": linkPrompt = true; break;
+                case "--inbox": inbox = true; break;
+                case "--desktop" when hasValue: desktop = args[++i]; break;
             }
         }
-        return new CommandLineOptions(command, archive, preview, topic, query, prompt);
+        return new CommandLineOptions(command, archive, preview, topic, query, prompt, linkPrompt, inbox, desktop);
     }
 }

@@ -19,6 +19,12 @@ internal sealed class AppSettings
     /// <summary>Written like "Alt+E" or "Ctrl+Shift+Space".</summary>
     public string Hotkey { get; set; } = "Alt+E";
 
+    /// <summary>The files on the Desktop appear among those to sort.</summary>
+    public bool InboxDesktop { get; set; } = true;
+
+    /// <summary>The files in Downloads appear among those to sort.</summary>
+    public bool InboxDownloads { get; set; }
+
     public static AppSettings Load()
     {
         try
