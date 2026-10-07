@@ -1,0 +1,28 @@
+namespace Quiver.Core;
+
+/// <summary>
+/// Names and visibility rules shared by everything that reads the archive.
+/// </summary>
+public static class ArchiveLayout
+{
+    /// <summary>Hidden folder in the archive root that holds Quiver's own data.</summary>
+    public const string MetadataFolderName = ".quiver";
+
+    public const string MetadataFileName = "archive.json";
+
+    /// <summary>Folder in the archive root for files that still have to be sorted.</summary>
+    public const string InboxFolderName = "_Da smistare";
+
+    internal static readonly EnumerationOptions TopLevelOnly = new()
+    {
+        IgnoreInaccessible = true,
+        AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
+    };
+
+    /// <summary>Dot-prefixed names (like .quiver or .git) are internal and never shown.</summary>
+    public static bool IsHiddenName(ReadOnlySpan<char> name) => name.Length > 0 && name[0] == '.';
+
+    /// <summary>Metadata key for a path: relative to the root, with forward slashes.</summary>
+    public static string ToRelativeKey(string root, string fullPath) =>
+        Path.GetRelativePath(root, fullPath).Replace('\\', '/');
+}

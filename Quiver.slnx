@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Quiver.App/Quiver.App.csproj" />
+    <Project Path="src/Quiver.Core/Quiver.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Quiver.App.Tests/Quiver.App.Tests.csproj" />
+    <Project Path="tests/Quiver.Tests/Quiver.Tests.csproj" />
+  </Folder>
+</Solution>

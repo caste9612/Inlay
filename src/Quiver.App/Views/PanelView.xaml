@@ -1,0 +1,250 @@
+<UserControl x:Class="Quiver.App.Views.PanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Quiver.App.Views"
+             xmlns:vm="clr-namespace:Quiver.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+             AllowDrop="True"
+             FontFamily="{StaticResource UiFont}"
+             FontSize="13"
+             TextElement.Foreground="{StaticResource TextPrimaryBrush}"
+             PreviewKeyDown="OnPreviewKeyDown"
+             PreviewTextInput="OnPreviewTextInput"
+             PreviewDragOver="OnPreviewDragOver"
+             DragLeave="OnDragLeave">
+
+    <UserControl.Resources>
+        <views:NullToVisibilityConverter x:Key="NullToVisibility" />
+
+        <ContextMenu x:Key="ItemMenu">
+            <MenuItem Header="Apri" FontWeight="SemiBold" Click="ItemOpen_Click" />
+            <MenuItem Header="Mostra in Explorer" InputGestureText="Ctrl+Invio" Click="ItemReveal_Click" />
+            <MenuItem Header="Copia percorso" Click="ItemCopyPath_Click" />
+            <Separator />
+            <MenuItem Header="Rinomina…" InputGestureText="F2" Click="ItemRename_Click" />
+            <MenuItem Header="Sposta nel Cestino" InputGestureText="Canc" Click="ItemRecycle_Click" />
+        </ContextMenu>
+
+        <ContextMenu x:Key="BoardMenu">
+            <MenuItem Header="Nuovo riquadro…" InputGestureText="Ctrl+Maiusc+N" Click="NewTile_Click" />
+        </ContextMenu>
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource WindowBackgroundBrush}" BorderBrush="{StaticResource WindowBorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Sidebar: search, topics, new topic, inbox -->
+            <Grid Background="{StaticResource SidebarBackgroundBrush}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Margin="12,12,12,10">
+                    <TextBox x:Name="SearchBox" Style="{StaticResource SearchBoxStyle}"
+                             Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                             PreviewKeyDown="SearchBox_PreviewKeyDown" />
+                    <TextBlock Margin="13,0,0,0" VerticalAlignment="Center" FontSize="14" IsHitTestVisible="False"
+                               Foreground="{StaticResource TextSecondaryBrush}" Text="Cerca nell'archivio…">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Query}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+
+                <TreeView x:Name="TopicTree" Grid.Row="1" Margin="6,0" Style="{StaticResource TopicTreeStyle}"
+                          ItemsSource="{Binding Topics}" SelectedItemChanged="TopicTree_SelectedItemChanged">
+                    <TreeView.Resources>
+                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource TopicItemStyle}">
+                            <EventSetter Event="DragOver" Handler="DropTarget_DragOver" />
+                            <EventSetter Event="DragLeave" Handler="DropTarget_DragLeave" />
+                            <EventSetter Event="Drop" Handler="DropTarget_Drop" />
+                        </Style>
+                    </TreeView.Resources>
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate DataType="{x:Type vm:TopicViewModel}" ItemsSource="{Binding Children}">
+                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Apri cartella" Click="TopicOpenFolder_Click" />
+                                        <Separator />
+                                        <MenuItem Header="Nuovo riquadro…" Click="TopicNewTile_Click" />
+                                        <MenuItem Header="Nuovo argomento qui dentro…" Click="TopicNewTopic_Click" />
+                                        <Separator />
+                                        <MenuItem Header="Rinomina…" InputGestureText="F2" Click="TopicRename_Click" />
+                                        <MenuItem Header="Sposta nel Cestino…" InputGestureText="Canc" Click="TopicRecycle_Click" />
+                                        <MenuItem Header="Riporta a riquadro" Click="TopicDemote_Click" IsEnabled="{Binding CanDemote}" />
+                                    </ContextMenu>
+                                </TextBlock.ContextMenu>
+                            </TextBlock>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+
+                <StackPanel Grid.Row="2" Margin="8,8,8,10">
+                    <Button Margin="0,0,0,2" Style="{StaticResource FlatButtonStyle}" Foreground="{StaticResource TextSecondaryBrush}"
+                            Content="+  Nuovo argomento" Click="NewTopic_Click" />
+                    <Button Style="{StaticResource FlatButtonStyle}" HorizontalContentAlignment="Stretch"
+                            Command="{Binding ShowInboxCommand}"
+                            AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Right" Padding="7,1" Background="{StaticResource AccentSoftBrush}" CornerRadius="9"
+                                    Visibility="{Binding HasInboxItems, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock FontSize="12" Text="{Binding InboxCount}" />
+                            </Border>
+                            <TextBlock Text="Da smistare" />
+                        </DockPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Board of the selected topic -->
+            <DockPanel Grid.Column="1" Margin="22,16,10,6"
+                       Visibility="{Binding IsBoardVisible, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock DockPanel.Dock="Top" Margin="0,0,0,12" FontSize="20" FontWeight="SemiBold"
+                           Text="{Binding Breadcrumb}" TextTrimming="CharacterEllipsis" />
+
+                <ItemsControl DockPanel.Dock="Top" Focusable="False" ItemsSource="{Binding SubTopics}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:TopicViewModel}">
+                            <Button Style="{StaticResource ChipButtonStyle}" Content="{Binding Name}"
+                                    Command="{Binding DataContext.SelectTopicCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Grid Background="Transparent" ContextMenu="{StaticResource BoardMenu}">
+                    <TextBlock Margin="0,8,0,0" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding EmptyMessage}" TextWrapping="Wrap" />
+                    <ScrollViewer Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl Focusable="False" ItemsSource="{Binding Tiles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:TileViewModel}">
+                                    <Border Width="272" Margin="0,0,12,12" Padding="6,8,6,6"
+                                            Background="{StaticResource TileBackgroundBrush}"
+                                            BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="1" CornerRadius="8"
+                                            AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                                        <Border.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Apri cartella" Click="TileOpenFolder_Click" />
+                                                <MenuItem Header="Nuovo riquadro…" InputGestureText="Ctrl+Maiusc+N" Click="NewTile_Click" />
+                                                <Separator />
+                                                <MenuItem Header="Rinomina…" Click="TileRename_Click" IsEnabled="{Binding IsOwnFolder}" />
+                                                <MenuItem Header="Sposta nel Cestino…" Click="TileRecycle_Click" IsEnabled="{Binding IsOwnFolder}" />
+                                                <MenuItem Header="Promuovi ad argomento" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Top" Margin="7,0,7,6" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock DockPanel.Dock="Top" Margin="7,0,7,4" FontStyle="Italic"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" Text="Vuoto: trascina qui dei file"
+                                                       Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+                                            <ListBox MaxHeight="300" Style="{StaticResource EntryListStyle}" ItemsSource="{Binding Items}"
+                                                     MouseDoubleClick="Entry_MouseDoubleClick" KeyDown="Entry_KeyDown"
+                                                     PreviewMouseLeftButtonDown="Entry_PreviewMouseLeftButtonDown"
+                                                     PreviewMouseMove="Entry_PreviewMouseMove">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type vm:ItemViewModel}">
+                                                        <DockPanel Background="Transparent" ToolTip="{Binding ToolTip}" ContextMenu="{StaticResource ItemMenu}">
+                                                            <Image Width="20" Height="20" Margin="0,0,8,0" Source="{Binding Icon}"
+                                                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                                                            <TextBlock VerticalAlignment="Center" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                        </DockPanel>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </DockPanel>
+
+            <!-- Search results -->
+            <DockPanel Grid.Column="1" Margin="22,16,10,6"
+                       Visibility="{Binding IsSearching, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock DockPanel.Dock="Top" Margin="0,4,0,10" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding ResultsHeader}" />
+                <ListBox x:Name="ResultsList" Style="{StaticResource EntryListStyle}" ItemContainerStyle="{StaticResource ResultItemStyle}"
+                         ItemsSource="{Binding Results}" MouseDoubleClick="Entry_MouseDoubleClick" KeyDown="Entry_KeyDown"
+                         PreviewMouseLeftButtonDown="Entry_PreviewMouseLeftButtonDown" PreviewMouseMove="Entry_PreviewMouseMove">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:SearchResultViewModel}">
+                            <DockPanel Margin="0,2" Background="Transparent" ToolTip="{Binding ToolTip}" ContextMenu="{StaticResource ItemMenu}">
+                                <Image Width="24" Height="24" Margin="0,0,12,0" Source="{Binding Icon}"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock FontSize="14" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding Location}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- Status bar -->
+            <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="14,6" BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,1,0,0">
+                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+            </Border>
+
+            <!-- Questions: names to type and confirmations -->
+            <Grid Grid.RowSpan="2" Grid.ColumnSpan="2" Background="{StaticResource OverlayBrush}"
+                  Visibility="{Binding Prompt, Converter={StaticResource NullToVisibility}}">
+                <Border Width="440" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{StaticResource TileBackgroundBrush}" BorderBrush="{StaticResource WindowBorderBrush}"
+                        BorderThickness="1" CornerRadius="10" DataContext="{Binding Prompt}"
+                        KeyboardNavigation.TabNavigation="Cycle">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,12" FontSize="16" FontWeight="SemiBold" Text="{Binding Title}" />
+                        <TextBlock Margin="0,0,0,12" Text="{Binding Message}" TextWrapping="Wrap"
+                                   Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}" />
+                        <TextBox x:Name="PromptInput" Style="{StaticResource SearchBoxStyle}"
+                                 Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                 Visibility="{Binding HasInput, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Margin="0,8,0,0" Foreground="{StaticResource ErrorBrush}" Text="{Binding Error}" TextWrapping="Wrap"
+                                   Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
+                        <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button Margin="0,0,8,0" Content="Annulla" Style="{StaticResource FlatButtonStyle}" Command="{Binding CancelCommand}" />
+                            <Button x:Name="PromptConfirm" Content="{Binding ConfirmLabel}" Style="{StaticResource AccentButtonStyle}"
+                                    Command="{Binding ConfirmCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>
