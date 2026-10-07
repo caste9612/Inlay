@@ -943,8 +943,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var board = _reader.ReadBoard(topic.Topic);
         BoardTitle = topic.Name;
         BoardPath = string.Join(" › ", topic.Ancestors().Reverse().Select(ancestor => ancestor.Name));
-        Replace(SubTopics, topic.Children);
-        Replace(Tiles, board.Tiles.Select(tile => new TileViewModel(tile, _root, _cutPaths)));
+        Reconciler.Reconcile(SubTopics, topic.Children, child => child.Topic.RelativePath, child => child.Topic.RelativePath,
+            child => child, (_, _) => { });
+        Reconciler.Reconcile(Tiles, board.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, tile.IsGeneral), tile => tile.Key,
+            tile => new TileViewModel(tile, _root, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
         EmptyMessage = board.Tiles.Count == 0 && topic.Children.Count == 0
             ? "Questo argomento è vuoto. Trascina qui dei file, oppure crea un riquadro con Ctrl+Maiusc+N."
             : "";
@@ -965,7 +967,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         BoardTitle = "Da smistare";
         BoardPath = "";
         SubTopics.Clear();
-        Replace(Tiles, tiles.Select(tile => new TileViewModel(tile.Title, tile.FolderPath, tile.Items, _cutPaths)));
+        Reconciler.Reconcile(Tiles, tiles, tile => TileViewModel.KeyOf(tile.FolderPath, isGeneral: false), tile => tile.Key,
+            tile => new TileViewModel(tile.Title, tile.FolderPath, tile.Items, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
         EmptyMessage = InboxCount == 0 ? InboxEmptyMessage() : "";
         OnPropertyChanged(nameof(BoardFolder));
         OnPropertyChanged(nameof(SelectedTopic));
@@ -993,16 +996,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         _reloadPending = false;
         _reader = new ArchiveReader(_root, LoadMetadata(), _inboxSources);
-        // What was selected stays selected, if it is still there.
-        var selected = ToPathSet(SelectedBoardItems().Select(item => item.Item.FullPath));
-
-        var collapsed = Topics
-            .SelectMany(topic => topic.SelfAndDescendants())
-            .Where(topic => !topic.IsExpanded)
-            .Select(topic => topic.Topic.RelativePath)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        _selectedTopic = null;
-        Replace(Topics, _reader.ReadTopics().Select(topic => new TopicViewModel(topic, parent: null, collapsed)));
+        // The topics, tiles and items still there keep their view models, with their selection, the name being typed
+        // and the branches left open; the view hears only about what moved, arrived or went away.
+        Reconciler.Reconcile(Topics, _reader.ReadTopics(), topic => topic.RelativePath, topic => topic.Topic.RelativePath,
+            topic => new TopicViewModel(topic, parent: null), (viewModel, topic) => viewModel.Update(topic));
         InboxCount = _reader.ReadInbox().Sum(tile => tile.Items.Count);
 
         if (IsInboxShown)
@@ -1012,9 +1009,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         else
             ShowEmptyArchive();
 
-        foreach (var item in Tiles.SelectMany(tile => tile.Items).Where(item => selected.Contains(item.Item.FullPath)))
-            item.IsSelected = true;
-        // What was just renamed, moved or pasted takes the place of that selection.
+        // What was just renamed, moved or pasted takes the place of the selection.
         ApplyPendingSelection();
         Reloaded?.Invoke(this, EventArgs.Empty);
     }
@@ -1384,11 +1379,4 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     private static string Count(int count, string one, string many) => count == 1 ? $"1 {one}" : $"{count:N0} {many}";
-
-    private static void Replace<T>(ObservableCollection<T> collection, IEnumerable<T> items)
-    {
-        collection.Clear();
-        foreach (var item in items)
-            collection.Add(item);
-    }
 }

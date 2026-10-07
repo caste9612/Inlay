@@ -277,6 +277,8 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - Il runtime .NET 10 Desktop, se manca, lo scarica l'installer.
   - `Program.Main` fa passare prima Velopack, che durante installazione e disinstallazione chiude il processo prima di qualunque finestra.
   - Le release stanno su GitHub, con le note in `novita\<versione>.md`. Velopack potrà anche aggiornare Quiver da lì; con il repository privato serve un token, quindi gli aggiornamenti automatici sono rimandati.
+- **Ricarica**: a ogni apertura del pannello e a ogni modifica vista dal watcher, la bacheca viene riletta. I view model di argomenti, riquadri ed elementi ancora presenti restano gli stessi, aggiornati sul posto (`Reconciler`): selezione, nome in modifica, rami aperti e focus sopravvivono, e la vista riceve solo gli inserimenti, gli spostamenti e le rimozioni.
+- **Icone di Windows**: programmi, collegamenti e file senza un'icona di Brace chiedono la loro icona a Windows su un thread dedicato, perché un collegamento a una risorsa di rete che non risponde può bloccare per secondi; nel frattempo mostrano il documento di Brace. Nelle anteprime da riga di comando le icone si leggono subito, sullo stesso thread.
 - **Obiettivi di prestazioni**: pannello visibile in meno di 100 ms dalla scorciatoia (la finestra è già creata e solo nascosta); ricerca su 50.000 file in meno di 50 ms; meno di 100 MB di memoria a riposo.
 - **Convenzioni**: codice e commenti in inglese; interfaccia in italiano, con i testi in file di risorse per eventuali traduzioni.
 
@@ -296,8 +298,9 @@ Fatto:
 - della v0.2: `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti (anche «Nuovo collegamento…»), i file trascinati da Outlook e dal browser;
 - la prova dal vivo dei gesti del pannello, su un archivio di prova: ha trovato e fatto correggere il pannello che si nascondeva durante un trascinamento;
 - le icone di Brace per i tipi di file, gli archivi come i vault di Obsidian, l'installer e la release 0.2.0 su GitHub;
-- con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`, e che la finestra Archivi resta libera perché non si ridimensiona.
+- con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`, e che la finestra Archivi resta libera perché non si ridimensiona;
+- dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli.
 
 1. Installare la 0.2.0 dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta.
 2. Provare dal vivo la finestra Archivi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
-3. Poi il resto della v0.2, partendo da quello che manca di più nell'uso.
+3. Il resto della v0.2, nell'ordine deciso il 7 ottobre 2026: smista rapido e «Invia a Quiver» da Explorer; le impostazioni nell'app; il colore dei riquadri e la selezione a rettangolo. GlazeWM e gli aggiornamenti automatici restano per dopo.

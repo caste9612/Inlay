@@ -477,6 +477,57 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Contains(viewModel.Tiles.SelectMany(tile => tile.Items), item => item.Name == "nuovo.txt");
     });
 
+    [Fact]
+    public void AReload_KeepsTheViewModelsOfWhatIsStillThere_WithTheirState() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var topic = viewModel.SelectedTopic!;
+        var tile = viewModel.Tiles.Single(candidate => candidate.Title == "Documenti");
+        var item = Item(viewModel, "a.txt");
+        item.IsSelected = true;
+        viewModel.Topics.Single(candidate => candidate.Name == "Personale").IsExpanded = false;
+        AddFile("Lavoro/Documenti/nuovo.txt");
+
+        viewModel.OnPanelShowing();
+
+        Assert.Same(topic, viewModel.SelectedTopic);
+        Assert.Same(tile, viewModel.Tiles.Single(candidate => candidate.Title == "Documenti"));
+        Assert.Same(item, Item(viewModel, "a.txt"));
+        Assert.True(item.IsSelected);
+        Assert.False(viewModel.Topics.Single(candidate => candidate.Name == "Personale").IsExpanded);
+        Assert.Equal(["a.txt", "b.txt", "nuovo.txt"], tile.Items.Select(candidate => candidate.Name));
+        Assert.Equal(3, tile.Count);
+    });
+
+    [Fact]
+    public void ASavedFile_ShowsItsNewDate_OnTheSameRow() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var item = Item(viewModel, "a.txt");
+        var dates = 0;
+        item.PropertyChanged += (_, e) => dates += e.PropertyName == nameof(ItemViewModel.DateText) ? 1 : 0;
+        Assert.Equal("oggi", item.DateText);
+        File.SetLastWriteTime(Path.Combine(_root, "Lavoro", "Documenti", "a.txt"), DateTime.Now.AddDays(-1));
+
+        viewModel.OnPanelShowing();
+
+        Assert.Same(item, Item(viewModel, "a.txt"));
+        Assert.Equal("ieri", item.DateText);
+        Assert.Equal(1, dates);
+    });
+
+    [Fact]
+    public void MovingATile_ReordersTheSameViewModels() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var archivio = viewModel.Tiles.Single(tile => tile.Title == "Archivio");
+        var documenti = viewModel.Tiles.Single(tile => tile.Title == "Documenti");
+
+        viewModel.MoveTile(documenti, before: archivio);
+
+        Assert.Equal([documenti, archivio], viewModel.Tiles);
+    });
+
     private MainViewModel Open() => new(_root, live: false);
 
     private static ItemViewModel Item(MainViewModel viewModel, string name) =>

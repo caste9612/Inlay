@@ -22,7 +22,7 @@ public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
     [ObservableProperty]
     private bool _isCut;
 
-    public ArchiveItem Item { get; } = item;
+    public ArchiveItem Item { get; private set; } = item;
 
     public string Name => Item.DisplayName;
 
@@ -37,7 +37,22 @@ public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
     // As in Explorer, a shortcut is renamed without seeing its .lnk or .url.
     protected override string HiddenExtension => Name == Item.Name ? "" : Path.GetExtension(Item.Name);
 
-    public FileKind Kind { get; } = FileKinds.Of(item);
+    public FileKind Kind { get; private set; } = FileKinds.Of(item);
+
+    /// <summary>The item read again: the same file or folder, maybe saved since, or renamed in its case only.</summary>
+    public void Update(ArchiveItem latest)
+    {
+        if (Item == latest)
+            return;
+        var renamed = !string.Equals(Item.Name, latest.Name, StringComparison.Ordinal);
+        Item = latest;
+        Kind = FileKinds.Of(latest);
+        OnPropertyChanged(nameof(Item));
+        OnPropertyChanged(nameof(DateText));
+        OnPropertyChanged(nameof(ToolTip));
+        if (renamed)
+            OnPropertyChanged(nameof(Name));
+    }
 
     /// <summary>
     /// The icon of Brace for folders, the common kinds of file and those no program opens; null for programs, shortcuts
