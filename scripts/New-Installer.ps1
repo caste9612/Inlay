@@ -101,8 +101,9 @@ Write-Host "Installer pronto: $($setup.FullName)"
 
 if ($Publish) {
     Write-Host "Pubblico la release v$Version su GitHub, dal commit $($commit.Substring(0, 7))..."
-    $assets = (Get-ChildItem -LiteralPath $installerFolder -File).FullName
-    $options = if ($Prerelease) { @('--prerelease') } else { @() }
+    # Always lists: PowerShell turns a list of one into a plain string, and @ would then pass it to gh a letter at a time.
+    $assets = @((Get-ChildItem -LiteralPath $installerFolder -File).FullName)
+    $options = @(if ($Prerelease) { '--prerelease' })
     # The tag goes on the commit just built, not on whatever the main branch of GitHub holds now.
     gh release create "v$Version" @assets --repo $gitHubRepo --target $commit --title "Quiver $Version" --notes-file $notes @options
     if ($LASTEXITCODE -ne 0) { throw 'La pubblicazione su GitHub non è riuscita.' }
