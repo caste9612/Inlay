@@ -373,7 +373,7 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 - **Spostare la vista**: trascinando sul vuoto, oppure con la rotella premuta, dovunque. Doppio clic sul vuoto: tutto in vista; sul titolo di una zona: la zona inquadrata.
 - **Tre livelli**, secondo lo zoom:
   - lontano, sotto il 35 %: le zone con il nome e i numeri, i riquadri come blocchi del loro colore;
-  - medio, fino al 70 %: i riquadri con titolo e numero, e i nomi dei sotto-argomenti;
+  - medio, fino al 70 %: i riquadri con titolo e numero e, sotto, i nomi dei loro elementi in grande, quanti ne entrano; i nomi dei sotto-argomenti;
   - vicino: i riquadri veri, come sulla bacheca: selezione, doppio clic, tasto destro, rinomina, trascinamenti, `Ctrl+Z`.
 
   Ai livelli lontano e medio un doppio clic su un riquadro ci vola sopra. Tra un livello e l'altro le soglie hanno un po' di margine, perché lo zoom lento non faccia sfarfallare.

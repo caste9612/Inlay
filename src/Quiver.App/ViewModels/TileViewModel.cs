@@ -61,6 +61,12 @@ public sealed partial class TileViewModel : RenameableViewModel
 
     public int Count => Items.Count;
 
+    // A card from afar shows only the first names: as many as fit in the place of the tile, never more than these.
+    private const int PreviewNames = 12;
+
+    /// <summary>The names of the first items, one per line: the card that stands for the tile on the canvas from afar.</summary>
+    public string Preview => string.Join(Environment.NewLine, Items.Take(PreviewNames).Select(item => item.Name));
+
     public bool IsEmpty => Items.Count == 0;
 
     /// <summary>Only tiles that are a folder of their own can be moved, renamed, deleted, colored or promoted.</summary>
@@ -158,6 +164,7 @@ public sealed partial class TileViewModel : RenameableViewModel
         });
         OnPropertyChanged(nameof(Count));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(Preview));
     }
 
     private ItemViewModel NewItem(ArchiveItem item) => new(item) { IsCut = _cutPaths.Contains(item.FullPath) };

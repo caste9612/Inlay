@@ -916,6 +916,26 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
+    public void FromAfar_ATileTellsItsFirstItems_OneALine() => StaThread.Run(() =>
+    {
+        for (var i = 1; i <= 14; i++)
+            AddFile($"Personale/Casa/conto {i:00}.pdf");
+        using var viewModel = Open();
+        var documents = viewModel.Tiles.Single(tile => tile.Title == "Documenti");
+
+        Assert.Equal(["a.txt", "b.txt"], documents.Preview.Split(Environment.NewLine));
+
+        viewModel.SelectTopicByPath("Personale");
+        var casa = viewModel.Tiles.Single(tile => tile.Title == "Casa");
+        // No more than a card from afar has room for, in the order of the tile.
+        var names = casa.Preview.Split(Environment.NewLine);
+        Assert.Equal(12, names.Length);
+        Assert.Equal("bollette.csv", names[0]);
+        Assert.Equal("conto 11.pdf", names[^1]);
+        Assert.Equal(15, casa.Count);
+    });
+
+    [Fact]
     public void TheTopics_GetTheirColorsWhenFirstSeen_KeptInTheArchive() => StaThread.Run(() =>
     {
         using var viewModel = Open();

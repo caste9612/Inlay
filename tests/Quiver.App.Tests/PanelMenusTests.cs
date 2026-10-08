@@ -11,6 +11,7 @@ namespace Quiver.App.Tests;
 /// The menus of the panel, built as the right click builds them, with their bindings attached: a menu that cannot bind
 /// stops the click with an error. Nothing is shown on screen.
 /// </summary>
+[Collection(AppViews.Name)]
 public sealed class PanelMenusTests : IDisposable
 {
     private readonly string _root = Directory.CreateDirectory(

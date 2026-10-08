@@ -532,9 +532,15 @@
                         <!-- The color of the tile, along its left edge. -->
                         <Border Width="8" HorizontalAlignment="Left" CornerRadius="6,0,0,6" Background="{Binding ColorBrush}"
                                 Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
-                        <DockPanel Margin="22,14,18,0" VerticalAlignment="Top" Style="{StaticResource NotFarthest}">
-                            <TextBlock DockPanel.Dock="Right" Margin="12,0,0,0" FontSize="22" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Count}" />
-                            <TextBlock FontSize="24" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                        <!-- Sized so that even the tile of a single item has room for its name under the title. -->
+                        <DockPanel Margin="18,7,14,4" ClipToBounds="True" Style="{StaticResource NotFarthest}">
+                            <DockPanel DockPanel.Dock="Top">
+                                <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" FontSize="18" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Count}" />
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                            <!-- Its items in large print, as many as fit: from afar the canvas still says what is inside. -->
+                            <TextBlock Margin="0,1,0,0" FontSize="16" LineHeight="20" LineStackingStrategy="BlockLineHeight"
+                                       Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding Preview}" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
                     </Grid>
                 </Border>

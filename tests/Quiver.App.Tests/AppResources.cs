@@ -26,3 +26,13 @@ internal static class AppResources
         }
     }
 }
+
+/// <summary>
+/// The tests that build the views of the app, one at a time: the resources are of one application for all, and WPF reads
+/// them as they are first needed, which two threads at once can break.
+/// </summary>
+[CollectionDefinition(Name)]
+public sealed class AppViews
+{
+    public const string Name = "Viste dell'app";
+}
