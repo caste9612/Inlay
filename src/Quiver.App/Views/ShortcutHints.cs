@@ -37,6 +37,7 @@ public sealed record ShortcutGroup(string Title, IReadOnlyList<ShortcutHint> Hin
         ]),
         new("Finestra",
         [
+            new("mostra o nascondi gli argomenti", "Ctrl+B"),
             new("chiudi: Quiver resta nell'area di notifica", "Esc", "Alt+E"),
         ]),
     ];

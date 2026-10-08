@@ -38,6 +38,9 @@ internal sealed class AppSettings
     /// <summary>The view used last: "canvas" for the canvas; null for the board of a topic.</summary>
     public string? View { get; set; }
 
+    /// <summary>The topics on the left were closed last time.</summary>
+    public bool SidebarClosed { get; set; }
+
     /// <summary>Where these settings are saved; another file only in tests.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public string SavePath { get; set; } = FilePath;

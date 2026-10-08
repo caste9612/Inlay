@@ -49,6 +49,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(IsSearching), nameof(IsBoardVisible), nameof(IsCanvasVisible))]
     private string _query = "";
 
+    /// <summary>The topics on the left; closed, the board or the canvas take the whole width (Ctrl+B).</summary>
+    [ObservableProperty]
+    private bool _isSidebarOpen = true;
+
     /// <summary>The canvas instead of the board: the whole archive at once.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsBoardVisible), nameof(IsCanvasVisible), nameof(ViewIndex))]

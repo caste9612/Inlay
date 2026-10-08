@@ -230,32 +230,32 @@
             <MenuItem Header="Promuovi ad argomento" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
             <!-- The palette of Brace: a stripe on the title, kept with the archive. -->
             <MenuItem Header="Colore" IsEnabled="{Binding IsOwnFolder}">
-                <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}}">
+                <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}}">
                     <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Ambra" Tag="#FFA133" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                <MenuItem Header="Ambra" Tag="#FFA133" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Viola" Tag="#B48CFF" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                <MenuItem Header="Viola" Tag="#B48CFF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Verde" Tag="#36CFB0" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                <MenuItem Header="Verde" Tag="#36CFB0" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosso" Tag="#FF7272" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                <MenuItem Header="Rosso" Tag="#FF7272" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
@@ -338,36 +338,36 @@
                  inside another that of its topic. -->
             <MenuItem Header="Colore">
                 <MenuItem Header="Automatico" Tag="auto" Click="TopicColor_Click"
-                          IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=auto}">
+                          IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=auto}">
                     <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSync16}" /></MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Nessuno" Tag="none" Click="TopicColor_Click"
-                          IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=none}">
+                          IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=none}">
                     <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Ambra" Tag="#FFA133" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                <MenuItem Header="Ambra" Tag="#FFA133" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Viola" Tag="#B48CFF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                <MenuItem Header="Viola" Tag="#B48CFF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Verde" Tag="#36CFB0" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                <MenuItem Header="Verde" Tag="#36CFB0" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosso" Tag="#FF7272" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                <MenuItem Header="Rosso" Tag="#FF7272" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
@@ -701,6 +701,22 @@
                                RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock DockPanel.Dock="Left" Margin="8,0,0,0" VerticalAlignment="Center"
                                    Style="{StaticResource Brace.Text.Heading}" Text="Quiver" />
+                        <!-- The topics on the left, closed and opened again (Ctrl+B). A plain button: the bar keeps its one amber
+                             for the pin. -->
+                        <Button DockPanel.Dock="Left" Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="Barra degli argomenti"
+                                WindowChrome.IsHitTestVisibleInChrome="True" Click="SidebarToggle_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Brace.IconButton.Small}">
+                                    <Setter Property="ToolTip" Value="Nascondi gli argomenti (Ctrl+B)" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSidebarOpen}" Value="False">
+                                            <Setter Property="ToolTip" Value="Mostra gli argomenti (Ctrl+B)" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.PanelLeft16}" />
+                        </Button>
                         <!-- The buttons of the window, from the right edge inwards. -->
                         <Button DockPanel.Dock="Right" Style="{StaticResource Quiver.TitleBarCloseButton}"
                                 ToolTip="Chiudi: Quiver resta nell'area di notifica (Esc)" AutomationProperties.Name="Chiudi" Click="Close_Click">
@@ -850,12 +866,13 @@
 
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="264" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Sidebar: topics and the inbox -->
-                    <Border Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,0,1,0">
+                    <!-- Sidebar: topics and the inbox. Closed, it takes no room. -->
+                    <Border x:Name="Sidebar" Width="264" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                            BorderThickness="0,0,1,0" Visibility="{Binding IsSidebarOpen, Converter={StaticResource Visible}}">
                         <DockPanel>
                             <DockPanel DockPanel.Dock="Top" Height="40" Margin="16,4,8,0">
                                 <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}" VerticalAlignment="Center"

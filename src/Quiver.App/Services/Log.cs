@@ -6,7 +6,8 @@ internal static class Log
     private const long MaxSize = 1024 * 1024;
     private static readonly Lock Gate = new();
 
-    public static string FilePath { get; } = Path.Combine(
+    /// <summary>Where it writes; the tests send it to a file of their own, so that the user's log tells only about Quiver.</summary>
+    public static string FilePath { get; internal set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Quiver", "quiver.log");
 
     public static void Write(string message)

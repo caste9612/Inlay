@@ -201,6 +201,12 @@ public partial class PanelView : UserControl
             e.Handled = true;
             return;
         }
+        if (key == Key.B && modifiers == ModifierKeys.Control)
+        {
+            ToggleSidebar();
+            e.Handled = true;
+            return;
+        }
         // The canvas: Ctrl+0 shows it whole, Ctrl with + and - zooms, as in a browser.
         if (ViewModel.IsCanvasVisible && modifiers == ModifierKeys.Control && key is Key.D0 or Key.NumPad0 or Key.OemPlus or Key.Add or Key.OemMinus or Key.Subtract)
         {
@@ -1685,6 +1691,23 @@ public partial class PanelView : UserControl
     private void NewTile_Click(object sender, RoutedEventArgs e) => ViewModel.NewTile();
 
     private void Undo_Click(object sender, RoutedEventArgs e) => Observe(ViewModel.Undo());
+
+    // ---- The topics on the left ----
+
+    private void SidebarToggle_Click(object sender, RoutedEventArgs e) => ToggleSidebar();
+
+    /// <summary>Closes or opens the topics on the left; closing them, the focus they had goes to the board or the canvas.</summary>
+    private void ToggleSidebar()
+    {
+        var focusInside = Sidebar.IsKeyboardFocusWithin;
+        ViewModel.IsSidebarOpen = !ViewModel.IsSidebarOpen;
+        if (!focusInside || ViewModel.IsSidebarOpen)
+            return;
+        if (ViewModel.IsCanvasVisible)
+            CanvasSurface.Focus();
+        else
+            BoardArea.Focus();
+    }
 
     // ---- The status bar and the toasts ----
 

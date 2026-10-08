@@ -30,12 +30,17 @@ public sealed class AppSettingsTests : IDisposable
         Assert.False(AppSettings.Load(path).Topmost);
 
         Assert.Null(AppSettings.Load(path).View);
-        new AppSettings { SavePath = path, Window = new WindowPlacement(-1600, 120, -200, 980, Maximized: true), Topmost = true, View = "canvas" }.Save();
+        Assert.False(AppSettings.Load(path).SidebarClosed);
+        new AppSettings
+        {
+            SavePath = path, Window = new WindowPlacement(-1600, 120, -200, 980, Maximized: true), Topmost = true, View = "canvas", SidebarClosed = true,
+        }.Save();
 
         var loaded = AppSettings.Load(path);
         Assert.Equal(new WindowPlacement(-1600, 120, -200, 980, true), loaded.Window);
         Assert.True(loaded.Topmost);
         Assert.Equal("canvas", loaded.View);
+        Assert.True(loaded.SidebarClosed);
         Assert.True(loaded.Window!.IsUsable());
         Assert.False(new WindowPlacement(0, 0, 40, 30, false).IsUsable());
     }

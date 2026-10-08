@@ -39,13 +39,22 @@ public partial class PanelWindow : Window
         InitializeComponent();
         DataContext = _viewModel = viewModel;
         Topmost = settings.Topmost;
-        // The board or the canvas, as left last time.
+        // The board or the canvas, and the topics on the left open or closed, as left last time.
         viewModel.IsCanvasShown = settings.View == CanvasView;
+        viewModel.IsSidebarOpen = !settings.SidebarClosed;
         viewModel.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName != nameof(MainViewModel.IsCanvasShown))
-                return;
-            _settings.View = viewModel.IsCanvasShown ? CanvasView : null;
+            switch (e.PropertyName)
+            {
+                case nameof(MainViewModel.IsCanvasShown):
+                    _settings.View = viewModel.IsCanvasShown ? CanvasView : null;
+                    break;
+                case nameof(MainViewModel.IsSidebarOpen):
+                    _settings.SidebarClosed = !viewModel.IsSidebarOpen;
+                    break;
+                default:
+                    return;
+            }
             SaveSettings();
         };
         View.CloseRequested += (_, _) => HidePanel("closed", returnFocus: true);
