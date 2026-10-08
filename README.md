@@ -15,7 +15,7 @@ Scarica **Quiver-win-Setup.exe** dalle [release](https://github.com/caste9612/Qu
 
 Al primo avvio Quiver dà il benvenuto e chiede l'archivio: creane uno nuovo o usa una cartella che hai già.
 
-Per preparare l'installer dal codice: `.\scripts\New-Installer.ps1`; con `-Publish` lo pubblica anche come release su GitHub, con le note di `novita\<versione>.md`. La versione è quella di `src\Quiver.App\Quiver.App.csproj`.
+Per preparare l'installer dal codice: `.\scripts\New-Installer.ps1`; con `-Publish` lo pubblica anche come release su GitHub, con le note di `novita\<versione>.md`, e con `-Prerelease` la segna come da provare. La versione è quella di `src\Quiver.App\Quiver.App.csproj`. Prima di pubblicare lo script controlla che tutto sia nel commit e che il commit sia già su GitHub, e lega il tag della release proprio a quel commit.
 
 ## Sviluppo
 
