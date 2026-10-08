@@ -32,10 +32,20 @@ internal sealed record CommandLineOptions(
     /// <summary>The files handed over by «Invia a Quiver» in Explorer: everything after --sort.</summary>
     public IReadOnlyList<string> SortPaths { get; init; } = [];
 
+    /// <summary>Diagnostics: draw the canvas instead of the board, shown whole unless <see cref="PreviewZoom"/> says how close.</summary>
+    public bool PreviewCanvas { get; init; }
+
+    /// <summary>Diagnostics: the zoom of the canvas, around the middle of the view (0.5 for 50 %); with --topic, around its zone.</summary>
+    public double? PreviewZoom { get; init; }
+
+    /// <summary>Diagnostics: move the canvas of the archive on screen for a few seconds and write here how smooth it was.</summary>
+    public string? BenchmarkOutput { get; init; }
+
     public static CommandLineOptions Parse(IReadOnlyList<string> args)
     {
-        string? command = null, archive = null, preview = null, topic = null, query = null, desktop = null, section = null;
-        bool prompt = false, linkPrompt = false, inbox = false, settings = false, welcome = false, picker = false, notice = false;
+        string? command = null, archive = null, preview = null, topic = null, query = null, desktop = null, section = null, benchmark = null;
+        bool prompt = false, linkPrompt = false, inbox = false, settings = false, welcome = false, picker = false, notice = false, canvas = false;
+        double? zoom = null;
         var sort = new List<string>();
         for (var i = 0; i < args.Count; i++)
         {
@@ -60,6 +70,14 @@ internal sealed record CommandLineOptions(
                 case "--settings": settings = true; break;
                 case "--section" when hasValue: section = args[++i]; settings = true; break;
                 case "--welcome": welcome = true; break;
+                case "--canvas": canvas = true; break;
+                case "--benchmark-canvas" when hasValue: benchmark = args[++i]; break;
+                case "--zoom" when hasValue:
+                    zoom = double.TryParse(args[++i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value)
+                        ? value
+                        : null;
+                    canvas = true;
+                    break;
                 case "--sort":
                     // Explorer puts the chosen files after the arguments of the shortcut: all that follows is a path.
                     for (i++; i < args.Count; i++)
@@ -70,6 +88,9 @@ internal sealed record CommandLineOptions(
         return new CommandLineOptions(command, archive, preview, topic, query, prompt, linkPrompt, inbox, desktop, settings, welcome, picker, notice, section)
         {
             SortPaths = sort,
+            PreviewCanvas = canvas,
+            PreviewZoom = zoom,
+            BenchmarkOutput = benchmark,
         };
     }
 }

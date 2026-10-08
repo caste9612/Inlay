@@ -38,6 +38,7 @@ internal static class PreviewRenderer
         viewModel.BuildIndexNow();
         if (options.PreviewTopic is { } topic)
             viewModel.SelectTopicByPath(topic);
+        viewModel.IsCanvasShown = options.PreviewCanvas;
         if (options.PreviewInbox)
             viewModel.ShowInboxCommand.Execute(null);
         if (options.PreviewQuery is { } query)
@@ -66,7 +67,8 @@ internal static class PreviewRenderer
             viewModel.Notice = new StatusNotice(destination.FolderPath, []);
         }
 
-        Save(new PanelView { DataContext = viewModel }, PanelSize, output);
+        var view = new PanelView { DataContext = viewModel };
+        Save(view, PanelSize, output, options.PreviewCanvas ? () => view.FrameCanvas(options.PreviewZoom, options.PreviewTopic) : null);
     }
 
     /// <summary>
@@ -94,12 +96,21 @@ internal static class PreviewRenderer
         Save(new SettingsView { DataContext = viewModel }, SettingsSize, output);
     }
 
-    private static void Save(FrameworkElement view, Size size, string output)
+    /// <param name="prepare">What to do once the view is laid out, before it is drawn: placing the camera of the canvas.</param>
+    private static void Save(FrameworkElement view, Size size, string output, Action? prepare = null)
     {
         Settle(view);
         view.Measure(size);
         view.Arrange(new Rect(size));
         Settle(view);
+        if (prepare is not null)
+        {
+            prepare();
+            Settle(view);
+            view.Measure(size);
+            view.Arrange(new Rect(size));
+            Settle(view);
+        }
 
         var bitmap = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(view);

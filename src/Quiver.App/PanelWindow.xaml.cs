@@ -21,6 +21,9 @@ public partial class PanelWindow : Window
     /// <summary>The height of the title bar of the view, which moves the window: titlebar-height of Brace, the CaptionHeight of its chrome.</summary>
     private const double TitleBarHeight = 32;
 
+    /// <summary>How the settings say that the canvas was the view in use.</summary>
+    private const string CanvasView = "canvas";
+
     private readonly MainViewModel _viewModel;
     private readonly AppSettings _settings;
     private nint _hwnd;
@@ -36,6 +39,15 @@ public partial class PanelWindow : Window
         InitializeComponent();
         DataContext = _viewModel = viewModel;
         Topmost = settings.Topmost;
+        // The board or the canvas, as left last time.
+        viewModel.IsCanvasShown = settings.View == CanvasView;
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(MainViewModel.IsCanvasShown))
+                return;
+            _settings.View = viewModel.IsCanvasShown ? CanvasView : null;
+            SaveSettings();
+        };
         View.CloseRequested += (_, _) => HidePanel("closed", returnFocus: true);
         View.ArchivesRequested += (_, _) => ArchivesRequested?.Invoke(this, EventArgs.Empty);
         // The shell's dialogs took the focus and do not give it back. If the user went to another program while the

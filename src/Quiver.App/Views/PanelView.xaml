@@ -28,6 +28,34 @@
         <views:BoolToVisibilityConverter x:Key="Hidden" Invert="True" />
         <views:SameColorConverter x:Key="SameColor" />
         <views:EqualsToVisibilityConverter x:Key="EqualsVisible" />
+        <views:QuotientConverter x:Key="Quotient" />
+
+        <!-- What the canvas shows at each level (CanvasSurface.Level, inherited by all that is on it). Close up only, keeping
+             its place from afar; from afar only; not at the farthest level. -->
+        <Style x:Key="NearOnly" TargetType="FrameworkElement">
+            <Style.Triggers>
+                <Trigger Property="views:CanvasSurface.Level" Value="Middle">
+                    <Setter Property="Visibility" Value="Hidden" />
+                </Trigger>
+                <Trigger Property="views:CanvasSurface.Level" Value="Far">
+                    <Setter Property="Visibility" Value="Hidden" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="AfarOnly" TargetType="FrameworkElement">
+            <Style.Triggers>
+                <Trigger Property="views:CanvasSurface.Level" Value="Near">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="NotFarthest" TargetType="FrameworkElement">
+            <Style.Triggers>
+                <Trigger Property="views:CanvasSurface.Level" Value="Far">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
         <!-- Icon of a kind of thing (folder, topic): text-secondary, like br-tree-kind. -->
         <Style x:Key="Kind" TargetType="Path" BasedOn="{StaticResource Brace.Icon}">
@@ -47,6 +75,17 @@
              icon in accent: Brace keeps the filled icons for the selection of the main navigation. -->
         <sys:Double x:Key="NavRowHeight">32</sys:Double>
         <sys:Double x:Key="NavTextSize">14</sys:Double>
+
+        <!-- «Bacheca | Tela», as a segmented control of Brace: the same in the header of both views. -->
+        <x:Array x:Key="ViewNames" Type="sys:String">
+            <sys:String>Bacheca</sys:String>
+            <sys:String>Tela</sys:String>
+        </x:Array>
+        <Style x:Key="ViewSwitch" TargetType="ListBox" BasedOn="{StaticResource Brace.SegmentedControl}">
+            <Setter Property="ItemsSource" Value="{StaticResource ViewNames}" />
+            <Setter Property="ToolTip" Value="La bacheca di un argomento, o la tela con tutto l'archivio" />
+            <Setter Property="AutomationProperties.Name" Value="Vista" />
+        </Style>
 
         <!-- "Da smistare", as a row of the topics. -->
         <Style x:Key="InboxRow" TargetType="Button">
@@ -367,6 +406,229 @@
         <Style x:Key="TileRow" TargetType="ListBoxItem" BasedOn="{StaticResource ItemContainer}">
             <Setter Property="Height" Value="{StaticResource Brace.RowCompact}" />
         </Style>
+
+        <!-- A tile: the title with its handle, color and menu, the rows, and the corner that resizes it. The same on the
+             board and, close up, on the canvas. -->
+        <DataTemplate x:Key="TileTemplate" DataType="{x:Type vm:TileViewModel}">
+            <Grid x:Name="TileRoot">
+                <GroupBox Style="{StaticResource Brace.Panel}" Padding="0" ContextMenu="{DynamicResource TileMenu}"
+                          AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                    <GroupBox.Header>
+                        <DockPanel Background="Transparent" ToolTip="Trascina il titolo per spostare il riquadro"
+                                   PreviewMouseLeftButtonDown="TileHeader_PreviewMouseLeftButtonDown"
+                                   PreviewMouseMove="TileHeader_PreviewMouseMove">
+                            <!-- The handle, under the pointer, in the margin before the title: where a tile is taken. -->
+                            <Path x:Name="Grip" DockPanel.Dock="Left" Margin="-11,0,-3,0" Style="{StaticResource Brace.Icon}"
+                                  Data="{StaticResource Quiver.Icon.Grip16}" TextElement.Foreground="{DynamicResource Brace.TextTertiary}"
+                                  Cursor="SizeAll" Visibility="Hidden" />
+                            <!-- The color of the tile, as a stripe before its title. -->
+                            <Border DockPanel.Dock="Left" Width="4" Margin="0,3,8,3" CornerRadius="2" Background="{Binding ColorBrush}"
+                                    Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}"
+                                    ToolTip="Azioni sul riquadro" AutomationProperties.Name="Azioni sul riquadro" Click="TileActions_Click">
+                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
+                            </Button>
+                            <ContentControl DockPanel.Dock="Right" Margin="6,0" VerticalAlignment="Center"
+                                            Style="{StaticResource Brace.TabCount}" Content="{Binding Count}" />
+                            <Grid>
+                                <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="{Binding Title}"
+                                           Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
+                                <TextBox Style="{StaticResource EditBox}" FontWeight="Normal"
+                                         Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                         Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
+                                         IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
+                                         LostKeyboardFocus="EditBox_LostKeyboardFocus" />
+                            </Grid>
+                        </DockPanel>
+                    </GroupBox.Header>
+                    <Grid>
+                        <TextBlock Margin="12,10" Foreground="{DynamicResource Brace.TextTertiary}" TextWrapping="Wrap"
+                                   Text="Vuoto. Trascina qui dei file, o incollali con Ctrl+V."
+                                   Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
+                        <!-- About ten rows, then it scrolls; as many as the corner says, when given a height. The
+                             style of Brace for lists does not reach a subclass by itself. -->
+                        <views:TileList Style="{StaticResource {x:Type ListBox}}" Rows="{Binding Rows}"
+                                 MaxHeight="{Binding ListMaxHeight}" SelectionMode="Extended"
+                                 Source="{Binding Items}" VirtualizingPanel.IsVirtualizing="False"
+                                 ItemContainerStyle="{StaticResource TileRow}" ItemTemplate="{StaticResource ItemRow}"
+                                 SelectionChanged="ItemList_SelectionChanged"
+                                 PreviewMouseLeftButtonDown="ItemList_PreviewMouseLeftButtonDown"
+                                 PreviewMouseLeftButtonUp="ItemList_PreviewMouseLeftButtonUp"
+                                 PreviewMouseRightButtonDown="ItemList_PreviewMouseRightButtonDown"
+                                 PreviewMouseMove="ItemList_PreviewMouseMove"
+                                 PreviewMouseWheel="ItemList_PreviewMouseWheel"
+                                 MouseDoubleClick="ItemList_MouseDoubleClick" KeyDown="ItemList_KeyDown" />
+                    </Grid>
+                </GroupBox>
+                <!-- The corner: dragged, the tile takes one, two or three columns, and as many rows as wanted. -->
+                <Thumb x:Name="ResizeGrip" Style="{StaticResource Quiver.ResizeGrip}" HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom" Margin="0,0,1,1" Visibility="Hidden"
+                       DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta"
+                       DragCompleted="ResizeGrip_DragCompleted" MouseDoubleClick="ResizeGrip_MouseDoubleClick" />
+            </Grid>
+            <DataTemplate.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
+                        <Condition Binding="{Binding IsOwnFolder}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="Grip" Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
+                        <Condition Binding="{Binding CanArrange}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+                <Trigger SourceName="ResizeGrip" Property="IsDragging" Value="True">
+                    <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- A tile on the canvas. Close up, the tile itself, as on the board. From afar, a card over it with its title and
+             count, then only its block: the tile keeps its place under it, so zooming never moves the zones. -->
+        <DataTemplate x:Key="CanvasTileTemplate" DataType="{x:Type vm:TileViewModel}">
+            <views:CoverPanel>
+                <!-- Inside the tile the level stays put: a change of level does not walk down all its rows. -->
+                <Border Style="{StaticResource NearOnly}">
+                    <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource TileTemplate}" views:CanvasSurface.Level="Near" />
+                </Border>
+                <Border CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource Brace.BorderDefault}" Background="{DynamicResource Brace.SurfaceRaised}"
+                        Style="{StaticResource AfarOnly}" ToolTip="Doppio clic per avvicinarti" MouseLeftButtonDown="TileSummary_MouseLeftButtonDown">
+                    <Grid>
+                        <!-- The color of the tile, along its left edge. -->
+                        <Border Width="8" HorizontalAlignment="Left" CornerRadius="6,0,0,6" Background="{Binding ColorBrush}"
+                                Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
+                        <DockPanel Margin="22,14,18,0" VerticalAlignment="Top" Style="{StaticResource NotFarthest}">
+                            <TextBlock DockPanel.Dock="Right" Margin="12,0,0,0" FontSize="22" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Count}" />
+                            <TextBlock FontSize="24" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                    </Grid>
+                </Border>
+            </views:CoverPanel>
+        </DataTemplate>
+
+        <!-- A zone of the canvas: a topic with its tiles and, side by side below them, the zones of the topics inside it; or
+             «Da smistare». Its tiles are laid out as on a board, in the columns of the zone. -->
+        <DataTemplate DataType="{x:Type vm:ZoneViewModel}">
+            <Grid>
+                <Border x:Name="ZoneFrame" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                        BorderThickness="1" CornerRadius="10" Padding="16,12,16,16">
+                    <StackPanel>
+                        <!-- The name of the zone, as the title of a board. A double click shows the zone whole. From afar the zones of
+                             the root have their name above them instead; those inside keep this one until the farthest level. -->
+                        <DockPanel Margin="2,0,2,12" Background="Transparent" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
+                            <DockPanel.Style>
+                                <Style TargetType="DockPanel">
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsNested}" Value="False" />
+                                                <Condition Binding="{Binding (views:CanvasSurface.Level), RelativeSource={RelativeSource Self}}" Value="Middle" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </MultiDataTrigger>
+                                        <Trigger Property="views:CanvasSurface.Level" Value="Far">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DockPanel.Style>
+                            <Path x:Name="ZoneIcon" DockPanel.Dock="Left" Margin="0,0,10,0" Style="{StaticResource Brace.Icon20}"
+                                  Data="{StaticResource Brace.Icon.Folder20}" TextElement.Foreground="{DynamicResource Brace.TextSecondary}" />
+                            <TextBlock DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Brace.TextTertiary}"
+                                       Text="{Binding Summary}" />
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                        <ItemsControl Focusable="False" ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource CanvasTileTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <views:TileGridPanel FixedColumns="{Binding Columns}" MinColumnWidth="280" Spacing="16" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="views:TileGridPanel.Columns" Value="{Binding Columns}" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
+                        <ItemsControl Focusable="False" Margin="0,16,0,0" ItemsSource="{Binding Children}">
+                            <ItemsControl.Style>
+                                <Style TargetType="ItemsControl">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Children.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.Style>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <views:TileGridPanel FixedColumns="{Binding Columns}" MinColumnWidth="280" Spacing="16" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="views:TileGridPanel.Columns" Value="{Binding Columns}" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
+                        <TextBlock x:Name="ZoneEmpty" Margin="2,0" Foreground="{DynamicResource Brace.TextTertiary}" Visibility="Collapsed"
+                                   Text="Vuoto. Trascina qui dei file, o crea un riquadro." />
+                    </StackPanel>
+                </Border>
+                <!-- From afar: the name of a zone of the root, above its top left corner, in the space between zones, scaled back
+                     so that it stays as big on screen at any zoom. -->
+                <Canvas HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Canvas.Style>
+                        <Style TargetType="Canvas">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsNested}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <Trigger Property="views:CanvasSurface.Level" Value="Near">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Canvas.Style>
+                    <!-- Never wider than the zone looks on screen; at the farthest level the name alone. The name comes first: in a
+                         narrow zone the numbers give way. -->
+                    <Border Canvas.Left="0" Canvas.Bottom="8" Padding="10,5" CornerRadius="6" Background="{DynamicResource Brace.SurfaceOverlay}"
+                            BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1" RenderTransformOrigin="0,1"
+                            RenderTransform="{Binding (views:CanvasSurface.LabelScale), RelativeSource={RelativeSource Self}}"
+                            ToolTip="Doppio clic per vedere tutta la zona" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
+                        <Border.MaxWidth>
+                            <MultiBinding Converter="{StaticResource Quotient}">
+                                <Binding ElementName="ZoneFrame" Path="ActualWidth" />
+                                <Binding Path="(views:CanvasSurface.LabelScale).ScaleX" RelativeSource="{RelativeSource Self}" />
+                            </MultiBinding>
+                        </Border.MaxWidth>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" FontSize="15" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Brace.TextTertiary}"
+                                       Text="{Binding Summary}" TextTrimming="CharacterEllipsis" Style="{StaticResource NotFarthest}" />
+                        </DockPanel>
+                    </Border>
+                </Canvas>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsInbox}" Value="True">
+                    <Setter TargetName="ZoneIcon" Property="Data" Value="{StaticResource Brace.Icon.ArrowDownload20}" />
+                    <Setter TargetName="ZoneEmpty" Property="Text" Value="Niente da smistare." />
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding Tiles.Count}" Value="0" />
+                        <Condition Binding="{Binding Children.Count}" Value="0" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="ZoneEmpty" Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </UserControl.Resources>
 
     <!-- No border of its own: in the window, the frame of Windows draws it in border-default (brace:Chrome.Dark). -->
@@ -484,7 +746,7 @@
                                            Foreground="{DynamicResource Brace.TextTertiary}" Text="Argomenti" />
                             </DockPanel>
                             <Border DockPanel.Dock="Bottom" Padding="6,6" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,1,0,0">
-                                <Button x:Name="InboxButton" Style="{StaticResource InboxRow}" Command="{Binding ShowInboxCommand}"
+                                <Button x:Name="InboxButton" Style="{StaticResource InboxRow}" Command="{Binding ShowInboxCommand}" Click="InboxButton_Click"
                                         AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
                                     <DockPanel>
                                         <ContentControl DockPanel.Dock="Right" Style="{StaticResource Brace.TabCount}" Content="{Binding InboxCount}"
@@ -557,6 +819,8 @@
                                         <TextBlock VerticalAlignment="Center" Text="Nuovo riquadro" />
                                     </StackPanel>
                                 </Button>
+                                <ListBox DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
+                                         SelectedIndex="{Binding ViewIndex, Mode=TwoWay}" />
                                 <StackPanel VerticalAlignment="Bottom">
                                     <TextBlock Style="{StaticResource Brace.Text.Caption}" Foreground="{DynamicResource Brace.TextTertiary}"
                                                Text="{Binding BoardPath}" TextTrimming="CharacterEllipsis" />
@@ -594,7 +858,7 @@
                                            Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding EmptyMessage}" />
                                 <ScrollViewer x:Name="BoardScroller" Padding="20,0,20,20" Focusable="False"
                                               HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                                    <ItemsControl x:Name="TilesControl" Focusable="False" ItemsSource="{Binding Tiles}">
+                                    <ItemsControl x:Name="TilesControl" Focusable="False" ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource TileTemplate}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <views:TileGridPanel MinColumnWidth="280" Spacing="16" />
@@ -606,88 +870,51 @@
                                                 <Setter Property="views:TileGridPanel.Columns" Value="{Binding Columns}" />
                                             </Style>
                                         </ItemsControl.ItemContainerStyle>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate DataType="{x:Type vm:TileViewModel}">
-                                                <Grid x:Name="TileRoot">
-                                                    <GroupBox Style="{StaticResource Brace.Panel}" Padding="0" ContextMenu="{StaticResource TileMenu}"
-                                                              AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
-                                                        <GroupBox.Header>
-                                                            <DockPanel Background="Transparent" ToolTip="Trascina il titolo per spostare il riquadro"
-                                                                       PreviewMouseLeftButtonDown="TileHeader_PreviewMouseLeftButtonDown"
-                                                                       PreviewMouseMove="TileHeader_PreviewMouseMove">
-                                                                <!-- The handle, under the pointer, in the margin before the title: where a tile is taken. -->
-                                                                <Path x:Name="Grip" DockPanel.Dock="Left" Margin="-11,0,-3,0" Style="{StaticResource Brace.Icon}"
-                                                                      Data="{StaticResource Quiver.Icon.Grip16}" TextElement.Foreground="{DynamicResource Brace.TextTertiary}"
-                                                                      Cursor="SizeAll" Visibility="Hidden" />
-                                                                <!-- The color of the tile, as a stripe before its title. -->
-                                                                <Border DockPanel.Dock="Left" Width="4" Margin="0,3,8,3" CornerRadius="2" Background="{Binding ColorBrush}"
-                                                                        Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
-                                                                <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}"
-                                                                        ToolTip="Azioni sul riquadro" AutomationProperties.Name="Azioni sul riquadro" Click="TileActions_Click">
-                                                                    <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
-                                                                </Button>
-                                                                <ContentControl DockPanel.Dock="Right" Margin="6,0" VerticalAlignment="Center"
-                                                                                Style="{StaticResource Brace.TabCount}" Content="{Binding Count}" />
-                                                                <Grid>
-                                                                    <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="{Binding Title}"
-                                                                               Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
-                                                                    <TextBox Style="{StaticResource EditBox}" FontWeight="Normal"
-                                                                             Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
-                                                                             Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
-                                                                             IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
-                                                                             LostKeyboardFocus="EditBox_LostKeyboardFocus" />
-                                                                </Grid>
-                                                            </DockPanel>
-                                                        </GroupBox.Header>
-                                                        <Grid>
-                                                            <TextBlock Margin="12,10" Foreground="{DynamicResource Brace.TextTertiary}" TextWrapping="Wrap"
-                                                                       Text="Vuoto. Trascina qui dei file, o incollali con Ctrl+V."
-                                                                       Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
-                                                            <!-- About ten rows, then it scrolls; as many as the corner says, when given a height. The
-                                                                 style of Brace for lists does not reach a subclass by itself. -->
-                                                            <views:TileList Style="{StaticResource {x:Type ListBox}}" Rows="{Binding Rows}"
-                                                                     MaxHeight="{Binding ListMaxHeight}" SelectionMode="Extended"
-                                                                     ItemsSource="{Binding Items}" VirtualizingPanel.IsVirtualizing="False"
-                                                                     ItemContainerStyle="{StaticResource TileRow}" ItemTemplate="{StaticResource ItemRow}"
-                                                                     SelectionChanged="ItemList_SelectionChanged"
-                                                                     PreviewMouseLeftButtonDown="ItemList_PreviewMouseLeftButtonDown"
-                                                                     PreviewMouseLeftButtonUp="ItemList_PreviewMouseLeftButtonUp"
-                                                                     PreviewMouseRightButtonDown="ItemList_PreviewMouseRightButtonDown"
-                                                                     PreviewMouseMove="ItemList_PreviewMouseMove"
-                                                                     PreviewMouseWheel="ItemList_PreviewMouseWheel"
-                                                                     MouseDoubleClick="ItemList_MouseDoubleClick" KeyDown="ItemList_KeyDown" />
-                                                        </Grid>
-                                                    </GroupBox>
-                                                    <!-- The corner: dragged, the tile takes one, two or three columns, and as many rows as wanted. -->
-                                                    <Thumb x:Name="ResizeGrip" Style="{StaticResource Quiver.ResizeGrip}" HorizontalAlignment="Right"
-                                                           VerticalAlignment="Bottom" Margin="0,0,1,1" Visibility="Hidden"
-                                                           DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta"
-                                                           DragCompleted="ResizeGrip_DragCompleted" MouseDoubleClick="ResizeGrip_MouseDoubleClick" />
-                                                </Grid>
-                                                <DataTemplate.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
-                                                            <Condition Binding="{Binding IsOwnFolder}" Value="True" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter TargetName="Grip" Property="Visibility" Value="Visible" />
-                                                    </MultiDataTrigger>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
-                                                            <Condition Binding="{Binding CanArrange}" Value="True" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
-                                                    </MultiDataTrigger>
-                                                    <Trigger SourceName="ResizeGrip" Property="IsDragging" Value="True">
-                                                        <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
-                                                    </Trigger>
-                                                </DataTemplate.Triggers>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </ScrollViewer>
                             </Grid>
+                        </DockPanel>
+
+                        <!-- The canvas: the whole archive at once, a zone for each topic, seen through a camera that zooms and moves. -->
+                        <DockPanel Visibility="{Binding IsCanvasVisible, Converter={StaticResource Visible}}">
+                            <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
+                                <ListBox DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
+                                         SelectedIndex="{Binding ViewIndex, Mode=TwoWay}" />
+                                <Button DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Ghost}"
+                                        Content="Mostra tutto" ToolTip="Tutto l'archivio in vista (Ctrl+0, o doppio clic sul vuoto)" Click="CanvasFitAll_Click" />
+                                <!-- The zoom, also from the mouse alone: the wheel zooms where it points, these around the middle. -->
+                                <StackPanel DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Orientation="Horizontal">
+                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Allontana (Ctrl+-)" AutomationProperties.Name="Allontana"
+                                            Click="CanvasZoomOut_Click">
+                                        <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ZoomOut16}" />
+                                    </Button>
+                                    <TextBlock MinWidth="48" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource Brace.TextSecondary}"
+                                               Text="{Binding Canvas.ZoomText}" ToolTip="La rotella zooma dove punti; trascina sul vuoto per spostarti" />
+                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Avvicina (Ctrl++)" AutomationProperties.Name="Avvicina"
+                                            Click="CanvasZoomIn_Click">
+                                        <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ZoomIn16}" />
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel VerticalAlignment="Bottom">
+                                    <TextBlock Style="{StaticResource Brace.Text.Caption}" Foreground="{DynamicResource Brace.TextTertiary}"
+                                               Text="Tutto l'archivio" />
+                                    <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Tela" />
+                                </StackPanel>
+                            </DockPanel>
+                            <views:CanvasSurface x:Name="CanvasSurface" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,1,0,0"
+                                                 Background="{DynamicResource Brace.SurfaceSunken}" Camera="{Binding Canvas.Camera, Mode=TwoWay}"
+                                                 views:CanvasSurface.Level="{Binding Canvas.Level}" views:TileList.StartsAsleep="True"
+                                                 KeyboardNavigation.IsTabStop="False" SizeChanged="CanvasSurface_SizeChanged">
+                                <!-- Text in Ideal mode: scaled, it stays sharp. -->
+                                <ItemsControl x:Name="ZonesControl" Focusable="False" ItemsSource="{Binding Canvas.Zones}"
+                                              TextOptions.TextFormattingMode="Ideal">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <views:ZoneCanvasPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </views:CanvasSurface>
                         </DockPanel>
 
                         <!-- Search results -->

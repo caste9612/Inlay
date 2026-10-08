@@ -35,6 +35,9 @@ internal sealed class AppSettings
     /// <summary>The window stays above the others: the pin in its title bar, as in Hive and Pulse, with the same name.</summary>
     public bool Topmost { get; set; }
 
+    /// <summary>The view used last: "canvas" for the canvas; null for the board of a topic.</summary>
+    public string? View { get; set; }
+
     /// <summary>Where these settings are saved; another file only in tests.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public string SavePath { get; set; } = FilePath;

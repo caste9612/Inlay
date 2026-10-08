@@ -56,7 +56,13 @@ public partial class PanelView : UserControl
     private double _resizeStartWidth;
     private double _resizeStartListHeight;
     private TileList? _resizeList;
+    private TileGridPanel? _resizePanel;
     private TileSize? _sizeBefore;
+
+    // The canvas: the archive it last showed whole, and a search result to fly to once it is clear the click was single.
+    private string? _canvasFitFor;
+    private readonly DispatcherTimer _resultTimer = new() { Interval = TimeSpan.FromMilliseconds(NativeMethods.GetDoubleClickTime()) };
+    private SearchResultViewModel? _resultToShow;
 
     // Selecting with a rectangle: where the press was, the rectangle on screen, and what Ctrl keeps selected.
     private Point? _bandStart;
@@ -74,6 +80,7 @@ public partial class PanelView : UserControl
         DataContextChanged += OnDataContextChanged;
         _renameTimer.Tick += RenameTimer_Tick;
         _springTimer.Tick += SpringTimer_Tick;
+        _resultTimer.Tick += ResultTimer_Tick;
     }
 
     /// <summary>Esc with nothing left to cancel, or the close button: the window goes back to the notification area.</summary>
@@ -111,6 +118,7 @@ public partial class PanelView : UserControl
             old.PropertyChanged -= OnViewModelPropertyChanged;
             old.SelectionRestored -= OnSelectionRestored;
             old.Reloaded -= OnReloaded;
+            old.ShowOnCanvasRequested -= OnShowOnCanvasRequested;
         }
         if (e.NewValue is MainViewModel current)
         {
@@ -118,6 +126,7 @@ public partial class PanelView : UserControl
             current.PropertyChanged += OnViewModelPropertyChanged;
             current.SelectionRestored += OnSelectionRestored;
             current.Reloaded += OnReloaded;
+            current.ShowOnCanvasRequested += OnShowOnCanvasRequested;
         }
     }
 
@@ -178,6 +187,16 @@ public partial class PanelView : UserControl
         if (key == Key.N && modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
         {
             ViewModel.NewTile();
+            e.Handled = true;
+            return;
+        }
+        // The canvas: Ctrl+0 shows it whole, Ctrl with + and - zooms, as in a browser.
+        if (ViewModel.IsCanvasVisible && modifiers == ModifierKeys.Control && key is Key.D0 or Key.NumPad0 or Key.OemPlus or Key.Add or Key.OemMinus or Key.Subtract)
+        {
+            if (key is Key.D0 or Key.NumPad0)
+                CanvasSurface.FitAll();
+            else
+                CanvasSurface.ZoomBy(key is Key.OemPlus or Key.Add ? 1.25 : 0.8);
             e.Handled = true;
             return;
         }
@@ -361,8 +380,130 @@ public partial class PanelView : UserControl
 
     private void TopicTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
-        if (e.NewValue is TopicViewModel topic && !ReferenceEquals(topic, ViewModel.SelectedTopic))
-            ViewModel.SelectTopicCommand.Execute(topic);
+        if (e.NewValue is not TopicViewModel topic || ReferenceEquals(topic, ViewModel.SelectedTopic))
+            return;
+        ViewModel.SelectTopicCommand.Execute(topic);
+        // On the canvas the view flies to its zone.
+        if (ViewModel.IsCanvasVisible && ViewModel.Canvas.ZoneOf(topic) is { } zone)
+            ShowZone(zone);
+    }
+
+    // ---- The canvas ----
+
+    /// <summary>The canvas came into view with a size: the first time for an archive, it shows it whole.</summary>
+    private void CanvasSurface_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (CanvasSurface.ActualWidth <= 0 || string.Equals(_canvasFitFor, ViewModel.Root, StringComparison.OrdinalIgnoreCase))
+            return;
+        _canvasFitFor = ViewModel.Root;
+        // Once the zones are laid out.
+        Dispatcher.BeginInvoke(() => CanvasSurface.FitAll(animated: false), DispatcherPriority.Loaded);
+    }
+
+    private void CanvasFitAll_Click(object sender, RoutedEventArgs e) => CanvasSurface.FitAll();
+
+    private void CanvasZoomIn_Click(object sender, RoutedEventArgs e) => CanvasSurface.ZoomBy(1.25);
+
+    private void CanvasZoomOut_Click(object sender, RoutedEventArgs e) => CanvasSurface.ZoomBy(0.8);
+
+    /// <summary>A double click on the name of a zone, close up or from afar, shows the zone whole.</summary>
+    private void ZoneHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2 || sender is not FrameworkElement { DataContext: ZoneViewModel zone })
+            return;
+        e.Handled = true;
+        ShowZone(zone);
+    }
+
+    /// <summary>From afar, a double click on a tile flies to it, close enough to work with it.</summary>
+    private void TileSummary_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2 || sender is not FrameworkElement { DataContext: TileViewModel tile })
+            return;
+        e.Handled = true;
+        ShowTile(tile);
+    }
+
+    /// <summary>«Da smistare» on the canvas is a zone: the view flies to it.</summary>
+    private void InboxButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsCanvasVisible && ViewModel.Canvas.Inbox is { } inbox)
+            ShowZone(inbox);
+    }
+
+    private void ShowZone(ZoneViewModel zone, bool animated = true)
+    {
+        if (AllDescendants<Border>(ZonesControl).FirstOrDefault(border => border.Name == "ZoneFrame" && ReferenceEquals(border.DataContext, zone)) is { } frame)
+            CanvasSurface.Show(CanvasSurface.BoundsOf(frame), animated, maxZoom: 1);
+    }
+
+    private void ShowTile(TileViewModel tile, bool animated = true)
+    {
+        if (AllDescendants<GroupBox>(ZonesControl).FirstOrDefault(box => ReferenceEquals(box.DataContext, tile)) is { } box)
+            CanvasSurface.Show(CanvasSurface.BoundsOf(box), animated, maxZoom: 1);
+    }
+
+    /// <summary>
+    /// For the previews from the command line, which have no flights: the canvas whole, or around the zone of a topic,
+    /// at the zoom asked for.
+    /// </summary>
+    internal void FrameCanvas(double? zoom, string? topicPath)
+    {
+        _canvasFitFor = ViewModel.Root;
+        CanvasSurface.FitAll(animated: false);
+        if (topicPath is not null && FindTopic(topicPath.Replace('\\', '/')) is { } topic && ViewModel.Canvas.ZoneOf(topic) is { } zone)
+            ShowZone(zone, animated: false);
+        if (zoom is { } wanted)
+            CanvasSurface.ZoomBy(wanted / CanvasSurface.Camera.Zoom);
+        CanvasSurface.WakeInViewNow();
+    }
+
+    /// <summary>«Mostra» after an operation, on the canvas: the tile where the items went, with them selected.</summary>
+    private void OnShowOnCanvasRequested(object? sender, string folder) =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (ViewModel.Canvas.TileOf(folder) is { } tile)
+                ShowTile(tile);
+        }, DispatcherPriority.Loaded);
+
+    /// <summary>On the canvas, a click on a search result goes to it, once it is clear that it is not a double click.</summary>
+    private void ResultsList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!ViewModel.IsCanvasShown || ItemUnder(ResultsList, e.OriginalSource) is not SearchResultViewModel result)
+            return;
+        _resultToShow = result;
+        _resultTimer.Stop();
+        _resultTimer.Start();
+    }
+
+    private void ResultTimer_Tick(object? sender, EventArgs e)
+    {
+        _resultTimer.Stop();
+        if (_resultToShow is { } result)
+            ShowResultOnCanvas(result);
+        _resultToShow = null;
+    }
+
+    /// <summary>
+    /// The search closes and the view flies to the tile of the result, with it selected. A file deep in a folder of a tile
+    /// shows as that folder.
+    /// </summary>
+    private void ShowResultOnCanvas(SearchResultViewModel result)
+    {
+        var path = result.Item.FullPath;
+        ViewModel.Query = "";
+        Dispatcher.BeginInvoke(() =>
+        {
+            for (var child = path; Path.GetDirectoryName(child) is { } folder; child = folder)
+            {
+                if (ViewModel.Canvas.TileOf(folder) is not { } tile)
+                    continue;
+                foreach (var item in ViewModel.ShownTiles.SelectMany(shown => shown.Items))
+                    item.IsSelected = string.Equals(item.Item.FullPath, child, StringComparison.OrdinalIgnoreCase);
+                ShowTile(tile);
+                return;
+            }
+        }, DispatcherPriority.Loaded);
     }
 
     /// <summary>A press on a topic, not on its arrow nor on its name being edited: dragged, it changes place.</summary>
@@ -452,8 +593,8 @@ public partial class PanelView : UserControl
     /// <param name="except">A list whose selection stays.</param>
     private void UnselectAll(ListBox? except = null)
     {
-        var keep = except?.ItemsSource;
-        foreach (var tile in ViewModel.Tiles.Where(tile => !ReferenceEquals(tile.Items, keep)))
+        var keep = except is null ? null : ItemsOf(except);
+        foreach (var tile in ViewModel.ShownTiles.Where(tile => !ReferenceEquals(tile.Items, keep)))
         {
             foreach (var item in tile.Items)
                 item.IsSelected = false;
@@ -494,6 +635,8 @@ public partial class PanelView : UserControl
 
     private void ItemList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        if (ReferenceEquals(sender, ResultsList))
+            ResultsList_PreviewMouseLeftButtonUp(sender, e);
         _pressedItem = null;
         if (_pendingClick is not { } item)
             return;
@@ -581,6 +724,9 @@ public partial class PanelView : UserControl
         if (e.ChangedButton != MouseButton.Left || IsInside<TextBox>(e.OriginalSource) || ItemUnder(sender, e.OriginalSource) is not { } item)
             return;
         _renameTimer.Stop();
+        // A double click on a result opens it, also on the canvas: no flight to it.
+        _resultTimer.Stop();
+        _resultToShow = null;
         ViewModel.Open(item.IsSelected ? ViewModel.SelectedItems() : [item]);
         e.Handled = true;
     }
@@ -710,23 +856,40 @@ public partial class PanelView : UserControl
             ? item
             : null;
 
-    /// <summary>The row of the first selected item, on the board or among the results.</summary>
+    /// <summary>The lists of the tiles on screen: on the board, or in every zone of the canvas, those within zones too.</summary>
+    private IEnumerable<ListBox> TileLists() =>
+        ViewModel.IsCanvasShown ? AllDescendants<TileList>(ZonesControl) : FindDescendants<ListBox>(BoardScroller);
+
+    /// <summary>
+    /// The row of the first selected item, on the board, on the canvas, or among the results. On the canvas the tile may
+    /// have no rows yet: it gets them now.
+    /// </summary>
     private ListBoxItem? FirstSelectedRow()
     {
-        IEnumerable<ListBox> lists = ViewModel.IsSearching ? [ResultsList] : FindDescendants<ListBox>(BoardScroller);
+        IEnumerable<ListBox> lists = ViewModel.IsSearching ? [ResultsList] : TileLists();
         foreach (var list in lists)
         {
-            if (list.Items.OfType<ItemViewModel>().FirstOrDefault(item => item.IsSelected) is { } selected &&
-                list.ItemContainerGenerator.ContainerFromItem(selected) is ListBoxItem row)
+            if (ItemsOf(list).OfType<ItemViewModel>().FirstOrDefault(item => item.IsSelected) is not { } selected)
+                continue;
+            if (list is TileList { IsAsleep: true } sleeping)
+            {
+                sleeping.Wake();
+                sleeping.UpdateLayout();
+            }
+            if (list.ItemContainerGenerator.ContainerFromItem(selected) is ListBoxItem row)
                 return row;
         }
         return null;
     }
 
+    /// <summary>The items of a list, its rows or not: a tile of the canvas has them before its rows.</summary>
+    private static System.Collections.IEnumerable ItemsOf(ListBox list) =>
+        (list is TileList tile ? tile.Source : list.ItemsSource) ?? Array.Empty<object>();
+
     private ListBox? ListOfTile(string? folder) =>
         folder is null
             ? null
-            : FindDescendants<ListBox>(BoardScroller).FirstOrDefault(list =>
+            : TileLists().FirstOrDefault(list =>
                 list.DataContext is TileViewModel tile && string.Equals(tile.FolderPath, folder, StringComparison.OrdinalIgnoreCase));
 
     private static void FocusRow(ListBoxItem row)
@@ -771,6 +934,8 @@ public partial class PanelView : UserControl
             list.Focus();
         else if (ViewModel.IsBoardVisible)
             BoardArea.Focus();
+        else if (ViewModel.IsCanvasVisible)
+            CanvasSurface.Focus();
         else
             FocusSearch();
     }
@@ -803,7 +968,7 @@ public partial class PanelView : UserControl
         if (_pressedTile is not { } tile || e.LeftButton != MouseButtonState.Pressed || !MovedEnough(e))
             return;
         _pressedTile = null;
-        if (!ViewModel.Tiles.Contains(tile))
+        if (!ViewModel.ShownTiles.Contains(tile))
             return;
         var data = new DataObject();
         data.SetData(TileFormat, tile.FolderPath);
@@ -838,7 +1003,9 @@ public partial class PanelView : UserControl
         if (sender is not Thumb { DataContext: TileViewModel tile, Parent: FrameworkElement tileRoot })
             return;
         _sizeBefore = tile.Size;
-        _resizeStart = Mouse.GetPosition(TilesControl);
+        // In points of the board, or of the canvas, whatever its zoom.
+        _resizePanel = FindAncestor<TileGridPanel>(tileRoot);
+        _resizeStart = _resizePanel is { } panel ? Mouse.GetPosition(panel) : default;
         _resizeStartWidth = tileRoot.ActualWidth;
         _resizeList = FindDescendants<TileList>(tileRoot).FirstOrDefault();
         _resizeStartListHeight = _resizeList?.ActualHeight ?? 0;
@@ -850,11 +1017,10 @@ public partial class PanelView : UserControl
     /// </summary>
     private void ResizeGrip_DragDelta(object sender, DragDeltaEventArgs e)
     {
-        if (sender is not Thumb { DataContext: TileViewModel tile } || _resizeList is not { } list ||
-            FindDescendants<TileGridPanel>(TilesControl).FirstOrDefault() is not { } board)
+        if (sender is not Thumb { DataContext: TileViewModel tile } || _resizeList is not { } list || _resizePanel is not { } board)
             return;
         // From where the drag started: the corner itself jumps along with the tile.
-        var moved = Mouse.GetPosition(TilesControl) - _resizeStart;
+        var moved = Mouse.GetPosition(board) - _resizeStart;
         var columns = (int)Math.Round((_resizeStartWidth + moved.X + board.Spacing) / (board.ColumnWidth + board.Spacing));
         columns = Math.Clamp(columns, 1, Math.Max(1, Math.Min(TileSize.MaxColumns, board.ColumnCount)));
         var rows = _sizeBefore?.Rows;
@@ -874,6 +1040,7 @@ public partial class PanelView : UserControl
             ViewModel.ResizeTile(tile, tile.Size);
         _sizeBefore = null;
         _resizeList = null;
+        _resizePanel = null;
     }
 
     /// <summary>A double click on the corner gives the tile back the size that follows its items.</summary>
@@ -995,10 +1162,10 @@ public partial class PanelView : UserControl
         switch (plan.Action)
         {
             case DropAction.MoveTile:
-                ShowInsertionLine(plan.Before);
+                ShowInsertionLine(plan.Tile!, plan.Before);
                 break;
-            case DropAction.ArrangeItems when plan.LineRow is { } row:
-                ShowLine(ref _insertionLine, TilesControl, row, plan.LineAtBottom);
+            case DropAction.ArrangeItems when plan.LineRow is { } row && TilesHostOf(ViewModel.SiblingsOf(plan.Tile!)) is { } host:
+                LineOn(host)?.ShowAt(row, plan.LineAtBottom);
                 break;
             case DropAction.MoveTopic when !plan.Inside && plan.LineRow is { } row:
                 ShowLine(ref _topicLine, TopicTree, row, plan.LineAtBottom);
@@ -1108,14 +1275,16 @@ public partial class PanelView : UserControl
         if (ReferenceEquals(target, TopicTree))
             return DropPlan.Nothing;
 
-        // A tile dragged by its title and dropped on its board changes place there.
+        // A tile dragged by its title and dropped among those next to it changes place there: on its board, or in its zone
+        // of the canvas. Onto a tile of another zone it goes nowhere: that is a move to another topic, for later.
         if (e.Data.GetDataPresent(TileFormat) && (onBoard || context is TileViewModel) &&
             e.Data.GetData(TileFormat) is string tilePath &&
-            ViewModel.Tiles.FirstOrDefault(tile => string.Equals(tile.FolderPath, tilePath, StringComparison.OrdinalIgnoreCase)) is { } moving)
+            ViewModel.ShownTiles.FirstOrDefault(tile => string.Equals(tile.FolderPath, tilePath, StringComparison.OrdinalIgnoreCase)) is { } moving)
         {
             if (onBoard)
                 return new DropPlan(DropAction.MoveTile) { Tile = moving };
-            return context is TileViewModel { IsOwnFolder: true } before && !ReferenceEquals(before, moving)
+            return context is TileViewModel { IsOwnFolder: true } before && !ReferenceEquals(before, moving) &&
+                   ViewModel.SiblingsOf(moving).Contains(before)
                 ? new DropPlan(DropAction.MoveTile) { Tile = moving, Before = before }
                 : DropPlan.Nothing;
         }
@@ -1238,23 +1407,43 @@ public partial class PanelView : UserControl
 
     // ---- What a drag shows: the line where a tile will land, the label of what is in hand ----
 
-    /// <summary>The line where the dragged tile will land: before <paramref name="before"/>, or after the last tile.</summary>
-    private void ShowInsertionLine(TileViewModel? before)
+    /// <summary>
+    /// The line where the dragged tile will land among those next to it, on the board or in its zone of the canvas:
+    /// before <paramref name="before"/>, or after the last tile.
+    /// </summary>
+    private void ShowInsertionLine(TileViewModel moving, TileViewModel? before)
     {
-        if (_insertionLine is null)
-        {
-            if (AdornerLayer.GetAdornerLayer(TilesControl) is not { } layer)
-                return;
-            _insertionLine = new InsertionAdorner(TilesControl, (Brush)FindResource("Brace.Accent"));
-            layer.Add(_insertionLine);
-        }
-        var target = before is null ? null : TilesControl.ItemContainerGenerator.ContainerFromItem(before) as FrameworkElement;
-        var last = ViewModel.Tiles.Count == 0 ? null : TilesControl.ItemContainerGenerator.ContainerFromItem(ViewModel.Tiles[^1]) as FrameworkElement;
-        var spacing = FindDescendants<TileGridPanel>(TilesControl).FirstOrDefault()?.Spacing ?? 16;
-        _insertionLine.ShowBefore(target, last, spacing);
+        var siblings = ViewModel.SiblingsOf(moving);
+        if (TilesHostOf(siblings) is not { } host || LineOn(host) is not { } line)
+            return;
+        var target = before is null ? null : host.ItemContainerGenerator.ContainerFromItem(before) as FrameworkElement;
+        var last = siblings.Count == 0 ? null : host.ItemContainerGenerator.ContainerFromItem(siblings[^1]) as FrameworkElement;
+        var spacing = FindDescendants<TileGridPanel>(host).FirstOrDefault()?.Spacing ?? 16;
+        line.ShowBefore(target, last, spacing);
     }
 
-    /// <summary>The line along a row of a tile, or along a topic of the sidebar, on the adorner layer of their control.</summary>
+    /// <summary>The control that shows these tiles: the board, or a zone of the canvas.</summary>
+    private ItemsControl? TilesHostOf(IReadOnlyList<TileViewModel> tiles) =>
+        ReferenceEquals(tiles, ViewModel.Tiles)
+            ? TilesControl
+            : AllDescendants<ItemsControl>(ZonesControl).FirstOrDefault(control => ReferenceEquals(control.ItemsSource, tiles));
+
+    /// <summary>The line of the drag, on the layer of <paramref name="host"/>: made again when the drag goes to another control.</summary>
+    private InsertionAdorner? LineOn(UIElement host)
+    {
+        if (_insertionLine is { } current && ReferenceEquals(current.AdornedElement, host))
+            return current;
+        if (_insertionLine is { } old)
+            AdornerLayer.GetAdornerLayer(old.AdornedElement)?.Remove(old);
+        _insertionLine = null;
+        if (AdornerLayer.GetAdornerLayer(host) is not { } layer)
+            return null;
+        _insertionLine = new InsertionAdorner(host, (Brush)FindResource("Brace.Accent"));
+        layer.Add(_insertionLine);
+        return _insertionLine;
+    }
+
+    /// <summary>The line along a topic of the sidebar, on the adorner layer of the tree.</summary>
     private void ShowLine(ref InsertionAdorner? line, UIElement host, FrameworkElement row, bool atBottom)
     {
         if (line is null)
@@ -1702,6 +1891,19 @@ public partial class PanelView : UserControl
         while (node is not null and not T)
             node = node is Visual or Visual3D ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node);
         return node as T;
+    }
+
+    /// <summary>Every descendant of type <typeparamref name="T"/>, those inside one another too, in visual order.</summary>
+    private static IEnumerable<T> AllDescendants<T>(DependencyObject node) where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
+        {
+            var child = VisualTreeHelper.GetChild(node, i);
+            if (child is T found)
+                yield return found;
+            foreach (var deeper in AllDescendants<T>(child))
+                yield return deeper;
+        }
     }
 
     /// <summary>The outermost descendants of type <typeparamref name="T"/>, in visual order.</summary>

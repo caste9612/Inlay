@@ -19,6 +19,16 @@ public sealed class TileGridPanel : Panel
 
     public static void SetColumns(DependencyObject element, int value) => element.SetValue(ColumnsProperty, value);
 
+    /// <summary>A fixed number of columns, each <see cref="MinColumnWidth"/> wide when nothing limits the width: a zone of the canvas. 0 for as many as fit, as on the board.</summary>
+    public static readonly DependencyProperty FixedColumnsProperty = DependencyProperty.Register(
+        nameof(FixedColumns), typeof(int), typeof(TileGridPanel), new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsMeasure));
+
+    public int FixedColumns
+    {
+        get => (int)GetValue(FixedColumnsProperty);
+        set => SetValue(FixedColumnsProperty, value);
+    }
+
     public double MinColumnWidth { get; set; } = 280;
 
     public double Spacing { get; set; } = 16;
@@ -30,7 +40,8 @@ public sealed class TileGridPanel : Panel
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        var width = double.IsInfinity(availableSize.Width) ? MinColumnWidth * 3 + Spacing * 2 : availableSize.Width;
+        var unbounded = FixedColumns > 0 ? FixedColumns : 3;
+        var width = double.IsInfinity(availableSize.Width) ? MinColumnWidth * unbounded + Spacing * (unbounded - 1) : availableSize.Width;
         var columns = ColumnsFor(width);
         var columnWidth = WidthOfColumn(width, columns);
         var height = 0.0;
@@ -84,7 +95,8 @@ public sealed class TileGridPanel : Panel
 
     private double WidthOf(int span, double columnWidth) => span * columnWidth + (span - 1) * Spacing;
 
-    private int ColumnsFor(double width) => Math.Max(1, (int)((width + Spacing) / (MinColumnWidth + Spacing)));
+    private int ColumnsFor(double width) =>
+        FixedColumns > 0 ? FixedColumns : Math.Max(1, (int)((width + Spacing) / (MinColumnWidth + Spacing)));
 
     private double WidthOfColumn(double width, int columns) => Math.Max(0, (width - Spacing * (columns - 1)) / columns);
 }

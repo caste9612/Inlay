@@ -46,8 +46,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private bool _noticeFollows;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsSearching), nameof(IsBoardVisible))]
+    [NotifyPropertyChangedFor(nameof(IsSearching), nameof(IsBoardVisible), nameof(IsCanvasVisible))]
     private string _query = "";
+
+    /// <summary>The canvas instead of the board: the whole archive at once.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsBoardVisible), nameof(IsCanvasVisible), nameof(ViewIndex))]
+    private bool _isCanvasShown;
 
     /// <summary>Where the board's topic sits, like "Lavoro › Clienti"; empty for topics in the root.</summary>
     [ObservableProperty]
@@ -112,6 +117,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Raised when items were selected after a reload (renamed, moved, pasted): the view focuses them.</summary>
     public event EventHandler? SelectionRestored;
 
+    /// <summary>«Mostra» on the canvas: the view flies to the tile of this folder, where the items are selected.</summary>
+    public event EventHandler<string>? ShowOnCanvasRequested;
+
     /// <summary>
     /// Raised after the topics and the board were read again. Their elements are new, so the view puts back the
     /// keyboard focus if it was on one of the old ones.
@@ -125,6 +133,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<TileViewModel> Tiles { get; } = [];
 
     public ObservableCollection<SearchResultViewModel> Results { get; } = [];
+
+    /// <summary>The zones of the canvas, read when it is shown.</summary>
+    public CanvasViewModel Canvas { get; } = new();
 
     public string Root => _root;
 
@@ -140,7 +151,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public bool IsSearching => !string.IsNullOrWhiteSpace(Query);
 
-    public bool IsBoardVisible => !IsSearching;
+    public bool IsBoardVisible => !IsSearching && !IsCanvasShown;
+
+    public bool IsCanvasVisible => !IsSearching && IsCanvasShown;
+
+    /// <summary>For the switch «Bacheca | Tela»: 0 for the board, 1 for the canvas.</summary>
+    public int ViewIndex
+    {
+        get => IsCanvasShown ? 1 : 0;
+        set => IsCanvasShown = value == 1;
+    }
 
     public bool HasInboxItems => InboxCount > 0;
 
@@ -280,9 +300,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Whether a file or folder waits to be sorted: dragged away from there, it is moved even to another drive.</summary>
     public bool IsInInbox(string path) => _reader.IsInInbox(path);
 
-    /// <summary>The selected items of the board, or of the search results while searching.</summary>
+    /// <summary>The selected items of the board or of the canvas, or of the search results while searching.</summary>
     public IReadOnlyList<ItemViewModel> SelectedItems() =>
-        (IsSearching ? Results.Cast<ItemViewModel>() : Tiles.SelectMany(tile => tile.Items)).Where(item => item.IsSelected).ToList();
+        (IsSearching ? Results.Cast<ItemViewModel>() : ShownTiles.SelectMany(tile => tile.Items)).Where(item => item.IsSelected).ToList();
+
+    /// <summary>The tiles on screen: those of the board, or those of every zone of the canvas.</summary>
+    public IEnumerable<TileViewModel> ShownTiles => IsCanvasShown ? Canvas.AllTiles() : Tiles;
+
+    /// <summary>The tiles next to this one: on its board, or in its zone of the canvas.</summary>
+    public IReadOnlyList<TileViewModel> SiblingsOf(TileViewModel tile) =>
+        Tiles.Contains(tile) ? Tiles : Canvas.ZoneWith(tile)?.Tiles ?? (IReadOnlyList<TileViewModel>)Tiles;
 
     // ---- Opening ----
 
@@ -328,7 +355,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _cutPaths.Clear();
         if (cut)
             _cutPaths.UnionWith(paths);
-        foreach (var item in Tiles.SelectMany(tile => tile.Items).Concat(Results))
+        // On both views: switching from one to the other, the items cut still look so.
+        foreach (var item in Tiles.Concat(Canvas.AllTiles()).SelectMany(tile => tile.Items).Concat(Results))
             item.IsCut = _cutPaths.Contains(item.Item.FullPath);
         Status = cut
             ? $"{Count(items.Count, "elemento pronto", "elementi pronti")} da spostare: incolla con Ctrl+V dove vuoi."
@@ -437,7 +465,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _selectedTopicPath = topic.Topic.RelativePath;
         IsInboxShown = false;
         Reload();
-        if (Tiles.FirstOrDefault(tile => SamePath(tile.FolderPath, path)) is { } tile)
+        if (ShownTiles.FirstOrDefault(tile => SamePath(tile.FolderPath, path)) is { } tile)
             BeginRename(tile);
     }
 
@@ -641,6 +669,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (Notice is not { ShowFolder: { } folder } notice)
             return;
         var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+        // On the canvas every tile is there already: the view flies to the right one.
+        if (IsCanvasShown)
+        {
+            SelectAfterReload(notice.Paths);
+            Reload();
+            ShowOnCanvasRequested?.Invoke(this, full);
+            return;
+        }
         if (SamePath(full, _reader.InboxPath) || !IsInsideArchive(full))
         {
             IsInboxShown = true;
@@ -831,7 +867,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         if (!tile.IsOwnFolder || ReferenceEquals(tile, before))
             return;
-        var order = Tiles.Where(t => t.IsOwnFolder).Select(t => t.RelativePath!).ToList();
+        var order = SiblingsOf(tile).Where(t => t.IsOwnFolder).Select(t => t.RelativePath!).ToList();
         var metadata = LoadMetadata();
         var previousOrder = order.ToDictionary(key => key, metadata.OrderOf, StringComparer.OrdinalIgnoreCase);
         order.Remove(tile.RelativePath!);
@@ -1381,10 +1417,59 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             SelectTopic(topic);
         else
             ShowEmptyArchive();
+        if (IsCanvasShown)
+            ReadCanvas();
 
         // What was just renamed, moved or pasted takes the place of the selection.
         ApplyPendingSelection();
         Reloaded?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Reads the board of every topic for the canvas, «Da smistare» first: the zones, tiles and items still there keep
+    /// their view models, with their selection and the names being typed.
+    /// </summary>
+    private void ReadCanvas()
+    {
+        List<ZoneModel> zones = [new(ZoneViewModel.InboxKey, "Da smistare", null, _reader.ReadInbox(), [])];
+        zones.AddRange(Topics.Select(ZoneModelOf));
+        ReconcileZones(Canvas.Zones, zones);
+    }
+
+    private ZoneModel ZoneModelOf(TopicViewModel topic) =>
+        new(topic.Topic.RelativePath, topic.Name, topic, _reader.ReadBoard(topic.Topic).Tiles, topic.Children.Select(ZoneModelOf).ToList());
+
+    private void ReconcileZones(ObservableCollection<ZoneViewModel> zones, IReadOnlyList<ZoneModel> models, bool nested = false) =>
+        Reconciler.Reconcile(zones, models, model => model.Key, zone => zone.Key,
+            model => FillZone(new ZoneViewModel(model.Key, model.Title, model.Topic) { IsNested = nested }, model),
+            (zone, model) => FillZone(zone, model));
+
+    private ZoneViewModel FillZone(ZoneViewModel zone, ZoneModel model)
+    {
+        // The tiles of «Da smistare» are folders outside the archive, as on its board.
+        if (model.Topic is null)
+            Reconciler.Reconcile(zone.Tiles, model.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, isGeneral: false), tile => tile.Key,
+                tile => new TileViewModel(tile.Title, tile.FolderPath, tile.Items, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
+        else
+            Reconciler.Reconcile(zone.Tiles, model.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, tile.IsGeneral), tile => tile.Key,
+                tile => new TileViewModel(tile, _root, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
+        ReconcileZones(zone.Children, model.Children, nested: true);
+        zone.Update(model.Title, model.Topic);
+        return zone;
+    }
+
+    /// <summary>A zone as read from the archive: its topic (none for «Da smistare»), its tiles and the zones inside it.</summary>
+    private sealed record ZoneModel(string Key, string Title, TopicViewModel? Topic, IReadOnlyList<Tile> Tiles, IReadOnlyList<ZoneModel> Children);
+
+    /// <summary>A name being typed in one view is confirmed before the other takes its place.</summary>
+    partial void OnIsCanvasShownChanging(bool value) => CommitAllEdits();
+
+    partial void OnIsCanvasShownChanged(bool value)
+    {
+        if (value)
+            ReadCanvas();
+        else
+            Reload();
     }
 
     private void ShowEmptyArchive()
@@ -1405,7 +1490,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (_selectAfterReload is not { } paths)
             return;
         _selectAfterReload = null;
-        var found = Tiles.SelectMany(tile => tile.Items).Where(item => paths.Contains(item.Item.FullPath)).ToList();
+        var found = ShownTiles.SelectMany(tile => tile.Items).Where(item => paths.Contains(item.Item.FullPath)).ToList();
         if (found.Count == 0)
             return;
         ClearSelection();
@@ -1414,7 +1499,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         SelectionRestored?.Invoke(this, EventArgs.Empty);
     }
 
-    private IEnumerable<ItemViewModel> SelectedBoardItems() => Tiles.SelectMany(tile => tile.Items).Where(item => item.IsSelected);
+    private IEnumerable<ItemViewModel> SelectedBoardItems() => ShownTiles.SelectMany(tile => tile.Items).Where(item => item.IsSelected);
 
     private void ClearSelection()
     {
@@ -1425,8 +1510,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Everything whose name can be edited in place: topics, tiles and items.</summary>
     private IEnumerable<RenameableViewModel> EditTargets() =>
         Topics.SelectMany(topic => topic.SelfAndDescendants())
-            .Concat<RenameableViewModel>(Tiles)
-            .Concat(Tiles.SelectMany(tile => tile.Items));
+            .Concat<RenameableViewModel>(ShownTiles)
+            .Concat(ShownTiles.SelectMany(tile => tile.Items));
 
     private void CancelAllEdits()
     {
@@ -1466,7 +1551,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     private ItemViewModel? FindItem(string path) =>
-        Tiles.SelectMany(tile => tile.Items).FirstOrDefault(item => SamePath(item.Item.FullPath, path));
+        ShownTiles.SelectMany(tile => tile.Items).FirstOrDefault(item => SamePath(item.Item.FullPath, path));
 
     private string? CreateFolder(string parentFolder, string name)
     {

@@ -67,6 +67,11 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
   - per prendere file da Explorer, tieni le due finestre affiancate, oppure fissa Quiver con il pin: resta sopra Explorer mentre trascini. Funziona anche cominciare a trascinare e premere `Alt+E` senza lasciare il tasto del mouse.
 - **Da smistare**: raccoglie in riquadri separati i file lasciati nella radice dell'archivio o nella cartella `_Da smistare` e quelli del Desktop, compreso quello comune a tutti gli utenti dove gli installer mettono i collegamenti. In **Impostazioni › Da smistare** si può togliere il Desktop o aggiungere Download. La ricerca trova anche questi file.
 - **Cercare**: basta scrivere. Con le frecce scegli un risultato, `Invio` lo apre ed `Esc` torna alla bacheca.
+- **Tela**: con l'interruttore **Bacheca | Tela** in alto a destra, tutto l'archivio insieme, con una zona per argomento e una per **Da smistare**; i sotto-argomenti stanno dentro la zona del loro argomento. Quiver ricorda l'ultima vista usata.
+  - La rotella zooma attorno al puntatore, dal 10 % al 200 %; sopra un riquadro che scorre lo fa scorrere, e con `Ctrl` zooma sempre. Anche `Ctrl++` e `Ctrl+-`, o i pulsanti accanto alla percentuale.
+  - Trascinando sul vuoto, o con la rotella premuta dovunque, si sposta la vista. Il doppio clic sul vuoto, **Mostra tutto** o `Ctrl+0` mettono in vista tutto l'archivio.
+  - Da lontano le zone mostrano il nome e i riquadri sono blocchi del loro colore; a metà strada i riquadri hanno titolo e numero di elementi; da vicino, dal 70 % circa, sono i riquadri della bacheca, con gli stessi gesti. Le righe dei riquadri arrivano appena la vista si ferma, così spostarsi e zoomare restano fluidi anche con archivi grandi.
+  - Un clic su un argomento nella barra laterale, o su **Da smistare**, vola alla sua zona; il doppio clic sul nome di una zona la inquadra, quello su un riquadro visto da lontano ci vola sopra. Un clic su un risultato della ricerca vola al suo riquadro, con l'elemento selezionato.
 - **Creare**:
   - un argomento: il pulsante + accanto ad **Argomenti**; dentro un altro argomento, tasto destro su quello;
   - un riquadro: **Nuovo riquadro**, `Ctrl+Maiusc+N` o tasto destro sulla bacheca;
@@ -104,7 +109,9 @@ L'icona di Quiver è una bacheca: tre riquadri, uno dei quali ambra, come un riq
 - `Quiver.exe --archive <cartella> --render-preview <file.png> [--topic Lavoro/Clienti] [--query testo] [--prompt | --prompt-link | --prompt-move | --notice] [--inbox [--desktop <cartella>]]` disegna il pannello in un'immagine senza aprire finestre. Serve per i controlli automatici:
   - `--prompt` aggiunge una richiesta di conferma, `--prompt-link` la domanda di **Nuovo collegamento…** con un errore, `--prompt-move` l'elenco di **Sposta in…**, `--notice` la barra di stato con **Annulla** e **Mostra**;
   - `--inbox` mostra **Da smistare**, e `--desktop` usa una cartella al posto del Desktop vero, come nelle prove;
-  - `--settings` disegna la finestra **Impostazioni**, con `--section archives|hotkey|inbox|windows` la pagina, e con `--welcome` com'è al primo avvio.
+  - `--settings` disegna la finestra **Impostazioni**, con `--section archives|hotkey|inbox|windows` la pagina, e con `--welcome` com'è al primo avvio;
+  - `--canvas` disegna la tela, tutta in vista; `--zoom 0.5` la disegna al 50 %, attorno al centro o, con `--topic`, attorno alla zona di quell'argomento.
+- `Quiver.exe --archive <cartella> --benchmark-canvas <file.txt>` misura quanto è fluida la tela su questo PC. Apre la tela dell'archivio in una finestra grande come lo schermo, senza prendere il focus, la muove per otto secondi sempre sullo stesso percorso (avvicinamento, spostamento da vicino, allontanamento, zoom avanti e indietro) e scrive nel file il tempo di apertura, i fotogrammi al secondo e quelli lenti; per ognuno dei più lenti, oltre 100 ms, cosa è successo prima (un cambio di livello, righe create, raccolte della memoria). L'archivio viene solo letto, e funziona anche con Quiver già aperto.
 
 ## Test e diagnostica
 
@@ -112,6 +119,7 @@ L'icona di Quiver è una bacheca: tre riquadri, uno dei quali ambra, come un riq
   - le regole dell'archivio, la ricerca, i metadati, Da smistare, i tipi di file, il ripristino dal Cestino (su un Cestino finto, costruito dal test) e il confronto byte per byte di una copia;
   - le operazioni sui file: spostare, copiare, rinominare, i collegamenti e i file trascinati da Outlook e dal browser. Il Cestino vero è escluso, per non riempirlo;
   - il pannello: rinomina sul posto, selezione dopo spostamenti e ricaricamenti, nuove cartelle e nuovi riquadri, ordine dei riquadri e degli argomenti, misura dei riquadri, ordinamento e ordine a mano degli elementi, `Ctrl+Z`, **Sposta in…** con le destinazioni recenti e i pulsanti della barra di stato;
+  - la tela: le zone con i sotto-argomenti dentro, la selezione e gli spostamenti tra zone, la camera (zoom attorno a un punto, voli, livelli), la disposizione delle zone senza sovrapposizioni, e le liste dei riquadri che restano senza righe finché non servono, alte come con le righe;
   - la coda delle operazioni sui file: un thread STA a parte, un'operazione dopo l'altra;
   - gli archivi: creare, aprire una cartella, rinominare e spostare l'archivio in uso, anche su un altro disco;
   - le impostazioni: la scorciatoia provata subito e tenuta solo se libera, gli interruttori salvati e applicati, su una Windows finta;

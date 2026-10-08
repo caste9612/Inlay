@@ -674,6 +674,83 @@ public sealed class MainViewModelTests : IDisposable
         Assert.False(tile.ByHand);
     });
 
+    // ---- La tela ----
+
+    [Fact]
+    public void TheCanvas_HasAZoneForEachTopic_TheInboxFirst_AndTopicsInsideTheirTopic() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        viewModel.PromoteTile(viewModel.Tiles.Single(tile => tile.Title == "Archivio"));
+
+        viewModel.IsCanvasShown = true;
+
+        Assert.False(viewModel.IsBoardVisible);
+        Assert.True(viewModel.IsCanvasVisible);
+        Assert.Equal([ZoneViewModel.InboxKey, "Lavoro", "Personale"], viewModel.Canvas.Zones.Select(zone => zone.Key));
+        var lavoro = viewModel.Canvas.Zones[1];
+        Assert.Same(viewModel.Topics.Single(topic => topic.Name == "Lavoro"), lavoro.Topic);
+        Assert.Equal(["Documenti"], lavoro.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["Lavoro/Archivio"], lavoro.Children.Select(zone => zone.Key));
+        // Archivio, now a topic, is a zone inside and no longer a tile.
+        Assert.Equal("1 riquadro · 2 elementi", lavoro.Summary);
+        Assert.Equal(["Casa"], viewModel.Canvas.Zones[2].Tiles.Select(tile => tile.Title));
+    });
+
+    [Fact]
+    public void OnTheCanvas_TheSelectionTakesItemsOfAnyZone_AndARenameKeepsIt() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        viewModel.IsCanvasShown = true;
+        var a = CanvasItem(viewModel, "a.txt");
+        var bollette = CanvasItem(viewModel, "bollette.csv");
+        a.IsSelected = true;
+        bollette.IsSelected = true;
+        Assert.Equal(["a.txt", "bollette.csv"], viewModel.SelectedItems().Select(item => item.Name));
+
+        bollette.IsSelected = false;
+        viewModel.BeginRename(a);
+        a.EditName = "c.txt";
+        Assert.Null(viewModel.CommitRename(a));
+
+        Assert.True(File.Exists(Path.Combine(_root, "Lavoro", "Documenti", "c.txt")));
+        Assert.Equal(["c.txt"], viewModel.SelectedItems().Select(item => item.Name));
+    });
+
+    [Fact]
+    public void AMoveBetweenZones_SelectsTheItemsWhereTheyLanded_AndTheZonesKeepTheirViewModels() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        viewModel.IsCanvasShown = true;
+        var personale = viewModel.Canvas.Zones.Single(zone => zone.Key == "Personale");
+        var casa = personale.Tiles.Single();
+
+        viewModel.Transfer([Path.Combine(_root, "Lavoro", "Documenti", "a.txt")], casa.FolderPath, TransferKind.Move);
+
+        Assert.Same(personale, viewModel.Canvas.Zones.Single(zone => zone.Key == "Personale"));
+        Assert.Same(casa, personale.Tiles.Single());
+        Assert.Equal(["a.txt", "bollette.csv"], casa.Items.Select(item => item.Name));
+        Assert.Equal(["a.txt"], viewModel.SelectedItems().Select(item => item.Name));
+        Assert.Equal("1 riquadro · 2 elementi", personale.Summary);
+    });
+
+    [Fact]
+    public void ATileMovedOnTheCanvas_ChangesPlaceInItsZone() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        viewModel.IsCanvasShown = true;
+        var lavoro = viewModel.Canvas.Zones.Single(zone => zone.Key == "Lavoro");
+        Assert.Equal(["Archivio", "Documenti"], lavoro.Tiles.Select(tile => tile.Title));
+
+        viewModel.MoveTile(lavoro.Tiles[1], before: lavoro.Tiles[0]);
+
+        Assert.Equal(["Documenti", "Archivio"], lavoro.Tiles.Select(tile => tile.Title));
+        viewModel.IsCanvasShown = false;
+        Assert.Equal(["Documenti", "Archivio"], viewModel.Tiles.Select(tile => tile.Title));
+    });
+
+    private static ItemViewModel CanvasItem(MainViewModel viewModel, string name) =>
+        viewModel.Canvas.AllTiles().SelectMany(tile => tile.Items).Single(item => item.Name == name);
+
     // ---- «Sposta in…» ----
 
     [Fact]

@@ -38,6 +38,12 @@ public partial class App : Application, ISettingsHost
             Shutdown(RenderPreview(options));
             return;
         }
+        // Next to a Quiver already running: it neither asks it for anything nor registers anything of its own.
+        if (options.BenchmarkOutput is not null)
+        {
+            CanvasBenchmark.Start(options, Shutdown);
+            return;
+        }
 
         DispatcherUnhandledException += OnUnhandledException;
         _singleInstance = new SingleInstance();

@@ -236,10 +236,14 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - con «Incolla collegamento» e con «Nuovo collegamento…», scrivendo un sito o un percorso;
   - da Outlook e dal browser arrivano allegati, messaggi e link.
 
-### v0.3 — trasloco e GlazeWM
+### v0.3 — la tela
 
-- **Trasloco dal desktop**: l'app legge la posizione delle icone, raggruppa quelle vicine e propone argomenti e riquadri. Si vede un'anteprima, si conferma e i file vengono spostati; il trasloco si può annullare.
-- **Workspace Home**.
+- **Tela**: tutto l'archivio su una superficie da spostare e zoomare, con un argomento per zona e le zone dove le mette l'utente. Piano in §11.
+
+### v0.4 — trasloco e GlazeWM
+
+- **Trasloco dal desktop**: l'app legge la posizione delle icone, raggruppa quelle vicine e propone argomenti e riquadri. Si vede un'anteprima, si conferma e i file vengono spostati; il trasloco si può annullare. Su questo PC il Desktop è stato svuotato a mano con la 0.2.2.
+- **Workspace Home**, con la tela a schermo intero.
 - **Argomento ↔ workspace**: se apri il pannello in un workspace collegato, si apre subito il suo argomento. "Apri argomento" porta sul workspace collegato e apre gli elementi segnati come "di avvio".
 
 ### Idee per dopo
@@ -339,8 +343,84 @@ Fatto:
 - l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo;
 - sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo. Tutto pubblicato come pre-release 0.2.1;
 - dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, pubblicata come pre-release 0.2.2;
-- svuotando il Desktop con la 0.2.2: le operazioni sui file in un thread a parte, perché la finestra si bloccava durante le copie; la barra laterale come navigazione; gli argomenti trascinabili; la misura dei riquadri dall'angolo; l'ordinamento e l'ordine a mano degli elementi. Verificato con i test (anche sul thread a parte, con un dispatcher come quello della finestra), con le anteprime e sull'archivio vero: letto in sola lettura con il codice della 0.2.2 e con il nuovo, dà gli stessi argomenti, riquadri ed elementi nello stesso ordine. Pubblicato come 0.2.3, la prima release normale: da qui niente più pre-release.
+- svuotando il Desktop con la 0.2.2: le operazioni sui file in un thread a parte, perché la finestra si bloccava durante le copie; la barra laterale come navigazione; gli argomenti trascinabili; la misura dei riquadri dall'angolo; l'ordinamento e l'ordine a mano degli elementi. Verificato con i test (anche sul thread a parte, con un dispatcher come quello della finestra), con le anteprime e sull'archivio vero: letto in sola lettura con il codice della 0.2.2 e con il nuovo, dà gli stessi argomenti, riquadri ed elementi nello stesso ordine. Pubblicato come 0.2.3, la prima release normale: da qui niente più pre-release;
+- le fasi 0 e 1 della tela (§11): `MainViewModel` con tutte le bacheche insieme, la vista Tela con una zona per argomento e i sotto-argomenti dentro, lo zoom a tre livelli e i voli dalla barra laterale, dalla ricerca e da «Mostra». Sull'archivio di prova pesante si apre in meno di 2 secondi invece di 14; misurata sul PC vero, va a 55-60 fotogrammi al secondo con l'archivio vero e a 45 con quello pesante. Verificate con i test, con le anteprime e con la misura, non ancora dal vivo.
 
-1. Installare dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta, con «Sposta in…» e «Invia a Quiver».
-2. Provare dal vivo la finestra nuova, le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
-3. Della v0.2 resta il menu completo di Windows; poi la v0.3 con GlazeWM. Gli aggiornamenti automatici restano per dopo.
+1. Provare dal vivo la 0.2.3: le copie lunghe, gli argomenti trascinati, l'angolo dei riquadri, «Ordina per» e l'ordine a mano.
+2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
+3. Provare dal vivo la tela; poi la fase 2, smistare sulla tela.
+4. Della v0.2 resta il menu completo di Windows; poi la v0.4 con GlazeWM. Gli aggiornamenti automatici restano per dopo.
+
+## 11. Piano: la tela
+
+*Deciso l'8 ottobre 2026. Le scelte: una vista alternativa alla bacheca; zone libere, come su una scrivania; la rotella zooma, come su una mappa; i sotto-argomenti dentro il loro argomento. Le fasi 0 e 1 sono fatte, verificate con i test, con le anteprime e con la misura delle prestazioni sul PC vero; manca la prova dal vivo dei gesti.*
+
+### L'idea
+
+Una superficie unica, da spostare e da zoomare, con tutto l'archivio insieme: la scrivania organizzata dell'idea di partenza. Ogni argomento è una **zona** con dentro i suoi riquadri, gli stessi della bacheca con le loro misure, colori e ordini; i sotto-argomenti sono zone dentro la zona del loro argomento. Anche **Da smistare** è una zona: si trascina da lì a qualunque riquadro dell'archivio senza cambiare argomento.
+
+Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non saltano quando cambiano la risoluzione o i monitor, come succedeva sul desktop (§1).
+
+### Come si usa
+
+- **Bacheca | Tela**: un interruttore in alto a destra, accanto a «Nuovo riquadro». Quiver ricorda l'ultima vista usata. La barra degli argomenti resta: un clic su un argomento vola sulla sua zona.
+- **Zoom**: la rotella zooma attorno al puntatore, dal 10 % al 200 % (al 100 % un riquadro è grande come sulla bacheca). Al livello vicino, sopra un riquadro che scorre la rotella lo fa scorrere; con `Ctrl` zooma sempre. `Ctrl+0` mostra tutto, `+` e `-` zoomano.
+- **Spostare la vista**: trascinando sul vuoto, oppure con la rotella premuta, dovunque. Doppio clic sul vuoto: tutto in vista; sul titolo di una zona: la zona inquadrata.
+- **Tre livelli**, secondo lo zoom:
+  - lontano, sotto il 35 %: le zone con il nome e i numeri, i riquadri come blocchi del loro colore;
+  - medio, fino al 70 %: i riquadri con titolo e numero, e i nomi dei sotto-argomenti;
+  - vicino: i riquadri veri, come sulla bacheca: selezione, doppio clic, tasto destro, rinomina, trascinamenti, `Ctrl+Z`.
+
+  Ai livelli lontano e medio un doppio clic su un riquadro ci vola sopra. Tra un livello e l'altro le soglie hanno un po' di margine, perché lo zoom lento non faccia sfarfallare.
+- **Selezione a rettangolo**: `Maiusc` + trascinare sul vuoto, perché trascinare sul vuoto sposta la vista.
+- **Le zone** si spostano trascinandone il titolo e si allargano a colonne dall'angolo, come i riquadri. Dentro, riquadri e sotto-argomenti si dispongono a righe nelle colonne della zona, come sulla bacheca.
+- **Ricerca**: come oggi; un clic su un risultato vola al suo riquadro con l'elemento selezionato, doppio clic o `Invio` lo aprono.
+- Per ogni archivio Quiver ricorda dov'era la vista.
+
+### Dove vanno le zone
+
+- La prima volta le dispone Quiver, nell'ordine della barra laterale, con Da smistare in alto a sinistra.
+- Appena l'utente sposta una zona, tutte tengono il posto in cui sono: da lì in poi i posti sono suoi.
+- Un argomento nuovo trova posto da solo, nel primo spazio libero sotto le zone che ci sono.
+- Quando una zona cresce (un riquadro nuovo, uno più alto) e arriva su un'altra, quella sotto scende quanto basta. Le zone non si coprono mai.
+- Nei metadati, per ogni argomento della radice e per Da smistare: `"canvas": { "x": 0, "y": 0, "columns": 3 }`, in punti della tela al 100 %. Per la tela non si sposta nessun file; spostare e allargare una zona si annulla con `Ctrl+Z`.
+
+### Come è fatta
+
+- **Core**: `CanvasPlacement` sistema le zone, dati i posti salvati e le misure delle zone: dove va una zona nuova, quali scendono quando una cresce. È geometria pura, con i suoi test.
+- **App**:
+  - la tela sta dentro `PanelView`, accanto alla bacheca: riquadri, menu e trascinamenti sono gli stessi, con lo stesso codice, e il modello del riquadro diventa una risorsa condivisa;
+  - `MainViewModel` oggi ragiona su una bacheca alla volta (selezione, appunti, rinomina, «Mostra», selezione dopo una ricarica): deve poterne gestire tante insieme. È il lavoro più delicato, quindi viene per primo, senza niente di visibile e con i test che ci sono;
+  - `CanvasViewModel`: le zone (argomento, riquadri, zone dentro, posto, colonne), la vista (centro e zoom) e il livello;
+  - la superficie: una sola trasformazione per zoom e spostamento, i voli animati con le durate e le curve di Brace, il testo in modalità Ideal perché resti nitido quando è scalato;
+  - le anteprime da riga di comando imparano `--canvas` e `--zoom`, per controllare la tela senza aprire finestre.
+- **Prestazioni**: misurate già nella fase 1. Su un archivio di prova pesante (24 argomenti, 192 riquadri, 4800 elementi) la prima tela, che creava subito tutti i riquadri con tutte le righe, si apriva in 14 secondi. Una riga da sola costa circa un millisecondo e mezzo, e nessuna sua parte pesa più delle altre: il rimedio è non creare le righe che non si vedono. Così ora:
+  - la lista di un riquadro nasce senza righe, ma già alta quanto le sue righe: le crea quando il riquadro è in vista al livello vicino e la vista sta ferma, poche alla volta tra un fotogramma e l'altro, e svegliandosi non sposta niente. La virtualizzazione di WPF non va bene, perché la selezione è legata ai view model (`IsSelected`);
+  - il livello arriva a tutto quello che sta sulla tela come proprietà ereditata (`CanvasSurface.Level`): migliaia di binding che cercavano la vista risalendo l'albero si risolvevano uno alla volta, e le zone cambiavano misura 155 volte prima di fermarsi;
+  - il menu di un riquadro si crea quando si apre, non per ogni riquadro (era un secondo su 192 riquadri);
+  - le zone si dispongono di nuovo solo quando cambia la misura di qualcuna.
+
+  La stessa tela ora si apre in meno di 2 secondi, processo compreso, e la bacheca è passata da 1,5 a 1,1.
+
+  Sul PC vero (schermo da 3492 × 1902 pixel a 125 %, accelerazione grafica di WPF attiva), con `--benchmark-canvas`, che muove la tela per otto secondi sempre sullo stesso percorso:
+  - l'archivio vero (13 riquadri) si apre in 0,6 secondi e va a 55-57 fotogrammi al secondo; qualche fotogramma da 33 ms quando si zooma da vicino, perché WPF ridisegna i testi a ogni scala;
+  - l'archivio pesante si apre in 2 secondi. All'inizio andava a 33 fotogrammi al secondo, con un blocco di oltre mezzo secondo passando al livello vicino: il cambio di livello scendeva in tutte le righe, e le righe si creavano mentre la vista si muoveva. Ora dentro un riquadro il livello resta fermo, e le righe arrivano quando la vista sta ferma da 120 ms: 45 fotogrammi al secondo, 60 spostandosi da vicino, il peggiore da 59 ms.
+
+  Se servirà ancora: da lontano le zone diventano immagini (`BitmapCache`).
+
+### Fasi
+
+0. **Preparazione**, senza niente di nuovo da vedere: `MainViewModel` con più bacheche insieme, il modello del riquadro condiviso. Tutti i test di oggi devono passare.
+1. **La tela da guardare**: l'interruttore, le zone disposte da Quiver (Da smistare compreso, i sotto-argomenti dentro), zoom e spostamento, i tre livelli, i voli dalla barra laterale e dalla ricerca, aprire e tasto destro al livello vicino. Più la misura delle prestazioni.
+2. **Smistare sulla tela**: trascinare tra riquadri di argomenti diversi e dalla zona Da smistare, il rettangolo con `Maiusc`, gli appunti, la rinomina, `Ctrl+Z`, le righe che mostrano dove va un riquadro o un elemento.
+3. **La tua scrivania**: zone da spostare e allargare, i posti nell'archivio, i nuovi argomenti sistemati da soli, le zone che scendono invece di coprirsi, la vista ricordata.
+4. **Dopo**: la minimappa, la tastiera tra le zone, il colore delle zone, e la modalità Home a schermo intero per il workspace di GlazeWM, con la tela dentro (§7).
+
+Ogni fase si chiude con i test e le anteprime e, prima di pubblicare, con la prova che l'archivio vero si legge come prima.
+
+### Rischi
+
+- **Prestazioni a 4K** su una GPU integrata: per questo la misura è nella prima fase, prima di costruirci sopra.
+- **Il passaggio a più bacheche** tocca il cuore di `MainViewModel`: i test di oggi fanno da rete, e la fase 0 non cambia niente di visibile.
+- **Gesti del mouse**: trascinare sul vuoto sposta la vista e il rettangolo vuole `Maiusc`. Va provato dal vivo se viene naturale.
+- **Compatibilità**: le versioni senza la tela non conoscono `"canvas"`. Tornando indietro, i posti delle zone si perderebbero alla prima modifica dei metadati; i file mai.
