@@ -37,7 +37,7 @@ Un'app dedicata che **sostituisce il desktop** come posto dove tenere e ritrovar
 
 - Un archivio è una cartella normale. La cartella nascosta `.quiver` dentro la segna come archivio e ne tiene i metadati, così l'archivio si porta dietro la sua disposizione dovunque vada.
 - Se ne possono avere più di uno. Le impostazioni del PC tengono l'elenco e quello in uso.
-- La finestra **Archivi** li gestisce:
+- La pagina **Archivi** della finestra Impostazioni li gestisce:
   - al primo avvio dà il benvenuto e chiede di crearne uno o di usare una cartella che si ha già;
   - poi si apre dal nome dell'archivio in alto nel pannello o dal menu della tray;
   - permette di passare da un archivio all'altro, rinominarli, spostarli e toglierli dall'elenco, senza toccare i file.
@@ -111,7 +111,7 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
 - `"kind": "topic"` serve solo sotto il primo livello, perché le cartelle nella radice sono già argomenti.
 - Se una cartella viene rinominata o spostata dall'app, i metadati si aggiornano subito. Se succede da Explorer con l'app aperta, l'app se ne accorge. Se succede ad app chiusa, i metadati rimasti senza cartella vengono riallineati all'avvio. Nel caso peggiore si perdono la posizione e il colore di un riquadro, mai i file.
 
-Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio.
+Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Quiver la prova all'istante e la tiene solo se Windows gliela dà.
 
 ## 5. Interfaccia
 
@@ -135,7 +135,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-- **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre la finestra **Archivi**) e il pulsante per chiudere.
+- **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre le Impostazioni sulla pagina **Archivi**) e il pulsante per chiudere.
 - **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare.
 - **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica.
 - **Barra di stato**: l'archivio e quanti elementi contiene, oppure l'esito dell'ultima operazione, e i tasti principali.
@@ -304,8 +304,9 @@ Fatto:
 - le icone di Brace per i tipi di file, gli archivi come i vault di Obsidian, l'installer e la release 0.2.0 su GitHub;
 - con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`, e che la finestra Archivi resta libera perché non si ridimensiona;
 - dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli;
-- l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo.
+- l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo;
+- sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer.
 
 1. Installare dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta, con «Sposta in…» e «Invia a Quiver».
-2. Provare dal vivo la finestra Archivi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
-3. Il resto della v0.2, nell'ordine deciso il 7 ottobre 2026: le impostazioni nell'app; il colore dei riquadri e la selezione a rettangolo. GlazeWM e gli aggiornamenti automatici restano per dopo.
+2. Provare dal vivo le impostazioni e l'installer, poi Quiver con GlazeWM: focus, più monitor.
+3. Il resto della v0.2, nell'ordine deciso il 7 ottobre 2026: il colore dei riquadri, con la tavolozza di Brace dal menu del riquadro, e la selezione a rettangolo. GlazeWM e gli aggiornamenti automatici restano per dopo.

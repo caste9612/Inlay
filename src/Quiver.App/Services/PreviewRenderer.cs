@@ -15,7 +15,7 @@ namespace Quiver.App.Services;
 internal static class PreviewRenderer
 {
     private static readonly Size PanelSize = new(1240, 780);
-    private static readonly Size ArchivesSize = new(864, 611);
+    private static readonly Size SettingsSize = new(944, 611);
 
     public static void Render(CommandLineOptions options)
     {
@@ -23,9 +23,9 @@ internal static class PreviewRenderer
         var root = options.ArchiveRoot ?? throw new ArgumentException("--render-preview richiede anche --archive <cartella>.");
         // No window drives the dispatcher here: the icons of Windows are read at once, on this thread.
         ShellIcons.Synchronous = true;
-        if (options.PreviewArchives)
+        if (options.PreviewSettings)
         {
-            RenderArchives(root, options.PreviewWelcome, output);
+            RenderSettings(root, options.PreviewWelcome, options.PreviewSection, output);
             return;
         }
 
@@ -69,10 +69,11 @@ internal static class PreviewRenderer
     }
 
     /// <summary>
-    /// The window of the archives, with the archive as the one in use and a second one that is not there; the first time,
-    /// with no archive yet. The settings are a copy in memory: nothing is saved.
+    /// The window of the settings on one of its pages, with the archive as the one in use and a second one that is not
+    /// there; the first time, with no archive yet. The settings are a copy in a file of their own: nothing of the PC
+    /// is touched, and what Windows says is made up.
     /// </summary>
-    private static void RenderArchives(string root, bool welcome, string output)
+    private static void RenderSettings(string root, bool welcome, string? section, string output)
     {
         var settings = new AppSettings { SavePath = Path.Combine(Path.GetTempPath(), "quiver-preview-settings.json") };
         if (!welcome)
@@ -80,8 +81,16 @@ internal static class PreviewRenderer
             settings.Archives.Add(Path.Combine(Path.GetPathRoot(root)!, "Archivio vecchio"));
             settings.UseArchive(root);
         }
-        var viewModel = new ArchivesViewModel(settings, new PreviewHost(welcome ? null : root), WindowsFolders.ReservedForArchives());
-        Save(new ArchivesView { DataContext = viewModel }, ArchivesSize, output);
+        var page = section?.ToLowerInvariant() switch
+        {
+            "hotkey" => SettingsSection.Hotkey,
+            "inbox" => SettingsSection.Inbox,
+            "windows" => SettingsSection.Windows,
+            _ => SettingsSection.Archives,
+        };
+        var viewModel = new SettingsViewModel(settings, new PreviewHost(welcome ? null : root), WindowsFolders.ReservedForArchives(),
+            new PreviewWindows(), page);
+        Save(new SettingsView { DataContext = viewModel }, SettingsSize, output);
     }
 
     private static void Save(FrameworkElement view, Size size, string output)
@@ -106,7 +115,7 @@ internal static class PreviewRenderer
         view.UpdateLayout();
     }
 
-    private sealed class PreviewHost(string? root) : IArchiveHost
+    private sealed class PreviewHost(string? root) : ISettingsHost
     {
         public string? CurrentRoot => root;
 
@@ -117,5 +126,23 @@ internal static class PreviewRenderer
         public void Release()
         {
         }
+
+        public bool TryUseHotkey(string shortcut) => true;
+
+        public void InboxChanged()
+        {
+        }
+    }
+
+    /// <summary>What Windows would say, made up: both switches on.</summary>
+    private sealed class PreviewWindows : IWindowsIntegration
+    {
+        public bool AutostartEnabled => true;
+
+        public bool TrySetAutostart(bool enabled) => true;
+
+        public bool SendToInstalled => true;
+
+        public bool TrySetSendTo(bool installed) => true;
     }
 }

@@ -1,0 +1,187 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using Quiver.App.Services;
+using Quiver.Core;
+
+namespace Quiver.App.ViewModels;
+
+/// <summary>What the settings ask of the app, beyond the archives.</summary>
+public interface ISettingsHost : IArchiveHost
+{
+    /// <summary>Registers the shortcut now. False when another program holds it: the one in use stays.</summary>
+    bool TryUseHotkey(string shortcut);
+
+    /// <summary>The places of «Da smistare» changed: the panel reads them again from the settings.</summary>
+    void InboxChanged();
+}
+
+/// <summary>The two things Quiver sets in Windows: its start with the session, and its place in the «Invia a» menu.</summary>
+public interface IWindowsIntegration
+{
+    bool AutostartEnabled { get; }
+
+    /// <returns>False when Windows refused the change.</returns>
+    bool TrySetAutostart(bool enabled);
+
+    bool SendToInstalled { get; }
+
+    /// <returns>False when the shortcut could not be written or removed.</returns>
+    bool TrySetSendTo(bool installed);
+}
+
+/// <summary>The pages of the window of the settings, in the order of its sidebar.</summary>
+public enum SettingsSection
+{
+    Archives,
+    Hotkey,
+    Inbox,
+    Windows,
+}
+
+/// <summary>
+/// The settings of this PC, each applied the moment it changes: the archives (as the vaults of Obsidian), the shortcut
+/// that opens the panel, what «Da smistare» shows, and what Quiver sets in Windows. The first time, before any archive,
+/// the window greets and only the archives matter.
+/// </summary>
+public sealed partial class SettingsViewModel : ObservableObject
+{
+    private readonly AppSettings _settings;
+    private readonly ISettingsHost _host;
+    private readonly IWindowsIntegration _windows;
+    private bool _applying;
+
+    [ObservableProperty]
+    private SettingsSection _section;
+
+    /// <summary>The shortcut in use, written like "Alt+E".</summary>
+    [ObservableProperty]
+    private string _hotkey;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHotkeyProblem))]
+    private string? _hotkeyProblem;
+
+    [ObservableProperty]
+    private bool _inboxDesktop;
+
+    [ObservableProperty]
+    private bool _inboxDownloads;
+
+    [ObservableProperty]
+    private bool _autostart;
+
+    [ObservableProperty]
+    private bool _sendTo;
+
+    [ObservableProperty]
+    private string _windowsProblem = "";
+
+    internal SettingsViewModel(AppSettings settings, ISettingsHost host, IReadOnlyList<ReservedFolder> reserved, IWindowsIntegration windows,
+        SettingsSection section = SettingsSection.Archives)
+    {
+        _settings = settings;
+        _host = host;
+        _windows = windows;
+        Archives = new ArchivesViewModel(settings, host, reserved);
+        _section = section;
+        _hotkey = settings.Hotkey;
+        _inboxDesktop = settings.InboxDesktop;
+        _inboxDownloads = settings.InboxDownloads;
+        _autostart = windows.AutostartEnabled;
+        _sendTo = windows.SendToInstalled;
+    }
+
+    public ArchivesViewModel Archives { get; }
+
+    /// <summary>The first time, before any archive: the window greets, and the other pages wait.</summary>
+    public bool IsWelcome => Archives.IsWelcome;
+
+    public bool HasHotkeyProblem => HotkeyProblem is not null;
+
+    /// <summary>A combination pressed in the field: tried at once, kept only if Windows gives it to Quiver.</summary>
+    /// <returns>Why it was not taken, shown under the field; null when it is in use now.</returns>
+    public string? UseHotkey(string shortcut)
+    {
+        shortcut = shortcut.Trim();
+        if (shortcut.Length == 0)
+            return HotkeyProblem = "Premi una combinazione con Ctrl, Alt o Win e un tasto.";
+        if (string.Equals(shortcut, _settings.Hotkey, StringComparison.OrdinalIgnoreCase))
+        {
+            HotkeyProblem = null;
+            return null;
+        }
+        if (!_host.TryUseHotkey(shortcut))
+            return HotkeyProblem = $"{shortcut} non è disponibile: forse la usa un altro programma. Resta {_settings.Hotkey}.";
+        _settings.Hotkey = shortcut;
+        Save();
+        Hotkey = shortcut;
+        HotkeyProblem = null;
+        return null;
+    }
+
+    partial void OnInboxDesktopChanged(bool value)
+    {
+        _settings.InboxDesktop = value;
+        Save();
+        _host.InboxChanged();
+    }
+
+    partial void OnInboxDownloadsChanged(bool value)
+    {
+        _settings.InboxDownloads = value;
+        Save();
+        _host.InboxChanged();
+    }
+
+    partial void OnAutostartChanged(bool value)
+    {
+        if (_applying)
+            return;
+        if (_windows.TrySetAutostart(value))
+        {
+            WindowsProblem = "";
+            return;
+        }
+        WindowsProblem = "Windows non ha permesso di cambiare l'avvio automatico.";
+        Revert(() => Autostart = _windows.AutostartEnabled);
+    }
+
+    partial void OnSendToChanged(bool value)
+    {
+        if (_applying)
+            return;
+        if (_windows.TrySetSendTo(value))
+        {
+            WindowsProblem = "";
+            return;
+        }
+        WindowsProblem = "Non sono riuscito a cambiare il menu «Invia a» di Explorer.";
+        Revert(() => SendTo = _windows.SendToInstalled);
+    }
+
+    /// <summary>Puts a switch back to what Windows says, without trying to apply that again.</summary>
+    private void Revert(Action restore)
+    {
+        _applying = true;
+        try
+        {
+            restore();
+        }
+        finally
+        {
+            _applying = false;
+        }
+    }
+
+    private void Save()
+    {
+        try
+        {
+            _settings.Save();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.Write($"Could not save the settings: {e.Message}");
+            WindowsProblem = $"Impossibile salvare le impostazioni: {e.Message}";
+        }
+    }
+}

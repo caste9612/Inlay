@@ -18,7 +18,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private const int MaxResults = 60;
 
     private readonly bool _live;
-    private readonly IReadOnlyList<InboxSource> _inboxSources;
+    private IReadOnlyList<InboxSource> _inboxSources;
     private readonly RecycleBin _recycleBin;
     private readonly RecentDestinations _recent;
     private readonly UndoHistory _history = new();
@@ -198,6 +198,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _indexing?.Cancel();
         _watcher?.Dispose();
         _watcher = null;
+    }
+
+    /// <summary>The places of «Da smistare» changed in the settings: the archive is read again with them, the history kept.</summary>
+    public void UseInboxSources(IReadOnlyList<InboxSource> sources)
+    {
+        _inboxSources = sources;
+        ReleaseArchive();
+        Reload();
+        if (!_live)
+            return;
+        RebuildIndex();
+        StartWatching();
     }
 
     public void SelectTopicByPath(string relativePath)

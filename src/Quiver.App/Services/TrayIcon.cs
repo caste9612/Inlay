@@ -11,16 +11,16 @@ internal sealed class TrayIcon : IDisposable
 {
     private readonly TaskbarIcon _taskbarIcon;
     private readonly System.Drawing.Icon _icon;
+    private readonly MenuItem _open;
 
-    public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action exit)
+    public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action showSettings, Action exit)
     {
         var menu = new ContextMenu();
-        menu.Items.Add(CreateItem("Apri Quiver", showPanel, shortcut));
+        menu.Items.Add(_open = CreateItem("Apri Quiver", showPanel, shortcut));
         menu.Items.Add(CreateItem("Apri l'archivio in Explorer", openArchiveFolder));
-        menu.Items.Add(CreateItem("Archivi…", showArchives));
         menu.Items.Add(new Separator());
-        menu.Items.Add(CreateAutostartItem());
-        menu.Items.Add(CreateSendToItem());
+        menu.Items.Add(CreateItem("Archivi…", showArchives));
+        menu.Items.Add(CreateItem("Impostazioni…", showSettings));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateItem("Esci", exit));
 
@@ -39,6 +39,13 @@ internal sealed class TrayIcon : IDisposable
 
     public void ShowWarning(string message) => _taskbarIcon.ShowNotification("Quiver", message, NotificationIcon.Warning);
 
+    /// <summary>The shortcut changed in the settings: the tooltip and the menu say the new one.</summary>
+    public void UpdateShortcut(string shortcut)
+    {
+        _taskbarIcon.ToolTipText = $"Quiver ({shortcut})";
+        _open.InputGestureText = shortcut;
+    }
+
     public void Dispose()
     {
         _taskbarIcon.Dispose();
@@ -51,36 +58,6 @@ internal sealed class TrayIcon : IDisposable
         var size = (int)Math.Round(16 * NativeMethods.GetDpiForSystem() / 96.0);
         using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/quiver.ico"))!.Stream;
         return new System.Drawing.Icon(stream, size, size);
-    }
-
-    private static MenuItem CreateAutostartItem()
-    {
-        var item = new MenuItem { Header = "Avvia con Windows", IsCheckable = true, IsChecked = Autostart.IsEnabled };
-        item.Click += (_, _) =>
-        {
-            if (!Autostart.TrySet(item.IsChecked))
-                item.IsChecked = Autostart.IsEnabled;
-        };
-        return item;
-    }
-
-    /// <summary>«Quiver» in the «Invia a» menu of Explorer, to send files into the archive from there.</summary>
-    private static MenuItem CreateSendToItem()
-    {
-        var item = new MenuItem
-        {
-            Header = "«Invia a Quiver» in Explorer",
-            ToolTip = "Nel menu «Invia a» del tasto destro di Explorer: i file scelti vengono mandati nell'archivio.",
-            IsCheckable = true,
-            IsChecked = SendToShortcut.IsInstalled(),
-        };
-        item.Click += (_, _) =>
-        {
-            var done = item.IsChecked ? SendToShortcut.TryInstall() : SendToShortcut.TryRemove();
-            if (!done)
-                item.IsChecked = SendToShortcut.IsInstalled();
-        };
-        return item;
     }
 
     private static MenuItem CreateItem(string header, Action action, string? shortcut = null)

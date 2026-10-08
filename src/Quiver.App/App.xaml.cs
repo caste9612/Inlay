@@ -10,15 +10,16 @@ namespace Quiver.App;
 /// Quiver lives in the notification area: the panel is created at startup and shown with the global shortcut,
 /// the tray icon, or a command from a second Quiver.exe (Quiver.exe --toggle, or --sort from «Invia a Quiver»).
 /// </summary>
-public partial class App : Application, IArchiveHost
+public partial class App : Application, ISettingsHost
 {
     private readonly CancellationTokenSource _stopping = new();
+    private readonly WindowsIntegration _windows = new();
     private SingleInstance? _singleInstance;
     private GlobalHotkey? _hotkey;
     private TrayIcon? _tray;
     private PanelWindow? _panel;
     private MainViewModel? _viewModel;
-    private ArchivesWindow? _archivesWindow;
+    private SettingsWindow? _settingsWindow;
     private AppSettings _settings = new();
 
     /// <summary>The archive chosen the first time, before the panel exists.</summary>
@@ -58,8 +59,8 @@ public partial class App : Application, IArchiveHost
         var root = options.ArchiveRoot ?? _settings.ArchiveRoot;
         if (root is null || !Directory.Exists(root))
         {
-            // The first time, or the archive is gone: the window of the archives greets and helps to choose one.
-            new ArchivesWindow(new ArchivesViewModel(_settings, this, WindowsFolders.ReservedForArchives())).ShowDialog();
+            // The first time, or the archive is gone: the window greets and helps to choose an archive.
+            new SettingsWindow(NewSettingsViewModel(SettingsSection.Archives)).ShowDialog();
             root = _chosenRoot;
             if (root is null)
             {
@@ -74,10 +75,11 @@ public partial class App : Application, IArchiveHost
             : WindowsFolders.InboxSources(_settings);
         _viewModel = new MainViewModel(root, inboxSources: inboxSources);
         _panel = new PanelWindow(_viewModel);
-        _panel.ArchivesRequested += (_, _) => ShowArchives();
+        _panel.ArchivesRequested += (_, _) => ShowSettings(SettingsSection.Archives);
         _panel.Prepare();
 
-        _tray = new TrayIcon(_settings.Hotkey, ShowPanelFromTray, OpenArchiveFolder, ShowArchives, Shutdown);
+        _tray = new TrayIcon(_settings.Hotkey, ShowPanelFromTray, OpenArchiveFolder,
+            () => ShowSettings(SettingsSection.Archives), () => ShowSettings(SettingsSection.Hotkey), Shutdown);
         _hotkey = new GlobalHotkey();
         _hotkey.Pressed += (_, _) => _panel.Toggle();
         if (!_hotkey.TryRegister(_settings.Hotkey))
@@ -85,7 +87,7 @@ public partial class App : Application, IArchiveHost
             Log.Write($"Could not register the shortcut {_settings.Hotkey}");
             _tray.ShowWarning(
                 $"La scorciatoia {_settings.Hotkey} non è disponibile: forse la usa un altro programma. " +
-                $"Puoi cambiarla in {AppSettings.FilePath}.");
+                "Puoi cambiarla in Impostazioni, dal menu dell'icona.");
         }
 
         _singleInstance.CommandReceived += (command, arguments) => Dispatcher.InvokeAsync(() => Execute(command, arguments));
@@ -147,20 +149,23 @@ public partial class App : Application, IArchiveHost
             _viewModel.OpenFolder(_viewModel.Root);
     }
 
-    /// <summary>The window of the archives, from the tray or the panel: one at a time.</summary>
-    private void ShowArchives()
+    /// <summary>The window of the settings, from the tray or the panel: one at a time, on the page asked for.</summary>
+    private void ShowSettings(SettingsSection section)
     {
-        _panel?.HidePanel("archives");
-        if (_archivesWindow is { } open)
+        _panel?.HidePanel("settings");
+        if (_settingsWindow is { } open)
         {
-            open.Activate();
+            open.Show(section);
             return;
         }
-        _archivesWindow = new ArchivesWindow(new ArchivesViewModel(_settings, this, WindowsFolders.ReservedForArchives()));
-        _archivesWindow.Closed += (_, _) => _archivesWindow = null;
-        _archivesWindow.Show();
-        _archivesWindow.Activate();
+        _settingsWindow = new SettingsWindow(NewSettingsViewModel(section));
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
+        _settingsWindow.Activate();
     }
+
+    private SettingsViewModel NewSettingsViewModel(SettingsSection section) =>
+        new(_settings, this, WindowsFolders.ReservedForArchives(), _windows, section);
 
     void IArchiveHost.Use(string root)
     {
@@ -174,6 +179,25 @@ public partial class App : Application, IArchiveHost
     }
 
     void IArchiveHost.Release() => _viewModel?.ReleaseArchive();
+
+    bool ISettingsHost.TryUseHotkey(string shortcut)
+    {
+        // Before the panel exists, the first time, the shortcut is registered at startup from the settings.
+        if (_hotkey is null)
+            return true;
+        if (_hotkey.TryRegister(shortcut))
+        {
+            _tray?.UpdateShortcut(shortcut);
+            Log.Write($"Shortcut changed to {shortcut}");
+            return true;
+        }
+        // The one in use comes back: the attempt let it go.
+        _hotkey.TryRegister(_settings.Hotkey);
+        Log.Write($"Could not register the shortcut {shortcut}, keeping {_settings.Hotkey}");
+        return false;
+    }
+
+    void ISettingsHost.InboxChanged() => _viewModel?.UseInboxSources(WindowsFolders.InboxSources(_settings));
 
     private static int RenderPreview(CommandLineOptions options)
     {
