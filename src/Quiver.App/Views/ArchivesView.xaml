@@ -96,6 +96,9 @@
                                                 <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                                 <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Path}"
                                                            TextTrimming="CharacterEllipsis" />
+                                                <!-- How much it takes, and the room left on its disk: counted in the background. -->
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Details}"
+                                                           TextTrimming="CharacterEllipsis" Visibility="{Binding Details, Converter={StaticResource NullToVisibility}}" />
                                             </StackPanel>
                                         </DockPanel>
                                     </DataTemplate>

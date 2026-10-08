@@ -98,6 +98,8 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
 {
   "version": 1,
   "folders": {
+    "Lavoro":                         { "color": "#5DA9FF", "autoColor": true },
+    "Personale":                      { "color": "none" },
     "Lavoro/Clienti":                 { "kind": "topic", "order": 0 },
     "Lavoro/Clienti/Rossi":           { "kind": "topic", "workspace": "3" },
     "Lavoro/Clienti/Bianchi":         { "kind": "topic" },
@@ -113,8 +115,9 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
 - `"size"`: le colonne della bacheca che il riquadro occupa (da 1 a 3) e le righe che mostra prima di scorrere (da 2 a 40; senza, segue i suoi elementi fino a circa dieci).
 - `"sort"`: come sono ordinati gli elementi del riquadro: per nome (`name`, quello di sempre, che non ha bisogno di voce), data di modifica (`modified`), tipo (`type`) o dimensione (`size`), ognuno nei due versi. Le cartelle vengono prima, come in Explorer.
 - `"items"`: l'ordine dato agli elementi trascinandoli, per nome. Quelli arrivati dopo seguono; un elemento rinominato da Quiver tiene il suo posto. Ordine a mano e `"sort"` si sostituiscono a vicenda.
+- `"color"`: il colore di un riquadro o di un argomento. Un argomento della radice lo riceve da Quiver la prima volta che lo vede, il meno usato dagli altri, con `"autoColor": true`; scelto a mano, il segno non c'è. `"none"` è un argomento lasciato senza colore apposta, che non ne riceve più. Un sotto-argomento senza un colore scelto per lui usa quello del suo argomento, e un riquadro non mostra il colore dato da Quiver quando era un argomento. Una versione di Quiver che non conosce `"autoColor"` lo perde al primo salvataggio e tiene il colore, come se fosse scelto.
 - Il riquadro «Generale» usa la voce del suo argomento, perché ne contiene i file.
-- Se una cartella viene rinominata o spostata dall'app, i metadati si aggiornano subito. Se succede da Explorer con l'app aperta, l'app se ne accorge. Se succede ad app chiusa, i metadati rimasti senza cartella vengono riallineati all'avvio. Nel caso peggiore si perdono la posizione e il colore di un riquadro, mai i file.
+- Se una cartella viene rinominata o spostata dall'app, i metadati la seguono subito. Se succede da Explorer, i metadati restano sotto il nome di prima: la cartella perde posizione, misura e colore, mai i file.
 
 Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Quiver la prova all'istante e la tiene solo se Windows gliela dà.
 
@@ -143,7 +146,8 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre le Impostazioni sulla pagina **Archivi**) e il pulsante per chiudere.
 - **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale.
 - **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica. Un riquadro può occupare fino a tre colonne: se non ci sta in quello che resta della riga, va a capo.
-- **Barra di stato**: l'archivio e quanti elementi contiene, oppure l'esito dell'ultima operazione, e i tasti principali.
+- **Barra di stato**, come in Explorer e come br-statusbar di Brace: a sinistra l'archivio, quanti elementi contiene e quanto occupano, oppure l'operazione in corso con i LED di br-activity; a destra la selezione e quanto pesa, lo spazio libero sul disco dell'archivio (in giallo sotto il 10 % o sotto 5 GB) e **?** con i tasti da sapere.
+- **Avvisi** (br-toast di Brace), in basso a destra: l'esito di un'operazione con **Annulla** e **Mostra**, e i problemi. Gli esiti si chiudono da soli dopo sei secondi, non mentre il puntatore è sopra; i problemi restano finché non si chiudono, e vanno anche nel log.
 
 ### Aspetto
 
@@ -190,7 +194,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - Un secondo clic lento su un elemento già selezionato lo rinomina. Mentre si scrive il nome, un clic altrove lo conferma.
 - Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Proprietà e Sposta nel Cestino. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
 - **Sposta in…** apre, sopra la bacheca, l'elenco dei riquadri e degli argomenti con i recenti in cima: si scrive una parte del nome e si conferma con un clic o con Invio. È lo stesso elenco che compare con **Invia a Quiver** dal menu «Invia a» di Explorer.
-- Dopo un'operazione, accanto al messaggio nella barra di stato ci sono **Annulla** e **Mostra**: la via per tornare indietro e quella per andare a vedere, senza tastiera.
+- Dopo un'operazione, nel suo avviso ci sono **Annulla** e **Mostra**: la via per tornare indietro e quella per andare a vedere, senza tastiera.
 - Mentre si trascina, un'etichetta accanto al puntatore dice cosa si ha in mano; un riquadro, una riga o un argomento che cambia posto mostra con una riga dove andrà.
 - Drag & drop:
   - in entrata, da Explorer, dalla posta (allegati e messaggi di Outlook) o dal browser (link e immagini);
@@ -344,7 +348,8 @@ Fatto:
 - sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo. Tutto pubblicato come pre-release 0.2.1;
 - dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, pubblicata come pre-release 0.2.2;
 - svuotando il Desktop con la 0.2.2: le operazioni sui file in un thread a parte, perché la finestra si bloccava durante le copie; la barra laterale come navigazione; gli argomenti trascinabili; la misura dei riquadri dall'angolo; l'ordinamento e l'ordine a mano degli elementi. Verificato con i test (anche sul thread a parte, con un dispatcher come quello della finestra), con le anteprime e sull'archivio vero: letto in sola lettura con il codice della 0.2.2 e con il nuovo, dà gli stessi argomenti, riquadri ed elementi nello stesso ordine. Pubblicato come 0.2.3, la prima release normale: da qui niente più pre-release;
-- le fasi 0 e 1 della tela (§11): `MainViewModel` con tutte le bacheche insieme, la vista Tela con una zona per argomento e i sotto-argomenti dentro, lo zoom a tre livelli e i voli dalla barra laterale, dalla ricerca e da «Mostra». Sull'archivio di prova pesante si apre in meno di 2 secondi invece di 14; misurata sul PC vero, va a 55-60 fotogrammi al secondo con l'archivio vero e a 45 con quello pesante. Verificate con i test, con le anteprime e con la misura, non ancora dal vivo.
+- le fasi 0 e 1 della tela (§11): `MainViewModel` con tutte le bacheche insieme, la vista Tela con una zona per argomento e i sotto-argomenti dentro, lo zoom a tre livelli e i voli dalla barra laterale, dalla ricerca e da «Mostra». Sull'archivio di prova pesante si apre in meno di 2 secondi invece di 14; misurata sul PC vero, va a 55-60 fotogrammi al secondo con l'archivio vero e a 45 con quello pesante. Verificate con i test, con le anteprime e con la misura, non ancora dal vivo.;
+- subito dopo, su richiesta: i colori degli argomenti, dati una volta da Quiver e tenuti nell'archivio, nella barra laterale e sulla tela; la barra di stato come in Explorer, con la selezione, lo spazio libero e i tasti da sapere sotto **?**; esiti e problemi in avvisi in basso a destra; quanto occupa ogni archivio in Impostazioni, e il controllo dello spazio prima di copiare. Verificato con i test e con le anteprime, non ancora dal vivo.
 
 1. Provare dal vivo la 0.2.3: le copie lunghe, gli argomenti trascinati, l'angolo dei riquadri, «Ordina per» e l'ordine a mano.
 2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.

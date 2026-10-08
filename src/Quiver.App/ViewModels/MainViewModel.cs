@@ -17,8 +17,10 @@ namespace Quiver.App.ViewModels;
 public sealed partial class MainViewModel : ObservableObject, IDisposable
 {
     private const int MaxResults = 60;
+    private const int MaxToasts = 3;
 
     private readonly bool _live;
+    private readonly bool _readOnly;
     private IReadOnlyList<InboxSource> _inboxSources;
     private readonly RecycleBin _recycleBin;
     private readonly RecentDestinations _recent;
@@ -40,10 +42,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private TopicViewModel? _selectedTopic;
     private string? _selectedTopicPath;
     private HashSet<string>? _selectAfterReload;
-    private string _summary = "";
     private bool _isPanelVisible;
     private bool _reloadPending;
-    private bool _noticeFollows;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSearching), nameof(IsBoardVisible), nameof(IsCanvasVisible))]
@@ -67,13 +67,34 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _resultsHeader = "";
 
+    /// <summary>
+    /// The last thing Quiver said: in a toast, or next to the LEDs of the status bar while an operation runs. Kept for the
+    /// tests, and for what reads back the problem just told.
+    /// </summary>
     [ObservableProperty]
     private string _status = "";
 
-    /// <summary>What the buttons next to the status message can do: take the last operation back, or go and see.</summary>
+    /// <summary>The operation under way, next to the LEDs of the status bar.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanShowNotice))]
-    private StatusNotice? _notice;
+    private string _activity = "";
+
+    /// <summary>"55.781 elementi · 2,3 GB", in the status bar once the archive has been read whole; empty before.</summary>
+    [ObservableProperty]
+    private string _archiveSummary = "";
+
+    /// <summary>"3 elementi selezionati · 12,4 MB", as in Explorer; null without a selection.</summary>
+    [ObservableProperty]
+    private string? _selectionSummary;
+
+    /// <summary>"120 GB liberi" on the disk of the archive, or "Poco spazio: 3,1 GB liberi"; null when Windows cannot say.</summary>
+    [ObservableProperty]
+    private string? _diskText;
+
+    [ObservableProperty]
+    private string? _diskToolTip;
+
+    [ObservableProperty]
+    private bool _isDiskLow;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasInboxItems))]
@@ -97,10 +118,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <param name="inboxSources">Places outside the archive shown in "Da smistare", like the Desktop.</param>
     /// <param name="recycleBin">Where Ctrl+Z finds what went to the Recycle Bin; by default, the one of Windows.</param>
     /// <param name="recent">Where files were sent last, offered first by «Sposta in…»; by default, those of this PC.</param>
+    /// <param name="readOnly">
+    /// For previews and measures, which look at the archive and write nothing into it: the colors new topics get are only
+    /// shown, not kept.
+    /// </param>
     internal MainViewModel(string root, bool live = true, IReadOnlyList<InboxSource>? inboxSources = null, RecycleBin? recycleBin = null,
-        RecentDestinations? recent = null)
+        RecentDestinations? recent = null, bool readOnly = false)
     {
         _live = live;
+        _readOnly = readOnly;
         _shell = live ? new FileOperationQueue() : null;
         _inboxSources = inboxSources ?? [];
         _recycleBin = recycleBin ?? new RecycleBin(WindowsFolders.RecycleBinOf);
@@ -137,10 +163,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>The zones of the canvas, read when it is shown.</summary>
     public CanvasViewModel Canvas { get; } = new();
 
+    /// <summary>The toasts in the bottom right corner, the newest last: what operations did, and what went wrong.</summary>
+    public ObservableCollection<ToastViewModel> Toasts { get; } = [];
+
+    /// <summary>For the tests: how much room the disk of a folder has; that of Windows in the app.</summary>
+    internal Func<string, DiskSpace?> DiskOf { get; set; } = DiskSpace.Of;
+
     public string Root => _root;
 
     /// <summary>The name of the archive in use: that of its folder.</summary>
     public string ArchiveName => Path.GetFileName(_root);
+
+    /// <summary>The archive in the status bar: where it is, and what a click on it does.</summary>
+    public string ArchiveToolTip => $"{_root}: apri in Explorer";
 
     public string InboxPath => _reader.InboxPath;
 
@@ -165,9 +200,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool HasInboxItems => InboxCount > 0;
 
     public bool CanUndo => _history.Last is not null;
-
-    /// <summary>«Mostra» has somewhere to go: the items of the last operation are in a folder.</summary>
-    public bool CanShowNotice => Notice?.ShowFolder is not null;
 
     /// <summary>For the tests: what Ctrl+Z would undo.</summary>
     internal UndoStep? LastUndoStep => _history.Last;
@@ -213,12 +245,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _index = null;
         _selectedTopic = null;
         _selectedTopicPath = null;
-        // What was done in another archive cannot be undone from this one.
+        // What was done in another archive cannot be undone from this one, nor told about here.
         _history.Clear();
+        Toasts.Clear();
         NotifyHistoryChanged();
         IsInboxShown = false;
         OnPropertyChanged(nameof(ArchiveName));
-        UpdateStatus();
+        OnPropertyChanged(nameof(ArchiveToolTip));
+        UpdateArchiveSummary();
         Reload();
         if (!_live)
             return;
@@ -261,8 +295,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Query = "";
         Prompt = null;
         Picker = null;
-        // The message about the last operation was for the previous time.
-        Status = _summary;
+        // The toasts were for the previous time.
+        Toasts.Clear();
         // Read again every time: the watcher reports names only, so a file saved meanwhile would show its old date,
         // and on a drive it cannot watch nothing else would notice the changes. A board is read in a moment.
         Reload();
@@ -294,7 +328,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void BuildIndexNow()
     {
         _index = SearchIndex.Build(_root, _reader.InboxSources);
-        UpdateStatus();
+        UpdateArchiveSummary();
     }
 
     /// <summary>Whether a file or folder waits to be sorted: dragged away from there, it is moved even to another drive.</summary>
@@ -332,11 +366,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             Clipboard.SetText(item.Item.FullPath);
-            Status = $"Percorso copiato: {item.Item.FullPath}";
+            Tell(ToastKind.Success, "Percorso copiato", item.Item.FullPath);
         }
         catch (ExternalException)
         {
-            Status = "Gli appunti sono occupati da un altro programma. Riprova tra un attimo.";
+            Tell(ToastKind.Danger, "Gli appunti sono occupati da un altro programma. Riprova tra un attimo.");
         }
     }
 
@@ -349,7 +383,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var paths = items.Select(item => item.Item.FullPath).ToList();
         if (!FileClipboard.Put(paths, cut))
         {
-            Status = "Gli appunti sono occupati da un altro programma. Riprova tra un attimo.";
+            Tell(ToastKind.Danger, "Gli appunti sono occupati da un altro programma. Riprova tra un attimo.");
             return;
         }
         _cutPaths.Clear();
@@ -358,29 +392,30 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         // On both views: switching from one to the other, the items cut still look so.
         foreach (var item in Tiles.Concat(Canvas.AllTiles()).SelectMany(tile => tile.Items).Concat(Results))
             item.IsCut = _cutPaths.Contains(item.Item.FullPath);
-        Status = cut
-            ? $"{Count(items.Count, "elemento pronto", "elementi pronti")} da spostare: incolla con Ctrl+V dove vuoi."
-            : $"{Count(items.Count, "elemento copiato", "elementi copiati")}.";
+        if (cut)
+            Tell(ToastKind.Info, $"{Count(items.Count, "elemento pronto", "elementi pronti")} da spostare: incolla con Ctrl+V dove vuoi.");
+        else
+            Tell(ToastKind.Success, $"{Count(items.Count, "elemento copiato", "elementi copiati")}.");
     }
 
     public async Task PasteInto(string folder)
     {
         if (FileClipboard.Read() is not { } clipboard || clipboard.Paths.Count == 0)
         {
-            Status = "Negli appunti non ci sono file da incollare.";
+            Tell(ToastKind.Info, "Negli appunti non ci sono file da incollare.");
             return;
         }
         var destination = Path.GetFullPath(folder);
         if (clipboard.Paths.Any(path => TransferRules.IsSameOrInside(destination, Path.GetFullPath(path))))
         {
-            Status = "Una cartella non si può incollare dentro se stessa.";
+            Tell(ToastKind.Warning, "Una cartella non si può incollare dentro se stessa.");
             return;
         }
         if (clipboard.Cut)
         {
             if (clipboard.Paths.All(path => SamePath(Path.GetDirectoryName(path) ?? "", destination)))
             {
-                Status = "I file sono già in questa cartella.";
+                Tell(ToastKind.Info, "I file sono già in questa cartella.");
                 return;
             }
             _cutPaths.Clear();
@@ -440,7 +475,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         if (FileClipboard.Read() is not { } clipboard || clipboard.Paths.Count == 0)
         {
-            Status = "Negli appunti non ci sono file da collegare.";
+            Tell(ToastKind.Info, "Negli appunti non ci sono file da collegare.");
             return Task.CompletedTask;
         }
         return Transfer(clipboard.Paths, folder, TransferKind.Link);
@@ -455,7 +490,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         topic ??= _selectedTopic;
         if (topic is null)
         {
-            Status = "Per creare un riquadro, scegli prima un argomento.";
+            Tell(ToastKind.Info, "Per creare un riquadro, scegli prima un argomento.");
             return;
         }
         var folder = topic.Topic.FullPath;
@@ -513,7 +548,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         // Search results show no field for the name.
         if (target is SearchResultViewModel)
         {
-            Status = "Dai risultati della ricerca non si rinomina: premi Esc e apri l'argomento che lo contiene.";
+            Tell(ToastKind.Info, "Dai risultati della ricerca non si rinomina: premi Esc e apri l'argomento che lo contiene.");
             return;
         }
         CancelAllEdits();
@@ -591,12 +626,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public async Task<bool> Recycle(IReadOnlyList<string> paths)
     {
-        using var turn = await BeginFileWork();
+        using var turn = await BeginFileWork(
+            paths.Count == 1 ? $"Sposto «{DisplayNameOf(paths[0])}» nel Cestino…" : $"Sposto {paths.Count} elementi nel Cestino…");
         var folders = paths.Where(Directory.Exists).Where(IsInsideArchive).ToList();
         var forgotten = SnapshotOf(paths);
         // The Recycle Bin dates what it receives: right after the deletion, it tells where each item went.
         var since = DateTime.UtcNow.AddSeconds(-2);
-        Status = paths.Count == 1 ? $"Sposto «{DisplayNameOf(paths[0])}» nel Cestino…" : $"Sposto {paths.Count} elementi nel Cestino…";
         var owner = OwnerWindow;
         var done = await RunShell(() => ShellFileOperations.Recycle(paths, owner));
         foreach (var folder in folders.Where(folder => !Directory.Exists(folder)))
@@ -605,16 +640,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (gone.Count > 0)
         {
             var inBin = _recycleBin.FindDeleted(gone, since);
-            Remember(new RecycleStep(inBin, gone.Count - inBin.Count, forgotten.Restrict(ArchiveKeys(gone))));
+            var step = new RecycleStep(inBin, gone.Count - inBin.Count, forgotten.Restrict(ArchiveKeys(gone)));
+            Remember(step);
             var where = inBin.Count == gone.Count ? "nel Cestino" : "stat{0} eliminat{0} definitivamente, senza passare dal Cestino";
             Report(gone.Count == 1
                     ? $"«{DisplayNameOf(gone[0])}» è {string.Format(where, "o")}."
                     : $"{gone.Count} elementi sono {string.Format(where, "i")}.",
-                new StatusNotice(null, gone));
+                new StatusNotice(null, gone), step, inBin.Count == gone.Count ? ToastKind.Success : ToastKind.Warning);
+        }
+        else if (done)
+        {
+            Tell(ToastKind.Info, "Non c'era niente da spostare nel Cestino.");
         }
         else
         {
-            Status = done ? "Non c'era niente da spostare nel Cestino." : "Lo spostamento nel Cestino non è riuscito.";
+            Tell(ToastKind.Danger, "Lo spostamento nel Cestino non è riuscito.");
         }
         ReloadUnlessEditing();
         return done;
@@ -663,10 +703,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         return null;
     }
 
-    /// <summary>«Mostra», next to the message of the last operation: the board goes where the items went, with them selected.</summary>
-    public void ShowNotice()
+    /// <summary>«Mostra» on the toast of an operation: the board goes where the items went, with them selected.</summary>
+    public void ShowNotice(StatusNotice notice)
     {
-        if (Notice is not { ShowFolder: { } folder } notice)
+        if (notice.ShowFolder is not { } folder)
             return;
         var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
         // On the canvas every tile is there already: the view flies to the right one.
@@ -700,7 +740,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         if (kind == TransferKind.None || paths.Count == 0)
             return;
-        using var turn = await BeginFileWork();
+        using var turn = await BeginFileWork(Doing(paths, kind, destinationFolder));
         await TransferNow(paths, destinationFolder, kind);
     }
 
@@ -715,6 +755,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             CreateLinks(paths, destinationFolder);
             return true;
+        }
+        // Files copied, or moved from another disk, need room where they go: better said now than a copy stopped halfway.
+        if (await NotEnoughRoom(paths, destinationFolder, kind) is { } shortage)
+        {
+            Tell(ToastKind.Warning, shortage.Title, shortage.Body);
+            UpdateDisk();
+            return false;
         }
 
         List<string> movedFolders = kind == TransferKind.Move
@@ -732,7 +779,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var namesBefore = kind == TransferKind.Copy ? EntryNames(destinationFolder) : null;
         // A copy next to the original gets a "- Copia" name, as in Explorer.
         var nextToOriginal = paths.Any(path => SamePath(Path.GetDirectoryName(path) ?? "", destinationFolder));
-        Status = Doing(paths, kind == TransferKind.Copy ? "Copio" : "Sposto", destinationFolder);
+        ShowActivity(Doing(paths, kind, destinationFolder));
         var owner = OwnerWindow;
         var done = await RunShell(() => kind == TransferKind.Copy
             ? ShellFileOperations.Copy(paths, destinationFolder, owner, renameOnCollision: nextToOriginal)
@@ -748,11 +795,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var arrived = paths.Select(path => Path.Combine(destinationFolder, Path.GetFileName(path))).ToList();
+        // What «Annulla» on the toast takes back: this operation, if it can be undone at all.
+        UndoStep? step = null;
         if (kind == TransferKind.Move)
         {
             var moved = landings.Where(item => !Path.Exists(item.From) && Path.Exists(item.To)).ToList();
             if (moved.Count > 0)
-                Remember(new MoveStep(moved, forgotten));
+                Remember(step = new MoveStep(moved, forgotten));
         }
         // The copies are the new names, each starting like an original: "a.txt", or "a - Copia.txt" next to it.
         // Without the names from before, the copies cannot be told from what was already there: no undo then.
@@ -764,15 +813,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 .Select(name => Path.Combine(destinationFolder, name))
                 .ToList();
             if (arrived.Count > 0)
-                Remember(new CopyStep(arrived));
+                Remember(step = new CopyStep(arrived));
         }
 
         var present = arrived.Where(Path.Exists).ToList();
+        var verb = kind == TransferKind.Copy ? ("copiato", "copiati") : ("spostato", "spostati");
+        // Stopped in the dialog of the shell, or by a problem the shell has just told about.
         if (!done)
-            Status = kind == TransferKind.Copy ? "La copia non è stata completata." : "Lo spostamento non è stato completato.";
+            Tell(ToastKind.Info, kind == TransferKind.Copy ? "La copia non è stata completata." : "Lo spostamento non è stato completato.");
         else if (present.Count > 0)
-            Report(Done(present, kind == TransferKind.Copy ? ("copiato", "copiati") : ("spostato", "spostati"), destinationFolder),
-                new StatusNotice(destinationFolder, present));
+            Report(Done(present, verb, destinationFolder), new StatusNotice(destinationFolder, present), step);
+        // Each one in the place of another with its name, as chosen in the dialog: done, with nothing new to point at.
+        else
+            Report(Done(paths, verb, destinationFolder), new StatusNotice(destinationFolder, []), step);
         // What arrived is selected, as in Explorer.
         SelectAfterReload(arrived);
         if (reload)
@@ -781,10 +834,36 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>"Sposto «a.txt» in «Casa»…", while the shell works.</summary>
-    private static string Doing(IReadOnlyList<string> paths, string verb, string folder) =>
-        paths.Count == 1
+    private static string Doing(IReadOnlyList<string> paths, TransferKind kind, string folder)
+    {
+        var verb = kind switch
+        {
+            TransferKind.Copy => "Copio",
+            TransferKind.Link => "Collego",
+            _ => "Sposto",
+        };
+        return paths.Count == 1
             ? $"{verb} «{DisplayNameOf(paths[0])}» in «{Path.GetFileName(folder)}»…"
             : $"{verb} {paths.Count} elementi in «{Path.GetFileName(folder)}»…";
+    }
+
+    /// <summary>
+    /// Why the files would not fit on the disk they go to: those copied, and those moved there from another disk, which
+    /// Windows copies before deleting them. Null when they fit, or when Windows cannot say how much room there is.
+    /// </summary>
+    private async Task<(string Title, string Body)?> NotEnoughRoom(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind)
+    {
+        var copied = kind == TransferKind.Copy ? paths : paths.Where(path => !ArchiveFolders.IsSameDrive(path, destinationFolder)).ToList();
+        if (copied.Count == 0 || DiskOf(destinationFolder) is not { } disk)
+            return null;
+        // Counted away from the window: a big folder takes a while.
+        var needed = _live ? await Task.Run(() => FolderSize.Of(copied)) : FolderSize.Of(copied);
+        if (needed <= disk.Free)
+            return null;
+        Log.Write($"Not enough room on {disk.Name} for {paths.Count} items: {needed} bytes needed, {disk.Free} free");
+        return ($"Su {disk.Name} non c'è abbastanza spazio",
+            $"Servono {ByteSize.Format(needed)} e ne restano {ByteSize.Format(disk.Free)}. Libera un po' di spazio, poi riprova.");
+    }
 
     /// <summary>
     /// Saves what another program drops without it being a file yet, like a mail attachment or a link from the browser.
@@ -803,13 +882,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             // Whatever the other program does wrong (COM errors come in many forms), the files saved so far keep their undo.
             Log.Write($"Could not save what was dropped: {e}");
-            Status = $"Non sono riuscito a salvare quello che hai trascinato: {e.Message}";
+            Tell(ToastKind.Danger, "Non sono riuscito a salvare quello che hai trascinato", e.Message);
         }
         if (created.Count > 0)
         {
-            Remember(new CopyStep(created));
+            var step = new CopyStep(created);
+            Remember(step);
             SelectAfterReload(created);
-            Report(Done(created, ("salvato", "salvati"), destinationFolder), new StatusNotice(destinationFolder, created));
+            Report(Done(created, ("salvato", "salvati"), destinationFolder), new StatusNotice(destinationFolder, created), step);
         }
         Reload();
     }
@@ -824,7 +904,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Status = $"Impossibile usare la cartella {folder}: {e.Message}";
+            Tell(ToastKind.Danger, $"Impossibile usare la cartella {folder}", e.Message);
             return false;
         }
     }
@@ -841,17 +921,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or COMException or ArgumentException)
             {
                 Log.Write($"Could not make a shortcut to {target}: {e}");
-                Status = $"Impossibile creare il collegamento a «{Path.GetFileName(target)}»: {e.Message}";
+                Tell(ToastKind.Danger, $"Impossibile creare il collegamento a «{Path.GetFileName(target)}»", e.Message);
             }
         }
         if (links.Count > 0)
         {
-            Remember(new LinkStep(links));
+            var step = new LinkStep(links);
+            Remember(step);
             SelectAfterReload(links);
             Report(links.Count == 1
                     ? $"Collegamento «{DisplayNameOf(links[0])}» creato in «{Path.GetFileName(destinationFolder)}»."
                     : $"{links.Count} collegamenti creati in «{Path.GetFileName(destinationFolder)}».",
-                new StatusNotice(destinationFolder, links));
+                new StatusNotice(destinationFolder, links), step);
         }
         Reload();
     }
@@ -894,14 +975,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        using var turn = await BeginFileWork();
+        using var turn = await BeginFileWork($"Sposto «{topic.Name}» in «{parent?.Name ?? ArchiveName}»…");
         var previousOrder = LoadMetadata().OrderOf(topic.Topic.RelativePath);
         var destination = parent?.Topic.FullPath ?? _root;
         var newPath = Path.Combine(destination, topic.Name);
         // Two topics with the same name would be merged into one: not something a drag should do.
         if (Path.Exists(newPath))
         {
-            Status = $"In «{parent?.Name ?? ArchiveName}» c'è già «{topic.Name}»: rinominane uno, poi riprova.";
+            Tell(ToastKind.Warning, $"In «{parent?.Name ?? ArchiveName}» c'è già «{topic.Name}»: rinominane uno, poi riprova.");
             return;
         }
         if (!await TransferNow([topic.Topic.FullPath], destination, TransferKind.Move, reload: false) || !Directory.Exists(newPath))
@@ -913,7 +994,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (_history.Last is MoveStep move)
         {
             _history.Pop();
-            Remember(new TopicMoveStep(move, previousOrder));
+            var topicMove = new TopicMoveStep(move, previousOrder);
+            // The toast of the move takes back all of it.
+            foreach (var toast in Toasts.Where(toast => ReferenceEquals(toast.UndoStep, move)))
+                toast.UndoStep = topicMove;
+            Remember(topicMove);
         }
         var newKey = KeyOf(newPath);
         var order = (parent?.Children ?? Topics).Select(sibling => sibling.Topic.RelativePath)
@@ -1030,8 +1115,30 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         if (tile.RelativePath is not { } key)
             return;
-        var previous = LoadMetadata().ColorOf(key);
-        ChangeMetadata(metadata => metadata.SetColor(key, color), new ColorStep(key, tile.Title, previous));
+        var metadata = LoadMetadata();
+        ChangeMetadata(m => m.SetColor(key, color), new ColorStep(key, tile.Title, metadata.ColorOf(key), metadata.IsColorAutomatic(key)));
+    }
+
+    /// <summary>
+    /// «Colore» of a topic: one of the palette, none on purpose (<see cref="TopicColors.None"/>), or with null the automatic
+    /// one: for a topic of the root the color least used by the others, for one inside another that of its topic. Kept in
+    /// the metadata of the archive; Ctrl+Z takes it back.
+    /// </summary>
+    public void SetTopicColor(TopicViewModel topic, string? color)
+    {
+        var key = topic.Topic.RelativePath;
+        var metadata = LoadMetadata();
+        ChangeMetadata(Choose, new ColorStep(key, topic.Name, metadata.ColorOf(key), metadata.IsColorAutomatic(key)));
+
+        bool Choose(ArchiveMetadata m)
+        {
+            if (color is not null)
+                return m.SetColor(key, color);
+            if (topic.Parent is not null)
+                return m.SetColor(key, null);
+            var others = Topics.Where(other => !ReferenceEquals(other, topic)).Select(other => m.ColorOf(other.Topic.RelativePath));
+            return m.SetColor(key, TopicColors.LeastUsed(others), automatic: true);
+        }
     }
 
     // ---- Undo ----
@@ -1043,14 +1150,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public async Task Undo()
     {
         CommitAllEdits();
-        using var turn = await BeginFileWork();
+        using var turn = await BeginFileWork("Annullo l'ultima operazione…");
         if (_history.Pop() is not { } step)
         {
-            Status = "Non c'è niente da annullare.";
+            Tell(ToastKind.Info, "Non c'è niente da annullare.");
             return;
         }
+        // Its toast offered «Annulla»: now it is done, and what the undo did takes its place.
+        foreach (var toast in Toasts.Where(toast => ReferenceEquals(toast.UndoStep, step)).ToList())
+            Toasts.Remove(toast);
         NotifyHistoryChanged();
-        Status = step switch
+        var outcome = step switch
         {
             MoveStep move => await UndoMove(move),
             TopicMoveStep topicMove => await UndoTopicMove(topicMove),
@@ -1067,30 +1177,42 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             SizeStep size => UndoSize(size),
             _ => throw new InvalidOperationException($"Unknown undo step {step.GetType().Name}"),
         };
+        if (outcome is { } said)
+            Tell(said.Kind, said.Message);
         ReloadUnlessEditing();
     }
 
-    private string UndoColor(ColorStep step)
+    /// <summary>What an undo has to say, and of what kind; null when a problem with the metadata has been told already.</summary>
+    private readonly record struct Outcome(ToastKind Kind, string Message)
+    {
+        public static Outcome Done(string message) => new(ToastKind.Success, message);
+
+        public static Outcome Refused(string message) => new(ToastKind.Warning, message);
+
+        public static Outcome Failed(string message) => new(ToastKind.Danger, message);
+    }
+
+    private Outcome? UndoColor(ColorStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return $"«{step.Name}» non c'è più.";
-        if (!UpdateMetadata(metadata => metadata.SetColor(step.Key, step.Previous)))
-            return Status;
-        return step.Previous is null ? $"«{step.Name}» è di nuovo senza colore." : $"«{step.Name}» ha di nuovo il colore di prima.";
+            return Outcome.Refused($"«{step.Name}» non c'è più.");
+        if (!UpdateMetadata(metadata => metadata.SetColor(step.Key, step.Previous, step.WasAutomatic)))
+            return null;
+        return Outcome.Done(step.Previous is null ? $"«{step.Name}» è di nuovo senza colore." : $"«{step.Name}» ha di nuovo il colore di prima.");
     }
 
     /// <summary>The undo did not happen, most likely because a file is open in another program: Ctrl+Z can try again.</summary>
     private void KeepForRetry(UndoStep step) => Remember(step);
 
-    private async Task<string> UndoMove(MoveStep step)
+    private async Task<Outcome?> UndoMove(MoveStep step)
     {
         // Only what is still where it went goes back, and only to a place that is still free.
         var items = step.Items.Where(item => Path.Exists(item.To) && !Path.Exists(item.From)).ToList();
         if (items.Count == 0)
-            return "Lo spostamento non si può annullare: nel frattempo gli elementi sono stati spostati o rinominati.";
-        Status = items.Count == 1
+            return Outcome.Refused("Lo spostamento non si può annullare: nel frattempo gli elementi sono stati spostati o rinominati.");
+        ShowActivity(items.Count == 1
             ? $"Rimetto «{DisplayNameOf(items[0].To)}» dov'era…"
-            : $"Rimetto {items.Count} elementi dov'erano…";
+            : $"Rimetto {items.Count} elementi dov'erano…");
         var owner = OwnerWindow;
         await RunShell(() => ShellFileOperations.MoveEach(
             items.Select(item => item.To).ToList(), items.Select(item => item.From).ToList(), owner));
@@ -1098,23 +1220,23 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (back.Count == 0)
         {
             KeepForRetry(step);
-            return "Lo spostamento non è stato annullato: forse un elemento è aperto in un altro programma. Riprova con Ctrl+Z.";
+            return Outcome.Failed("Lo spostamento non è stato annullato: forse un elemento è aperto in un altro programma. Riprova con Ctrl+Z.");
         }
         FollowBack(back, step.Forgotten);
         SelectAfterReload(back.Select(item => item.From));
         var done = back.Count == 1
             ? $"Spostamento annullato: «{DisplayNameOf(back[0].From)}» è di nuovo in «{FolderName(back[0].From)}»."
             : $"Spostamento annullato: {back.Count} elementi sono tornati dov'erano.";
-        return done + LeftAlone(step.Items.Count - back.Count);
+        return Outcome.Done(done + LeftAlone(step.Items.Count - back.Count));
     }
 
-    private async Task<string> UndoTopicMove(TopicMoveStep step)
+    private async Task<Outcome?> UndoTopicMove(TopicMoveStep step)
     {
-        var message = await UndoMove(step.Move);
+        var outcome = await UndoMove(step.Move);
         // The folder came back with the place it had taken over there: it gets its own back.
         if (step.Move.Items is [var item] && Directory.Exists(item.From) && !Directory.Exists(item.To))
             UpdateMetadata(metadata => metadata.SetOrder(KeyOf(item.From), step.PreviousOrder));
-        return message;
+        return outcome;
     }
 
     /// <summary>
@@ -1151,14 +1273,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Undoes copies and shortcuts made by Quiver: they go to the Recycle Bin, never deleted for good.</summary>
     /// <param name="them">With the article, as in "le copie".</param>
     /// <param name="many">As in "3 copie sono nel Cestino".</param>
-    private async Task<string> RecycleCreated(UndoStep step, IReadOnlyList<string> created, string undone, string them, string many)
+    private async Task<Outcome?> RecycleCreated(UndoStep step, IReadOnlyList<string> created, string undone, string them, string many)
     {
         var existing = created.Where(Path.Exists).ToList();
         if (existing.Count == 0)
-            return $"Non c'è niente da annullare: {them} non ci sono più.";
+            return Outcome.Refused($"Non c'è niente da annullare: {them} non ci sono più.");
         // Without a Recycle Bin, deleting is for good, changes made since included: not something an undo may do.
         if (!existing.All(RecycleBin.IsAvailableFor))
-            return $"Annullamento non fatto: su questo disco non c'è il Cestino, quindi non si potrebbe più recuperare niente. Se {them} non servono, usa Canc.";
+            return Outcome.Refused($"Annullamento non fatto: su questo disco non c'è il Cestino, quindi non si potrebbe più recuperare niente. Se {them} non servono, usa Canc.");
         var folders = existing.Where(Directory.Exists).Where(IsInsideArchive).ToList();
         var owner = OwnerWindow;
         await RunShell(() => ShellFileOperations.Recycle(existing, owner));
@@ -1168,62 +1290,62 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (removed.Count == 0)
         {
             KeepForRetry(step);
-            return $"Annullamento non riuscito: {them} sono ancora lì. Riprova con Ctrl+Z.";
+            return Outcome.Failed($"Annullamento non riuscito: {them} sono ancora lì. Riprova con Ctrl+Z.");
         }
         var done = removed.Count == 1
             ? $"{undone}: «{DisplayNameOf(removed[0])}» è nel Cestino."
             : $"{undone}: {removed.Count} {many} sono nel Cestino.";
-        return done + LeftAlone(created.Count - removed.Count);
+        return Outcome.Done(done + LeftAlone(created.Count - removed.Count));
     }
 
-    private string UndoRename(RenameStep step)
+    private Outcome? UndoRename(RenameStep step)
     {
         var newName = DisplayNameOf(step.To);
         if (!Path.Exists(step.To))
-            return $"La rinomina non si può annullare: «{newName}» non c'è più.";
+            return Outcome.Refused($"La rinomina non si può annullare: «{newName}» non c'è più.");
         var onlyTheCaseChanged = string.Equals(step.From, step.To, StringComparison.OrdinalIgnoreCase);
         if (!onlyTheCaseChanged && Path.Exists(step.From))
-            return $"La rinomina non si può annullare: nella cartella c'è già «{DisplayNameOf(step.From)}».";
+            return Outcome.Refused($"La rinomina non si può annullare: nella cartella c'è già «{DisplayNameOf(step.From)}».");
         if (!RenameNow(step.To, step.From))
         {
             KeepForRetry(step);
-            return $"Impossibile rinominare «{newName}»: forse è aperto in un altro programma. Riprova con Ctrl+Z.";
+            return Outcome.Failed($"Impossibile rinominare «{newName}»: forse è aperto in un altro programma. Riprova con Ctrl+Z.");
         }
         // The metadata follows the folder back, and so does the selection of a topic.
         KeepPlace(step.To, step.From);
         if (IsInsideArchive(step.From))
             FollowFolder(KeyOf(step.To), KeyOf(step.From));
         SelectAfterReload([step.From]);
-        return $"Rinomina annullata: si chiama di nuovo «{DisplayNameOf(step.From)}».";
+        return Outcome.Done($"Rinomina annullata: si chiama di nuovo «{DisplayNameOf(step.From)}».");
     }
 
-    private string UndoCreate(CreateStep step)
+    private Outcome? UndoCreate(CreateStep step)
     {
         var name = Path.GetFileName(step.Folder);
         try
         {
             if (!Directory.Exists(step.Folder))
-                return $"«{name}» non c'è più.";
+                return Outcome.Refused($"«{name}» non c'è più.");
             // Only an empty folder goes away for good: anything put in it since stays.
             if (Directory.EnumerateFileSystemEntries(step.Folder).Any())
-                return $"«{name}» non è più vuota, quindi resta. Se non ti serve, spostala nel Cestino con Canc.";
+                return Outcome.Refused($"«{name}» non è più vuota, quindi resta. Se non ti serve, spostala nel Cestino con Canc.");
             Directory.Delete(step.Folder);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             KeepForRetry(step);
-            return $"Impossibile togliere «{name}»: {e.Message}";
+            return Outcome.Failed($"Impossibile togliere «{name}»: {e.Message}");
         }
         // What it got meanwhile, like the mark of a topic, goes with it.
         if (IsInsideArchive(step.Folder))
             ForgetFolder(KeyOf(step.Folder));
-        return $"Annullata la creazione di «{name}».";
+        return Outcome.Done($"Annullata la creazione di «{name}».");
     }
 
-    private string UndoRecycle(RecycleStep step)
+    private Outcome? UndoRecycle(RecycleStep step)
     {
         if (step.Items.Count == 0)
-            return "Non si può ripristinare: Windows l'ha eliminato definitivamente, senza passare dal Cestino.";
+            return Outcome.Refused("Non si può ripristinare: Windows l'ha eliminato definitivamente, senza passare dal Cestino.");
         var restored = new List<RecycledItem>();
         var failed = new List<RecycledItem>();
         // A folder before what was inside it, in case both were deleted together.
@@ -1248,8 +1370,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (restored.Count == 0)
         {
             return failed.Count > 0
-                ? "Il ripristino non è riuscito: forse una cartella è aperta in un altro programma. Riprova con Ctrl+Z."
-                : "Nel Cestino non c'è più, oppure al suo posto c'è già un altro elemento.";
+                ? Outcome.Failed("Il ripristino non è riuscito: forse una cartella è aperta in un altro programma. Riprova con Ctrl+Z.")
+                : Outcome.Refused("Nel Cestino non c'è più, oppure al suo posto c'è già un altro elemento.");
         }
         ShellNotify.RecycleBinChanged();
         RestoreMetadata(step.Forgotten.Restrict(ArchiveKeys(restored.Select(item => item.OriginalPath))));
@@ -1263,10 +1385,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             1 => " Un elemento era stato eliminato definitivamente.",
             var count => $" {count} elementi erano stati eliminati definitivamente.",
         };
-        return done + LeftAlone(step.Items.Count - restored.Count - failed.Count) + lost;
+        return Outcome.Done(done + LeftAlone(step.Items.Count - restored.Count - failed.Count) + lost);
     }
 
-    private string UndoOrder(IReadOnlyDictionary<string, int?> previousOrder, string done)
+    private Outcome? UndoOrder(IReadOnlyDictionary<string, int?> previousOrder, string done)
     {
         // A tile or topic renamed or removed since has no folder to take the place.
         var existing = previousOrder.Where(entry => Directory.Exists(Path.Combine(_root, entry.Key))).ToList();
@@ -1277,34 +1399,34 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 changed |= metadata.SetOrder(key, order);
             return changed;
         });
-        return saved ? done : Status;
+        return saved ? Outcome.Done(done) : null;
     }
 
-    private string UndoArrange(ArrangeStep step)
+    private Outcome? UndoArrange(ArrangeStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return $"«{step.Name}» non c'è più.";
+            return Outcome.Refused($"«{step.Name}» non c'è più.");
         if (!UpdateMetadata(metadata => metadata.SetArrangement(step.Key, step.Sort, step.Items)))
-            return Status;
-        return $"«{step.Name}» è di nuovo nell'ordine di prima.";
+            return null;
+        return Outcome.Done($"«{step.Name}» è di nuovo nell'ordine di prima.");
     }
 
-    private string UndoSize(SizeStep step)
+    private Outcome? UndoSize(SizeStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return $"«{step.Name}» non c'è più.";
+            return Outcome.Refused($"«{step.Name}» non c'è più.");
         if (!UpdateMetadata(metadata => metadata.SetSize(step.Key, step.Previous)))
-            return Status;
-        return $"«{step.Name}» ha di nuovo la misura di prima.";
+            return null;
+        return Outcome.Done($"«{step.Name}» ha di nuovo la misura di prima.");
     }
 
-    private string UndoTopic(TopicStep step)
+    private Outcome? UndoTopic(TopicStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return $"«{step.Name}» non c'è più.";
+            return Outcome.Refused($"«{step.Name}» non c'è più.");
         if (!UpdateMetadata(metadata => metadata.SetTopic(step.Key, step.WasTopic)))
-            return Status;
-        return step.WasTopic ? $"«{step.Name}» è di nuovo un argomento." : $"«{step.Name}» è di nuovo un riquadro.";
+            return null;
+        return Outcome.Done(step.WasTopic ? $"«{step.Name}» è di nuovo un argomento." : $"«{step.Name}» è di nuovo un riquadro.");
     }
 
     /// <summary>For the items an undo could not put back: something else took their place, or they are gone.</summary>
@@ -1393,22 +1515,27 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     partial void OnQueryChanged(string value) => RunSearch();
 
-    /// <summary>A new message means the buttons of the last operation no longer apply, unless they come with it.</summary>
-    partial void OnStatusChanged(string value)
-    {
-        if (!_noticeFollows)
-            Notice = null;
-    }
-
     /// <summary>Reads topics and the current board again, keeping the selection if that topic still exists.</summary>
     private void Reload()
     {
         _reloadPending = false;
-        _reader = new ArchiveReader(_root, LoadMetadata(), _inboxSources);
+        var metadata = LoadMetadata();
+        _reader = new ArchiveReader(_root, metadata, _inboxSources);
+        var topics = _reader.ReadTopics();
+        // A topic of the root seen for the first time gets its color, and keeps it in the archive; a preview only shows it.
+        var rootKeys = topics.Select(topic => topic.RelativePath).ToList();
+        if (TopicColors.AssignMissing(metadata, rootKeys))
+        {
+            if (!_readOnly)
+                UpdateMetadata(m => TopicColors.AssignMissing(m, rootKeys));
+            topics = _reader.ReadTopics();
+        }
         // The topics, tiles and items still there keep their view models, with their selection, the name being typed
         // and the branches left open; the view hears only about what moved, arrived or went away.
-        Reconciler.Reconcile(Topics, _reader.ReadTopics(), topic => topic.RelativePath, topic => topic.Topic.RelativePath,
+        Reconciler.Reconcile(Topics, topics, topic => topic.RelativePath, topic => topic.Topic.RelativePath,
             topic => new TopicViewModel(topic, parent: null), (viewModel, topic) => viewModel.Update(topic));
+        foreach (var topic in Topics)
+            topic.RefreshColors();
         InboxCount = _reader.ReadInbox().Sum(tile => tile.Items.Count);
 
         if (IsInboxShown)
@@ -1422,6 +1549,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         // What was just renamed, moved or pasted takes the place of the selection.
         ApplyPendingSelection();
+        UpdateSelectionSummary();
+        UpdateDisk();
         Reloaded?.Invoke(this, EventArgs.Empty);
     }
 
@@ -1526,7 +1655,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             if (CommitRename(target) is { } problem)
             {
                 target.IsEditing = false;
-                Status = problem;
+                Tell(ToastKind.Info, problem);
             }
         }
     }
@@ -1563,7 +1692,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Status = $"Impossibile creare la cartella «{name}»: {e.Message}";
+            Tell(ToastKind.Danger, $"Impossibile creare la cartella «{name}»", e.Message);
             return null;
         }
     }
@@ -1616,6 +1745,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(UndoLabel));
+        // «Annulla» on a toast stays only while its operation is the one Ctrl+Z would undo.
+        foreach (var toast in Toasts)
+            toast.CanUndo = toast.UndoStep is not null && ReferenceEquals(toast.UndoStep, _history.Last);
     }
 
     /// <summary>Changes the metadata only, keeping a step to undo it if anything changed.</summary>
@@ -1710,7 +1842,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Write($"Could not save the archive metadata: {e}");
-            Status = $"Impossibile salvare le impostazioni dell'archivio: {e.Message}";
+            Tell(ToastKind.Danger, "Impossibile salvare le impostazioni dell'archivio", e.Message);
             return false;
         }
     }
@@ -1719,11 +1851,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// Waits for the file operations already under way, then holds the turn until disposed: each operation starts from
     /// the files as the previous one left them, and Ctrl+Z takes back the operation it waited for.
     /// </summary>
-    private async Task<IDisposable> BeginFileWork()
+    /// <param name="activity">What the status bar says once the turn comes, next to its LEDs.</param>
+    private async Task<IDisposable> BeginFileWork(string activity)
     {
         if (++_fileWorkCount == 1)
             OnPropertyChanged(nameof(IsBusy));
         await _fileWork.WaitAsync();
+        ShowActivity(activity);
         return new FileWorkTurn(this);
     }
 
@@ -1820,19 +1954,61 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Picker = picker;
     }
 
-    /// <summary>A message about an operation just done, with what the buttons next to it can do.</summary>
-    private void Report(string message, StatusNotice notice)
+    /// <summary>Something to say, in a toast of its kind: problems stay until closed, and go in the log too.</summary>
+    internal void Tell(ToastKind kind, string title, string? body = null) => Tell(new ToastViewModel(kind, title, body));
+
+    internal void Tell(ToastViewModel toast)
     {
-        _noticeFollows = true;
-        try
+        Status = toast.Body is null ? toast.Title : $"{toast.Title}: {toast.Body}";
+        if (toast.Kind is ToastKind.Warning or ToastKind.Danger)
+            Log.Write($"Told: {Status}");
+        // The same news again takes the place of the one already there, and no more than three at once.
+        foreach (var same in Toasts.Where(other => other.Title == toast.Title && other.Body == toast.Body).ToList())
+            Toasts.Remove(same);
+        Toasts.Add(toast);
+        while (Toasts.Count > MaxToasts)
+            Toasts.RemoveAt(0);
+    }
+
+    /// <summary>What an operation just did: «Annulla» takes back <paramref name="step"/>, «Mostra» goes where the items went.</summary>
+    private void Report(string message, StatusNotice notice, UndoStep? step, ToastKind kind = ToastKind.Success) =>
+        Tell(new ToastViewModel(kind, message, notice: notice.ShowFolder is null ? null : notice, undoStep: step)
         {
-            Status = message;
-        }
-        finally
+            CanUndo = step is not null && ReferenceEquals(step, _history.Last),
+        });
+
+    /// <summary>The operation under way, next to the LEDs of the status bar.</summary>
+    private void ShowActivity(string message)
+    {
+        Status = message;
+        Activity = message;
+    }
+
+    /// <summary>«Mostra» on a toast.</summary>
+    public void ShowFrom(ToastViewModel toast)
+    {
+        if (toast.Notice is { } notice)
+            ShowNotice(notice);
+    }
+
+    /// <summary>«Annulla» on a toast: the operation it tells about, while it is still the last one done.</summary>
+    public Task UndoFrom(ToastViewModel toast) => toast.CanUndo ? Undo() : Task.CompletedTask;
+
+    public void DismissToast(ToastViewModel toast) => Toasts.Remove(toast);
+
+    /// <summary>The selection changed, on the board, on the canvas or among the results: the status bar says how much it is.</summary>
+    public void UpdateSelectionSummary()
+    {
+        var selected = SelectedItems();
+        if (selected.Count == 0)
         {
-            _noticeFollows = false;
+            SelectionSummary = null;
+            return;
         }
-        Notice = notice;
+        // As in Explorer, the size of the files: that of folders would take a count of everything inside them.
+        var bytes = selected.Sum(item => item.Item.Size ?? 0);
+        var count = Count(selected.Count, "elemento selezionato", "elementi selezionati");
+        SelectionSummary = bytes > 0 ? $"{count} · {ByteSize.Format(bytes)}" : count;
     }
 
     private void RunSearch()
@@ -1869,7 +2045,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             if (indexing.IsCancellationRequested)
                 return;
             _index = index;
-            UpdateStatus();
+            UpdateArchiveSummary();
             if (IsSearching)
                 RunSearch();
         }
@@ -1880,7 +2056,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         catch (Exception e)
         {
             Log.Write($"Indexing failed: {e}");
-            Status = $"Ricerca non disponibile: {e.Message}";
+            Tell(ToastKind.Danger, "Ricerca non disponibile", e.Message);
         }
     }
 
@@ -1914,16 +2090,29 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             RebuildIndex();
     });
 
-    private void UpdateStatus()
+    /// <summary>The archive in the status bar, once it has been read whole: how many items, and what they take.</summary>
+    private void UpdateArchiveSummary()
     {
-        var parts = new List<string> { _root };
-        if (_index is not null)
-            parts.Add(Count(_index.Count, "elemento", "elementi"));
-        var summary = string.Join("   ·   ", parts);
-        // A message about the last operation stays until the panel opens again: the summary takes the place of an older one.
-        if (Status.Length == 0 || Status == _summary)
-            Status = summary;
-        _summary = summary;
+        ArchiveSummary = _index is null
+            ? ""
+            : $"{Count(_index.ArchiveCount, "elemento", "elementi")} · {ByteSize.Format(_index.ArchiveBytes)}";
+        UpdateDisk();
+    }
+
+    /// <summary>The free space of the disk of the archive: at every reload, after each operation and each time the panel opens.</summary>
+    private void UpdateDisk()
+    {
+        var disk = DiskOf(_root);
+        IsDiskLow = disk?.IsLow ?? false;
+        DiskText = disk is null ? null : disk.IsLow ? $"Poco spazio: {disk.FreeText}" : disk.FreeText;
+        DiskToolTip = disk is null
+            ? null
+            : string.Join(Environment.NewLine, new[]
+            {
+                disk.Description,
+                _index is null ? null : $"L'archivio occupa {ByteSize.Format(_index.ArchiveBytes)}.",
+                disk.IsLow ? "Resta poco spazio: le copie più grandi non ci stanno." : null,
+            }.OfType<string>());
     }
 
     private bool TryShell(Action action, string name)
@@ -1936,7 +2125,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         catch (Exception e) when (e is Win32Exception or InvalidOperationException or IOException)
         {
             Log.Write($"Could not open {name}: {e}");
-            Status = $"Impossibile aprire «{name}»: {e.Message}";
+            Tell(ToastKind.Danger, $"Impossibile aprire «{name}»", e.Message);
             return false;
         }
     }

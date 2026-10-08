@@ -69,6 +69,8 @@ public partial class PanelView : UserControl
     private SelectionBandAdorner? _band;
     private HashSet<ItemViewModel>? _bandKept;
     private bool _banding;
+    private bool _selectionSummaryQueued;
+    private DateTime _shortcutsClosedAt;
 
     // Where the keyboard focus was, to put it back when a reload replaces the element that had it.
     private bool _focusWasInTree;
@@ -81,6 +83,8 @@ public partial class PanelView : UserControl
         _renameTimer.Tick += RenameTimer_Tick;
         _springTimer.Tick += SpringTimer_Tick;
         _resultTimer.Tick += ResultTimer_Tick;
+        ShortcutsPopup.CustomPopupPlacementCallback = AboveRightEdge;
+        ShortcutsPopup.Closed += (_, _) => _shortcutsClosedAt = DateTime.UtcNow;
     }
 
     /// <summary>Esc with nothing left to cancel, or the close button: the window goes back to the notification area.</summary>
@@ -135,6 +139,13 @@ public partial class PanelView : UserControl
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         _renameTimer.Stop();
+        // Esc closes the keys worth knowing, not the window.
+        if (ShortcutsPopup.IsOpen && e.Key == Key.Escape)
+        {
+            ShortcutsPopup.IsOpen = false;
+            e.Handled = true;
+            return;
+        }
         if (ViewModel.Picker is { } picker)
         {
             switch (e.Key)
@@ -500,6 +511,7 @@ public partial class PanelView : UserControl
                     continue;
                 foreach (var item in ViewModel.ShownTiles.SelectMany(shown => shown.Items))
                     item.IsSelected = string.Equals(item.Item.FullPath, child, StringComparison.OrdinalIgnoreCase);
+                ViewModel.UpdateSelectionSummary();
                 ShowTile(tile);
                 return;
             }
@@ -582,12 +594,26 @@ public partial class PanelView : UserControl
     /// </summary>
     private void ItemList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        QueueSelectionSummary();
         // A rectangle selects in several tiles at once: its selections are not clicks.
         if (_banding)
             return;
         if (e.AddedItems.Count > 0 && sender is ListBox { IsKeyboardFocusWithin: true } source &&
             !Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
             UnselectAll(except: source);
+    }
+
+    /// <summary>The status bar says how much is selected: once for all the lists that changed together.</summary>
+    private void QueueSelectionSummary()
+    {
+        if (_selectionSummaryQueued)
+            return;
+        _selectionSummaryQueued = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            _selectionSummaryQueued = false;
+            ViewModel.UpdateSelectionSummary();
+        }, DispatcherPriority.Background);
     }
 
     /// <param name="except">A list whose selection stays.</param>
@@ -1535,7 +1561,7 @@ public partial class PanelView : UserControl
             e.Handled = true;
             // A name that cannot be used leaves the field open, with the reason in the status bar.
             if (ViewModel.CommitRename(target) is { } problem)
-                ViewModel.Status = problem;
+                ViewModel.Tell(ToastKind.Info, problem);
             else
                 FocusAfterEdit();
         }
@@ -1568,7 +1594,7 @@ public partial class PanelView : UserControl
         if (ViewModel.CommitRename(target) is { } problem)
         {
             ViewModel.CancelRename(target);
-            ViewModel.Status = problem;
+            ViewModel.Tell(ToastKind.Info, problem);
         }
     }, DispatcherPriority.Input);
 
@@ -1660,9 +1686,61 @@ public partial class PanelView : UserControl
 
     private void Undo_Click(object sender, RoutedEventArgs e) => Observe(ViewModel.Undo());
 
-    private void NoticeUndo_Click(object sender, RoutedEventArgs e) => Observe(ViewModel.Undo());
+    // ---- The status bar and the toasts ----
 
-    private void NoticeShow_Click(object sender, RoutedEventArgs e) => ViewModel.ShowNotice();
+    /// <summary>The archive in the status bar: its folder in Explorer.</summary>
+    private void StatusArchive_Click(object sender, RoutedEventArgs e) => ViewModel.OpenFolder(ViewModel.Root);
+
+    private void ShortcutsButton_Click(object sender, RoutedEventArgs e)
+    {
+        // A click on the «?» with the keys open closes them on its way down: on its way up it does not open them again.
+        if (DateTime.UtcNow - _shortcutsClosedAt < TimeSpan.FromMilliseconds(300))
+            return;
+        ShortcutsPopup.IsOpen = true;
+    }
+
+    /// <summary>
+    /// The keys worth knowing open above the «?», their right edge on that of the button. The frame of Brace keeps a
+    /// margin around itself for the shadow (Brace.PopupFrame), taken back here; the sizes come in pixels of the screen.
+    /// </summary>
+    private CustomPopupPlacement[] AboveRightEdge(Size popup, Size target, Point offset)
+    {
+        var dpi = VisualTreeHelper.GetDpi(ShortcutsButton);
+        var frame = new Thickness(16, 8, 16, 24);
+        return [new CustomPopupPlacement(
+            new Point(target.Width - popup.Width + frame.Right * dpi.DpiScaleX, -popup.Height + frame.Bottom * dpi.DpiScaleY),
+            PopupPrimaryAxis.Horizontal)];
+    }
+
+    /// <summary>A toast comes in as Brace wants, and the news and results close by themselves after a few seconds.</summary>
+    private void Toast_Loaded(object sender, RoutedEventArgs e)
+    {
+        // Loaded comes again when the toast is laid out anew: one clock is enough.
+        if (sender is not FrameworkElement { DataContext: ToastViewModel toast, Tag: null } element)
+            return;
+        element.Tag = toast;
+        Motion.Enter(element, slide: 8);
+        if (toast.ClosesByItself)
+            ToastClock.Start(element, () => ViewModel.DismissToast(toast));
+    }
+
+    private void ToastDismiss_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ToastViewModel toast })
+            ViewModel.DismissToast(toast);
+    }
+
+    private void ToastUndo_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ToastViewModel toast })
+            Observe(ViewModel.UndoFrom(toast));
+    }
+
+    private void ToastShow_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ToastViewModel toast })
+            ViewModel.ShowFrom(toast);
+    }
 
     private void BoardPaste_Click(object sender, RoutedEventArgs e)
     {
@@ -1808,6 +1886,12 @@ public partial class PanelView : UserControl
     }
 
     /// <summary>A color of the palette from the tile's menu; the entry without one takes the color away.</summary>
+    private void TopicColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string tag } && DataContextOf<TopicViewModel>(sender) is { } topic)
+            ViewModel.SetTopicColor(topic, tag == TopicViewModel.AutomaticChoice ? null : tag);
+    }
+
     private void TileColor_Click(object sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { Tag: string tag } && DataContextOf<TileViewModel>(sender) is { IsOwnFolder: true } tile)

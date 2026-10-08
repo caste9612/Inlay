@@ -43,22 +43,34 @@ public sealed class ArchiveMetadata
     /// <summary>Position of a tile on its board; null for tiles never moved, which follow in name order.</summary>
     public int? OrderOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Order : null;
 
-    /// <summary>The color of a tile, as "#RRGGBB"; null when it has none.</summary>
+    /// <summary>
+    /// The color of a tile or a topic, as "#RRGGBB"; <see cref="TopicColors.None"/> for a topic left without one on purpose;
+    /// null when it has none.
+    /// </summary>
     public string? ColorOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Color : null;
 
-    /// <summary>Gives a tile a color, or none.</summary>
+    /// <summary>The color given by Quiver to a topic of the root, not chosen.</summary>
+    public bool IsColorAutomatic(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) && folder.AutoColor == true;
+
+    /// <summary>The color chosen for a folder: a tile does not show the one Quiver gave it when it was a topic of the root.</summary>
+    public string? ChosenColorOf(string relativeKey) => IsColorAutomatic(relativeKey) ? null : ColorOf(relativeKey);
+
+    /// <summary>Gives a tile or a topic a color, or none.</summary>
+    /// <param name="automatic">Given by Quiver, not chosen: a topic keeps it only while it is in the root.</param>
     /// <returns>Whether anything changed.</returns>
-    public bool SetColor(string relativeKey, string? color)
+    public bool SetColor(string relativeKey, string? color, bool automatic = false)
     {
+        bool? marked = automatic && color is not null ? true : null;
         if (!Folders.TryGetValue(relativeKey, out var folder))
         {
             if (color is null)
                 return false;
             Folders[relativeKey] = folder = new FolderMetadata();
         }
-        if (string.Equals(folder.Color, color, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(folder.Color, color, StringComparison.OrdinalIgnoreCase) && folder.AutoColor == marked)
             return false;
         folder.Color = color;
+        folder.AutoColor = marked;
         if (folder.IsEmpty)
             Folders.Remove(relativeKey);
         return true;
@@ -257,6 +269,12 @@ public sealed class FolderMetadata
 
     public string? Color { get; set; }
 
+    /// <summary>
+    /// The color was given by Quiver, to a topic of the root, and not chosen. A version of Quiver without it forgets the
+    /// mark and keeps the color, as if chosen.
+    /// </summary>
+    public bool? AutoColor { get; set; }
+
     /// <summary>The size given to the tile; null for the usual one.</summary>
     public TileSize? Size { get; set; }
 
@@ -274,14 +292,15 @@ public sealed class FolderMetadata
 
     [JsonIgnore]
     public bool IsEmpty =>
-        Kind is null && Workspace is null && Color is null && Size is null && Order is null && Sort is null && Items is null;
+        Kind is null && Workspace is null && Color is null && AutoColor is null && Size is null && Order is null && Sort is null &&
+        Items is null;
 
     // Every property is a string, a number, a record or a list that is replaced, never changed: a shallow copy is a full one.
     public FolderMetadata Clone() => (FolderMetadata)MemberwiseClone();
 
     public bool SameAs(FolderMetadata other) =>
-        Kind == other.Kind && Workspace == other.Workspace && Color == other.Color && Size == other.Size &&
-        Order == other.Order && Sort == other.Sort && SameNames(Items, other.Items);
+        Kind == other.Kind && Workspace == other.Workspace && Color == other.Color && AutoColor == other.AutoColor &&
+        Size == other.Size && Order == other.Order && Sort == other.Sort && SameNames(Items, other.Items);
 
     internal static bool SameNames(IReadOnlyList<string>? a, IReadOnlyList<string>? b) =>
         a is null || b is null ? a is null && b is null : a.SequenceEqual(b, StringComparer.Ordinal);

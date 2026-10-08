@@ -122,6 +122,38 @@ public sealed class ArchivesViewModelTests : IDisposable
     });
 
     [Fact]
+    public void ToAnotherDrive_AnArchiveThatWouldNotFit_IsNotCopied() => StaThread.RunAsync(async () =>
+    {
+        var archive = MakeArchive("Archivio");
+        var destination = Directory.CreateDirectory(Path.Combine(_root, "Altro disco")).FullName;
+        var settings = Settings(archive);
+        // Another drive, with less room than the 9 bytes of the archive.
+        var viewModel = Open(settings, sameDrive: (_, _) => false, diskOf: _ => new DiskSpace("Z:", 4, 1000));
+
+        await viewModel.MoveToOtherDriveAsync(viewModel.Archives.Single(), Path.Combine(destination, "Archivio"));
+
+        Assert.StartsWith("Su Z: non c'è abbastanza spazio per l'archivio", viewModel.Status);
+        Assert.False(Directory.Exists(Path.Combine(destination, "Archivio")));
+        Assert.Equal([archive], settings.Archives);
+        Assert.False(viewModel.IsBusy);
+    });
+
+    [Fact]
+    public void EachArchive_SaysWhatItTakes_AndTheRoomLeftOnItsDisk() => StaThread.RunAsync(async () =>
+    {
+        var archive = MakeArchive("Archivio");
+        const long gb = 1024L * 1024 * 1024;
+        var viewModel = Open(Settings(archive), diskOf: _ => new DiskSpace("E:", 120 * gb, 465 * gb));
+        var entry = viewModel.Archives.Single();
+
+        for (var wait = 0; entry.Details is null && wait < 100; wait++)
+            await Task.Delay(20);
+
+        // Everything in it counts, its hidden metadata included.
+        Assert.Matches(@"^\d+ byte · disco E: 120 GB liberi su 465 GB$", entry.Details);
+    });
+
+    [Fact]
     public void ForgettingAnArchive_LeavesItsFolder_ButNotTheOneInUse() => StaThread.Run(() =>
     {
         var current = MakeArchive("Archivio");
@@ -149,8 +181,8 @@ public sealed class ArchivesViewModelTests : IDisposable
         Assert.Equal("Non trovato", viewModel.Archives.Single(entry => entry.Name == "Sparito").Badge);
     });
 
-    private ArchivesViewModel Open(AppSettings settings, Func<string, string, bool>? sameDrive = null) =>
-        new(settings, _host, [new ReservedFolder(Desktop, "desktop")], sameDrive);
+    private ArchivesViewModel Open(AppSettings settings, Func<string, string, bool>? sameDrive = null, Func<string, DiskSpace?>? diskOf = null) =>
+        new(settings, _host, [new ReservedFolder(Desktop, "desktop")], sameDrive, diskOf);
 
     /// <summary>Settings of the test, saved next to its folders; with <paramref name="current"/> as the archive in use.</summary>
     private AppSettings Settings(string? current = null)

@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Quiver.App.Views;
 using Quiver.Core;
 
 namespace Quiver.App.ViewModels;
@@ -8,6 +10,11 @@ namespace Quiver.App.ViewModels;
 /// <summary>A topic in the sidebar tree.</summary>
 public sealed partial class TopicViewModel : RenameableViewModel
 {
+    /// <summary>For «Colore»: the color Quiver gives, or for a topic inside another the one of its topic.</summary>
+    public const string AutomaticChoice = "auto";
+
+    private string? _shownColor;
+
     [ObservableProperty]
     private bool _isExpanded = true;
 
@@ -35,6 +42,24 @@ public sealed partial class TopicViewModel : RenameableViewModel
 
     public override string RenamePath => Topic.FullPath;
 
+    /// <summary>
+    /// The color it shows, as "#RRGGBB"; null for none. A topic of the root shows its own, given by Quiver or chosen; one
+    /// inside another, the one chosen for it, or else that of its topic.
+    /// </summary>
+    public string? Color => Topic.Color switch
+    {
+        TopicColors.None => null,
+        { } own when Parent is null || !Topic.ColorIsAutomatic => own,
+        _ => Parent?.Color,
+    };
+
+    public Brush? ColorBrush => TileColors.BrushFor(Color);
+
+    public bool HasColor => ColorBrush is not null;
+
+    /// <summary>What «Colore» has checked: <see cref="AutomaticChoice"/>, <see cref="TopicColors.None"/>, or the color chosen.</summary>
+    public string ColorChoice => Topic.Color is { } own && (own == TopicColors.None || !Topic.ColorIsAutomatic) ? own : AutomaticChoice;
+
     protected override bool RenamesFolder => true;
 
     /// <summary>
@@ -49,6 +74,21 @@ public sealed partial class TopicViewModel : RenameableViewModel
             OnPropertyChanged(nameof(Name));
         Reconciler.Reconcile(Children, topic.Children, child => child.RelativePath, child => child.Topic.RelativePath,
             child => new TopicViewModel(child, this), (viewModel, child) => viewModel.Update(child));
+    }
+
+    /// <summary>After a reload: the color shown, and those of the topics inside, which may follow it.</summary>
+    internal void RefreshColors()
+    {
+        if (!string.Equals(_shownColor, Color, StringComparison.OrdinalIgnoreCase))
+        {
+            _shownColor = Color;
+            OnPropertyChanged(nameof(Color));
+            OnPropertyChanged(nameof(ColorBrush));
+            OnPropertyChanged(nameof(HasColor));
+        }
+        OnPropertyChanged(nameof(ColorChoice));
+        foreach (var child in Children)
+            child.RefreshColors();
     }
 
     public IEnumerable<TopicViewModel> Ancestors()

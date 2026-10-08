@@ -22,7 +22,7 @@ internal static class Commands
 /// never takes the user's own files.
 /// </param>
 /// <param name="PreviewPicker">Diagnostics: draw the panel asking where the first item of the board goes.</param>
-/// <param name="PreviewNotice">Diagnostics: draw the status bar as after a move, with «Annulla» and «Mostra».</param>
+/// <param name="PreviewNotice">Diagnostics: draw the toasts as after a move, with «Annulla» and «Mostra», and after an error.</param>
 /// <param name="PreviewSection">Diagnostics: the page of the settings to draw: archives, hotkey, inbox or windows.</param>
 internal sealed record CommandLineOptions(
     string? Command, string? ArchiveRoot, string? PreviewOutput, string? PreviewTopic, string? PreviewQuery, bool PreviewPrompt,

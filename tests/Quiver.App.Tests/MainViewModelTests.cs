@@ -304,7 +304,7 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.Undo();
 
         Assert.Equal(["Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
-        Assert.Empty(MetadataStore.Load(_root).Folders);
+        Assert.DoesNotContain(MetadataStore.Load(_root).Folders.Values, folder => folder.Order is not null);
     });
 
     [Fact]
@@ -461,16 +461,71 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
-    public void AnOperationsMessage_StaysUntilThePanelOpensAgain() => StaThread.Run(() =>
+    public void AToast_StaysUntilThePanelOpensAgain_AndTheStatusBarTellsAboutTheArchive() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         viewModel.Undo();
 
         viewModel.BuildIndexNow();
-        Assert.Equal("Non c'è niente da annullare.", viewModel.Status);
+        Assert.Equal("Non c'è niente da annullare.", Assert.Single(viewModel.Toasts).Title);
+        // Lavoro/Documenti/a.txt, b.txt and Lavoro/Archivio, with their folders and topics.
+        Assert.Matches(@"^\d+ elementi · \d+(,\d+)? (byte|KB)$", viewModel.ArchiveSummary);
+        Assert.NotNull(viewModel.DiskText);
+        Assert.Contains("liberi su", viewModel.DiskToolTip);
 
         viewModel.OnPanelShowing();
-        Assert.StartsWith(_root, viewModel.Status);
+        Assert.Empty(viewModel.Toasts);
+    });
+
+    [Fact]
+    public void TheStatusBar_SaysHowMuchIsSelected() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        File.WriteAllText(Path.Combine(_root, "Lavoro", "Documenti", "a.txt"), new string('a', 2048));
+        viewModel.OnPanelShowing();
+
+        Item(viewModel, "a.txt").IsSelected = true;
+        Item(viewModel, "b.txt").IsSelected = true;
+        viewModel.UpdateSelectionSummary();
+
+        Assert.StartsWith("2 elementi selezionati · 2,", viewModel.SelectionSummary);
+        Assert.EndsWith(" KB", viewModel.SelectionSummary);
+
+        Item(viewModel, "a.txt").IsSelected = false;
+        Item(viewModel, "b.txt").IsSelected = false;
+        viewModel.UpdateSelectionSummary();
+
+        Assert.Null(viewModel.SelectionSummary);
+    });
+
+    [Fact]
+    public void ACopyThatWouldNotFit_IsNotStarted_AndSaysWhy() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var big = Path.Combine(Path.GetTempPath(), "quiver-app-tests", Guid.NewGuid().ToString("N") + ".bin");
+        Directory.CreateDirectory(Path.GetDirectoryName(big)!);
+        File.WriteAllBytes(big, new byte[64 * 1024]);
+        try
+        {
+            // A disk with 10 KB left.
+            viewModel.DiskOf = _ => new DiskSpace("Z:", 10 * 1024, 100L * 1024 * 1024 * 1024);
+            var destination = Path.Combine(_root, "Lavoro", "Archivio");
+
+            viewModel.Transfer([big], destination, TransferKind.Copy).GetAwaiter().GetResult();
+
+            Assert.False(File.Exists(Path.Combine(destination, Path.GetFileName(big))));
+            var toast = Assert.Single(viewModel.Toasts);
+            Assert.Equal(ToastKind.Warning, toast.Kind);
+            Assert.Equal("Su Z: non c'è abbastanza spazio", toast.Title);
+            Assert.StartsWith("Servono 64,0 KB e ne restano 10,0 KB.", toast.Body);
+            Assert.False(toast.ClosesByItself);
+            Assert.True(viewModel.IsDiskLow);
+            Assert.StartsWith("Poco spazio: ", viewModel.DiskText);
+        }
+        finally
+        {
+            File.Delete(big);
+        }
     });
 
     [Fact]
@@ -620,7 +675,7 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.Null(tile.Size);
         Assert.Equal(1, tile.Columns);
-        Assert.Empty(MetadataStore.Load(_root).Folders);
+        Assert.DoesNotContain("Lavoro/Documenti", MetadataStore.Load(_root).Folders.Keys);
     });
 
     [Fact]
@@ -791,17 +846,23 @@ public sealed class MainViewModelTests : IDisposable
         Assert.False(File.Exists(source));
         Assert.Equal(["Personale/Casa"], _recent.For(_root));
         Assert.Equal("«a.txt» spostato in «Casa».", viewModel.Status);
-        Assert.NotNull(viewModel.Notice);
-        Assert.True(viewModel.CanShowNotice);
+        var toast = Assert.Single(viewModel.Toasts);
+        Assert.Equal(ToastKind.Success, toast.Kind);
+        Assert.True(toast.CanUndo);
+        Assert.True(toast.CanShow);
+        Assert.True(toast.ClosesByItself);
         Assert.IsType<MoveStep>(viewModel.LastUndoStep);
 
-        viewModel.ShowNotice();
+        viewModel.ShowFrom(toast);
         Assert.Equal("Personale", viewModel.BoardTitle);
         Assert.Equal(["a.txt"], viewModel.SelectedItems().Select(selected => selected.Name));
 
-        viewModel.Undo();
+        viewModel.UndoFrom(toast);
         Assert.True(File.Exists(source));
-        Assert.Null(viewModel.Notice);
+        // Undone: its toast goes, and the one of the undo takes its place, with nothing more to take back.
+        var undone = Assert.Single(viewModel.Toasts);
+        Assert.StartsWith("Spostamento annullato", undone.Title);
+        Assert.False(undone.HasActions);
     });
 
     [Fact]
@@ -824,7 +885,7 @@ public sealed class MainViewModelTests : IDisposable
             var link = Assert.Single(Assert.IsType<LinkStep>(viewModel.LastUndoStep).Links);
             Assert.Equal(Path.Combine(_root, "Lavoro", "Archivio"), Path.GetDirectoryName(link));
             Assert.StartsWith("Collegamento «", viewModel.Status);
-            Assert.True(viewModel.CanShowNotice);
+            Assert.True(Assert.Single(viewModel.Toasts).CanShow);
         }
         finally
         {
@@ -850,21 +911,120 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.Null(tile.Color);
         Assert.False(tile.HasColor);
-        Assert.Empty(MetadataStore.Load(_root).Folders);
+        Assert.DoesNotContain("Lavoro/Documenti", MetadataStore.Load(_root).Folders.Keys);
         Assert.Contains("senza colore", viewModel.Status);
     });
 
     [Fact]
-    public void AMessageTypedLater_TakesTheButtonsAway() => StaThread.Run(() =>
+    public void TheTopics_GetTheirColorsWhenFirstSeen_KeptInTheArchive() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+
+        var metadata = MetadataStore.Load(_root);
+        Assert.Equal([TopicColors.Automatic[0], TopicColors.Automatic[1]], viewModel.Topics.Select(topic => topic.Color));
+        Assert.All(viewModel.Topics, topic => Assert.True(topic.HasColor));
+        Assert.Equal(TopicColors.Automatic[0], metadata.ColorOf("Lavoro"));
+        Assert.True(metadata.IsColorAutomatic("Personale"));
+        Assert.All(viewModel.Topics, topic => Assert.Equal(TopicViewModel.AutomaticChoice, topic.ColorChoice));
+        // Opened again, the same colors.
+        using var again = Open();
+        Assert.Equal(viewModel.Topics.Select(topic => topic.Color), again.Topics.Select(topic => topic.Color));
+    });
+
+    [Fact]
+    public void APreview_ShowsTheColors_AndWritesNothingIntoTheArchive() => StaThread.Run(() =>
+    {
+        using var viewModel = new MainViewModel(_root, live: false, recent: _recent, readOnly: true);
+
+        Assert.All(viewModel.Topics, topic => Assert.True(topic.HasColor));
+        Assert.False(File.Exists(MetadataStore.GetPath(_root)));
+    });
+
+    [Fact]
+    public void AColorChosenForATopic_Stays_AndCtrlZGivesBackTheOneQuiverHadGiven() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var lavoro = viewModel.Topics.Single(topic => topic.Name == "Lavoro");
+
+        viewModel.SetTopicColor(lavoro, "#FF7EB6");
+
+        Assert.Equal("#FF7EB6", lavoro.Color);
+        Assert.Equal("#FF7EB6", lavoro.ColorChoice);
+        Assert.False(MetadataStore.Load(_root).IsColorAutomatic("Lavoro"));
+        Assert.Equal("Annulla il colore", viewModel.UndoLabel);
+
+        viewModel.Undo();
+
+        Assert.Equal(TopicColors.Automatic[0], lavoro.Color);
+        Assert.True(MetadataStore.Load(_root).IsColorAutomatic("Lavoro"));
+
+        viewModel.SetTopicColor(lavoro, TopicColors.None);
+        Assert.False(lavoro.HasColor);
+        Assert.Equal(TopicColors.None, lavoro.ColorChoice);
+        // Seen again, a topic left without a color on purpose is not given one.
+        using var again = Open();
+        Assert.False(again.Topics.Single(topic => topic.Name == "Lavoro").HasColor);
+    });
+
+    [Fact]
+    public void ATopicInsideAnother_ShowsTheColorOfItsTopic_UnlessOneIsChosenForIt() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        viewModel.PromoteTile(viewModel.Tiles.Single(tile => tile.Title == "Archivio"));
+        var lavoro = viewModel.Topics.Single(topic => topic.Name == "Lavoro");
+        var archivio = Assert.Single(lavoro.Children);
+
+        Assert.Equal(lavoro.Color, archivio.Color);
+        Assert.Equal(TopicViewModel.AutomaticChoice, archivio.ColorChoice);
+
+        viewModel.SetTopicColor(archivio, "#36CFB0");
+        Assert.Equal("#36CFB0", archivio.Color);
+
+        // Automatico, inside another topic: that of its topic again, which follows it when it changes.
+        viewModel.SetTopicColor(archivio, null);
+        viewModel.SetTopicColor(lavoro, "#B48CFF");
+        Assert.Equal("#B48CFF", archivio.Color);
+        Assert.Null(MetadataStore.Load(_root).ColorOf("Lavoro/Archivio"));
+    });
+
+    [Fact]
+    public void AnotherOperation_TakesAnnullaAwayFromTheToastBefore() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         var documents = Path.Combine(_root, "Lavoro", "Documenti");
-        viewModel.Transfer([Path.Combine(documents, "a.txt")], Path.Combine(_root, "Lavoro", "Archivio"), TransferKind.Move);
-        Assert.NotNull(viewModel.Notice);
+        var archive = Path.Combine(_root, "Lavoro", "Archivio");
+        viewModel.Transfer([Path.Combine(documents, "a.txt")], archive, TransferKind.Move);
+        var first = Assert.Single(viewModel.Toasts);
+        Assert.True(first.CanUndo);
 
-        viewModel.Status = "Qualcos'altro.";
+        viewModel.Transfer([Path.Combine(documents, "b.txt")], archive, TransferKind.Move);
 
-        Assert.Null(viewModel.Notice);
+        // Ctrl+Z would undo the second one now: the first toast still shows where its file went, but not «Annulla».
+        Assert.Equal(2, viewModel.Toasts.Count);
+        Assert.False(first.CanUndo);
+        Assert.True(first.CanShow);
+        Assert.True(viewModel.Toasts[1].CanUndo);
+
+        viewModel.UndoFrom(first);
+        Assert.True(File.Exists(Path.Combine(archive, "b.txt")));
+    });
+
+    [Fact]
+    public void Problems_StayUntilClosed_TheSameNewsIsNotRepeated_AndThreeAtMost() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+
+        viewModel.Tell(ToastKind.Danger, "Impossibile aprire «a.txt».");
+        viewModel.Tell(ToastKind.Danger, "Impossibile aprire «a.txt».");
+        Assert.False(Assert.Single(viewModel.Toasts).ClosesByItself);
+
+        viewModel.Tell(ToastKind.Info, "Uno.");
+        viewModel.Tell(ToastKind.Info, "Due.");
+        viewModel.Tell(ToastKind.Info, "Tre.");
+
+        Assert.Equal(["Uno.", "Due.", "Tre."], viewModel.Toasts.Select(toast => toast.Title));
+        viewModel.DismissToast(viewModel.Toasts[0]);
+        Assert.Equal(["Due.", "Tre."], viewModel.Toasts.Select(toast => toast.Title));
     });
 
     private MainViewModel Open() => new(_root, live: false, recent: _recent);

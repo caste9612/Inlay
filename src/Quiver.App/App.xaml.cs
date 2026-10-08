@@ -137,7 +137,7 @@ public partial class App : Application, ISettingsHost
         if (_viewModel is { IsBusy: true } viewModel)
         {
             const string waiting = "Quiver si chiude appena finisce l'operazione sui file in corso.";
-            viewModel.Status = waiting;
+            viewModel.Tell(ToastKind.Info, waiting);
             _tray?.ShowInfo(waiting);
             await viewModel.WhenIdle();
         }
@@ -168,7 +168,7 @@ public partial class App : Application, ISettingsHost
         _panel.ShowPanel();
         if (existing.Count == 0)
         {
-            _viewModel.Status = "I file da mandare nell'archivio non ci sono più.";
+            _viewModel.Tell(ToastKind.Info, "I file da mandare nell'archivio non ci sono più.");
             return;
         }
         _viewModel.AskDestination(existing);

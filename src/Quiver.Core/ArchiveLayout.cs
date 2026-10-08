@@ -1,3 +1,5 @@
+using System.IO.Enumeration;
+
 namespace Quiver.Core;
 
 /// <summary>
@@ -21,6 +23,11 @@ public static class ArchiveLayout
 
     /// <summary>Dot-prefixed names (like .quiver or .git) are internal and never shown.</summary>
     public static bool IsHiddenName(ReadOnlySpan<char> name) => name.Length > 0 && name[0] == '.';
+
+    /// <summary>A junction or a symbolic link: what it holds is somewhere else, and going in could go round in circles.</summary>
+    internal static bool IsLinkToElsewhere(ref FileSystemEntry entry) =>
+        (entry.Attributes & FileAttributes.ReparsePoint) != 0 &&
+        new DirectoryInfo(entry.ToFullPath()).LinkTarget is not null;
 
     /// <summary>Metadata key for a path: relative to the root, with forward slashes.</summary>
     public static string ToRelativeKey(string root, string fullPath) =>

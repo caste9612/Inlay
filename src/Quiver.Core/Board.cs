@@ -1,7 +1,13 @@
 namespace Quiver.Core;
 
 /// <summary>A folder shown in the sidebar. Topics can contain other topics.</summary>
-public sealed record Topic(string FullPath, string RelativePath, IReadOnlyList<Topic> Children)
+/// <param name="Color">
+/// The color kept for it, as "#RRGGBB", or <see cref="TopicColors.None"/>; null when it has none yet, as a topic inside
+/// another one, which shows the color of its topic.
+/// </param>
+/// <param name="ColorIsAutomatic">The color was given by Quiver when it was a topic of the root, and not chosen.</param>
+public sealed record Topic(string FullPath, string RelativePath, IReadOnlyList<Topic> Children, string? Color = null,
+    bool ColorIsAutomatic = false)
 {
     public string Name => Path.GetFileName(FullPath);
 }

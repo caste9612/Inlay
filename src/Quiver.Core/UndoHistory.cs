@@ -85,4 +85,5 @@ public sealed record SizeStep(string Key, string Name, TileSize? Previous) : Und
 public sealed record TopicStep(string Key, string Name, bool WasTopic) : UndoStep;
 
 /// <summary>A tile given a color, or none: undoing gives it back the color it had.</summary>
-public sealed record ColorStep(string Key, string Name, string? Previous) : UndoStep;
+/// <param name="WasAutomatic">The color before was given by Quiver to a topic of the root, not chosen.</param>
+public sealed record ColorStep(string Key, string Name, string? Previous, bool WasAutomatic = false) : UndoStep;

@@ -34,7 +34,7 @@ internal static class PreviewRenderer
         IReadOnlyList<InboxSource> sources = options.DesktopStandIn is { } desktop ? [new InboxSource("Desktop", [desktop])] : [];
         // Recent places of the preview only, in a file of its own: the first tile of the board, as the place used last.
         var recent = RecentDestinations.Load(Path.Combine(Path.GetTempPath(), "quiver-preview-recenti.json"));
-        using var viewModel = new MainViewModel(root, live: false, inboxSources: sources, recent: recent);
+        using var viewModel = new MainViewModel(root, live: false, inboxSources: sources, recent: recent, readOnly: true);
         viewModel.BuildIndexNow();
         if (options.PreviewTopic is { } topic)
             viewModel.SelectTopicByPath(topic);
@@ -60,11 +60,12 @@ internal static class PreviewRenderer
                 recent.Remember(root, key);
             viewModel.AskDestination([first.Item.FullPath]);
         }
-        // The status bar as after a move, with its buttons; nothing is moved.
+        // The toast of a move, with its buttons; nothing is moved.
         if (options.PreviewNotice && viewModel.Tiles.FirstOrDefault(candidate => candidate.IsOwnFolder) is { } destination)
         {
-            viewModel.Status = $"3 elementi spostati in «{destination.Title}».";
-            viewModel.Notice = new StatusNotice(destination.FolderPath, []);
+            viewModel.Tell(new ToastViewModel(ToastKind.Success, $"3 elementi spostati in «{destination.Title}».",
+                notice: new StatusNotice(destination.FolderPath, []), undoStep: new CopyStep([])));
+            viewModel.Tell(ToastKind.Danger, "Impossibile aprire «Preventivo.pdf»", "Il file è usato da un altro processo.");
         }
 
         var view = new PanelView { DataContext = viewModel };

@@ -20,6 +20,28 @@ public sealed class SearchIndexTests : IDisposable
     }
 
     [Fact]
+    public void KnowsWhatTheArchiveTakes_WithoutItsHiddenFilesNorTheDesktop()
+    {
+        _archive.AddFile("Lavoro/Offerta.docx", new string('a', 1000));
+        _archive.AddFile("Lavoro/Rossi/Pianta.dwg", new string('b', 234));
+        _archive.AddFile(".quiver/archive.json", new string('c', 50));
+        var desktop = Path.Combine(_archive.Root, "..", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(desktop);
+        try
+        {
+            File.WriteAllText(Path.Combine(desktop, "Lasciato qui.txt"), new string('d', 70));
+
+            var index = SearchIndex.Build(_archive.Root, [new InboxSource("Desktop", [desktop])]);
+
+            Assert.Equal(1234, index.ArchiveBytes);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
     public void FindsFolders()
     {
         _archive.AddFolder("Lavoro/Commessa 2026");

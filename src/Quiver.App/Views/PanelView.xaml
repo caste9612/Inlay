@@ -173,14 +173,6 @@
             </Setter>
         </Style>
 
-        <!-- The actions next to the message of the last operation, in the status bar: the way back, and the way to go and see. -->
-        <Style x:Key="NoticeAction" TargetType="Button" BasedOn="{StaticResource Brace.StatusBar.Button}">
-            <Setter Property="Foreground" Value="{DynamicResource Brace.Accent}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0" />
-            <Setter Property="Padding" Value="8,0" />
-        </Style>
-
         <!-- Items: the same commands as the desktop's right-click menu. -->
         <ContextMenu x:Key="ItemMenu" x:Shared="False">
             <MenuItem Header="Apri" FontWeight="SemiBold" InputGestureText="Invio" Click="ItemOpen_Click">
@@ -238,7 +230,9 @@
             <MenuItem Header="Promuovi ad argomento" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
             <!-- The palette of Brace: a stripe on the title, kept with the archive. -->
             <MenuItem Header="Colore" IsEnabled="{Binding IsOwnFolder}">
-                <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}}" />
+                <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}}">
+                    <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
+                </MenuItem>
                 <Separator />
                 <MenuItem Header="Ambra" Tag="#FFA133" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
@@ -340,6 +334,43 @@
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Riporta a riquadro" Click="TopicDemote_Click" IsEnabled="{Binding CanDemote}" />
+            <!-- The color of the topic, in the sidebar and on the canvas. «Automatico» is the one Quiver gives, or for a topic
+                 inside another that of its topic. -->
+            <MenuItem Header="Colore">
+                <MenuItem Header="Automatico" Tag="auto" Click="TopicColor_Click"
+                          IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=auto}">
+                    <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSync16}" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Nessuno" Tag="none" Click="TopicColor_Click"
+                          IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=none}">
+                    <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Ambra" Tag="#FFA133" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Viola" Tag="#B48CFF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Verde" Tag="#36CFB0" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosso" Tag="#FF7272" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
             <Separator />
             <MenuItem Header="Sposta nel Cestino" InputGestureText="Canc" Style="{StaticResource Brace.MenuItem.Danger}" Click="TopicRecycle_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
@@ -540,7 +571,8 @@
                                   Data="{StaticResource Brace.Icon.Folder20}" TextElement.Foreground="{DynamicResource Brace.TextSecondary}" />
                             <TextBlock DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Brace.TextTertiary}"
                                        Text="{Binding Summary}" />
-                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="ZoneTitle" VerticalAlignment="Center" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}"
+                                       TextTrimming="CharacterEllipsis" />
                         </DockPanel>
                         <ItemsControl Focusable="False" ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource CanvasTileTemplate}">
                             <ItemsControl.ItemsPanel>
@@ -579,6 +611,21 @@
                                    Text="Vuoto. Trascina qui dei file, o crea un riquadro." />
                     </StackPanel>
                 </Border>
+                <!-- From afar the zone is lightly tinted with the color of its topic: the archive reads like a map. -->
+                <Border Margin="1" CornerRadius="9" Background="{Binding ColorBrush}" Opacity="0.08" IsHitTestVisible="False">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasColor}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <Trigger Property="views:CanvasSurface.Level" Value="Near">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
                 <!-- From afar: the name of a zone of the root, above its top left corner, in the space between zones, scaled back
                      so that it stays as big on screen at any zoom. -->
                 <Canvas HorizontalAlignment="Left" VerticalAlignment="Top">
@@ -597,7 +644,7 @@
                     </Canvas.Style>
                     <!-- Never wider than the zone looks on screen; at the farthest level the name alone. The name comes first: in a
                          narrow zone the numbers give way. -->
-                    <Border Canvas.Left="0" Canvas.Bottom="8" Padding="10,5" CornerRadius="6" Background="{DynamicResource Brace.SurfaceOverlay}"
+                    <Border x:Name="ZoneLabel" Canvas.Left="0" Canvas.Bottom="8" Padding="10,5" CornerRadius="6" Background="{DynamicResource Brace.SurfaceOverlay}"
                             BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1" RenderTransformOrigin="0,1"
                             RenderTransform="{Binding (views:CanvasSurface.LabelScale), RelativeSource={RelativeSource Self}}"
                             ToolTip="Doppio clic per vedere tutta la zona" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
@@ -608,7 +655,8 @@
                             </MultiBinding>
                         </Border.MaxWidth>
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Left" FontSize="15" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="ZoneLabelTitle" DockPanel.Dock="Left" FontSize="15" FontWeight="SemiBold" Text="{Binding Title}"
+                                       TextTrimming="CharacterEllipsis" />
                             <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Brace.TextTertiary}"
                                        Text="{Binding Summary}" TextTrimming="CharacterEllipsis" Style="{StaticResource NotFarthest}" />
                         </DockPanel>
@@ -619,6 +667,14 @@
                 <DataTrigger Binding="{Binding IsInbox}" Value="True">
                     <Setter TargetName="ZoneIcon" Property="Data" Value="{StaticResource Brace.Icon.ArrowDownload20}" />
                     <Setter TargetName="ZoneEmpty" Property="Text" Value="Niente da smistare." />
+                </DataTrigger>
+                <!-- The color of the topic: the border, the icon and the name of the zone, close up and from afar. -->
+                <DataTrigger Binding="{Binding HasColor}" Value="True">
+                    <Setter TargetName="ZoneFrame" Property="BorderBrush" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneIcon" Property="TextElement.Foreground" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneTitle" Property="Foreground" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneLabel" Property="BorderBrush" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneLabelTitle" Property="Foreground" Value="{Binding ColorBrush}" />
                 </DataTrigger>
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
@@ -688,45 +744,109 @@
                     </DockPanel>
                 </Border>
 
-                <!-- Status bar: where the archive is, or what just happened with its buttons, and the keys worth knowing -->
-                <Border DockPanel.Dock="Bottom" Height="{DynamicResource Brace.StatusBarHeight}" Padding="10,0"
-                        Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
-                        BorderThickness="0,1,0,0" TextElement.FontSize="{DynamicResource Brace.StatusBarTextSize}"
-                        TextElement.Foreground="{DynamicResource Brace.TextSecondary}">
-                    <DockPanel>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                            <ContentControl Style="{StaticResource Brace.Kbd}" Content="Invio" />
-                            <TextBlock Margin="4,0,12,0" Text="apri" />
-                            <ContentControl Style="{StaticResource Brace.Kbd}" Content="F2" />
-                            <TextBlock Margin="4,0,12,0" Text="rinomina" />
-                            <ContentControl Style="{StaticResource Brace.Kbd}" Content="Ctrl+C" />
-                            <TextBlock Margin="4,0,12,0" Text="copia" />
-                            <ContentControl Style="{StaticResource Brace.Kbd}" Content="Ctrl+V" />
-                            <TextBlock Margin="4,0,12,0" Text="incolla" />
-                            <ContentControl Style="{StaticResource Brace.Kbd}" Content="Ctrl+Z" />
-                            <TextBlock Margin="4,0,12,0" Text="annulla" />
-                            <ContentControl Style="{StaticResource Brace.Kbd}" Content="Canc" />
-                            <TextBlock Margin="4,0,12,0" Text="nel Cestino" />
-                            <ContentControl Style="{StaticResource Brace.Kbd}" Content="Alt+E" />
-                            <TextBlock Margin="4,0,0,0" Text="chiudi" />
-                        </StackPanel>
+                <!-- Status bar, as br-statusbar and as in Explorer. On the left the archive, with how many items it has and what
+                     they take, or the operation under way; on the right the selection, the free space of the disk and the keys
+                     worth knowing. What an operation did, with Annulla and Mostra, comes in a toast instead. -->
+                <StatusBar DockPanel.Dock="Bottom">
+                    <StatusBar.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <DockPanel LastChildFill="False" />
+                        </ItemsPanelTemplate>
+                    </StatusBar.ItemsPanel>
+                    <StatusBarItem Visibility="{Binding IsBusy, Converter={StaticResource Hidden}}">
                         <StackPanel Orientation="Horizontal">
-                            <!-- A move, copy or deletion under way, in the background: the LEDs of br-activity, next to what is being done. -->
-                            <Control Style="{StaticResource Brace.Activity}" Margin="0,0,8,0"
-                                     Visibility="{Binding IsBusy, Converter={StaticResource Visible}}" />
-                            <TextBlock MaxWidth="600" VerticalAlignment="Center" Text="{Binding Status}" TextTrimming="CharacterEllipsis"
-                                       ToolTip="{Binding Status}" />
-                            <!-- After an operation: the way back, and the way to go and see, next to the message. -->
-                            <StackPanel Margin="8,0,0,0" Orientation="Horizontal"
-                                        Visibility="{Binding Notice, Converter={StaticResource NullToVisibility}}">
-                                <Button Style="{StaticResource NoticeAction}" Content="Annulla" ToolTip="{Binding UndoLabel}"
-                                        IsEnabled="{Binding CanUndo}" Click="NoticeUndo_Click" />
-                                <Button Style="{StaticResource NoticeAction}" Content="Mostra" ToolTip="Vai dove sono finiti, con gli elementi selezionati"
-                                        Click="NoticeShow_Click" Visibility="{Binding CanShowNotice, Converter={StaticResource Visible}}" />
-                            </StackPanel>
+                            <Button Style="{StaticResource Brace.StatusBar.Button}" ToolTip="{Binding ArchiveToolTip}" Click="StatusArchive_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.Database16}" />
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding ArchiveName}" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Text="{Binding ArchiveSummary}" />
                         </StackPanel>
-                    </DockPanel>
-                </Border>
+                    </StatusBarItem>
+                    <!-- A move, copy or deletion under way, in the background: the LEDs of br-activity, next to what is being done. -->
+                    <StatusBarItem Visibility="{Binding IsBusy, Converter={StaticResource Visible}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Control Style="{StaticResource Brace.Activity}" Margin="0,0,8,0" />
+                            <TextBlock MaxWidth="600" VerticalAlignment="Center" Text="{Binding Activity}" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Activity}" />
+                        </StackPanel>
+                    </StatusBarItem>
+                    <!-- From the right edge inwards. -->
+                    <StatusBarItem DockPanel.Dock="Right">
+                        <Button x:Name="ShortcutsButton" Style="{StaticResource Brace.StatusBar.Button}" ToolTip="I tasti da sapere"
+                                AutomationProperties.Name="Scorciatoie da tastiera" Click="ShortcutsButton_Click">
+                            <Path Style="{StaticResource Brace.StatusIcon}" Margin="0" Data="{StaticResource Brace.Icon.QuestionCircle16}" />
+                        </Button>
+                    </StatusBarItem>
+                    <StatusBarItem DockPanel.Dock="Right" ToolTip="{Binding DiskToolTip}"
+                                   Visibility="{Binding DiskText, Converter={StaticResource NullToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path>
+                                <Path.Style>
+                                    <Style TargetType="Path" BasedOn="{StaticResource Brace.StatusIcon}">
+                                        <Setter Property="Data" Value="{StaticResource Brace.Icon.HardDrive16}" />
+                                        <Style.Triggers>
+                                            <!-- Short of space: the icon in the color of warnings, and the text says it too. -->
+                                            <DataTrigger Binding="{Binding IsDiskLow}" Value="True">
+                                                <Setter Property="Fill" Value="{DynamicResource Brace.StatusBarWarning}" />
+                                                <Setter Property="Data" Value="{StaticResource Brace.Icon.Warning16}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                            <TextBlock VerticalAlignment="Center" Text="{Binding DiskText}" />
+                        </StackPanel>
+                    </StatusBarItem>
+                    <StatusBarItem DockPanel.Dock="Right" Margin="0,0,12,0"
+                                   Visibility="{Binding SelectionSummary, Converter={StaticResource NullToVisibility}}">
+                        <TextBlock Text="{Binding SelectionSummary}" />
+                    </StatusBarItem>
+                </StatusBar>
+
+                <!-- The keys worth knowing, from the «?» of the status bar, by what they act on. -->
+                <Popup x:Name="ShortcutsPopup" PlacementTarget="{Binding ElementName=ShortcutsButton}" Placement="Custom"
+                       StaysOpen="False" AllowsTransparency="True" PopupAnimation="None">
+                    <ContentControl Style="{StaticResource Brace.PopupFrame}">
+                        <ItemsControl Margin="12,6,12,8" Focusable="False" ItemsSource="{x:Static views:ShortcutGroup.All}" Grid.IsSharedSizeScope="True">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type views:ShortcutGroup}">
+                                    <StackPanel Margin="0,6,0,0">
+                                        <TextBlock Margin="0,0,0,4" Style="{StaticResource Brace.Text.Label}" Foreground="{DynamicResource Brace.TextTertiary}"
+                                                   Text="{Binding Title}" />
+                                        <ItemsControl Focusable="False" ItemsSource="{Binding Hints}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type views:ShortcutHint}">
+                                                    <Grid Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="Keys" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <ItemsControl Margin="0,0,12,0" Focusable="False" ItemsSource="{Binding Keys}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <ContentControl Margin="0,0,4,0" Style="{StaticResource Brace.Kbd}" Content="{Binding}" />
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{DynamicResource Brace.TextSecondary}"
+                                                                   Text="{Binding Action}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ContentControl>
+                </Popup>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -799,6 +919,10 @@
                                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                                 <Setter TargetName="TopicIcon" Property="Data" Value="{StaticResource Brace.Icon.FolderFilled20}" />
                                                 <Setter TargetName="TopicIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Accent}" />
+                                            </DataTrigger>
+                                            <!-- A topic with a color keeps it, chosen or not: the row lit up says which one is chosen. -->
+                                            <DataTrigger Binding="{Binding HasColor}" Value="True">
+                                                <Setter TargetName="TopicIcon" Property="TextElement.Foreground" Value="{Binding ColorBrush}" />
                                             </DataTrigger>
                                         </HierarchicalDataTemplate.Triggers>
                                     </HierarchicalDataTemplate>
@@ -948,6 +1072,54 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </DockPanel>
+
+                        <!-- Toasts (br-toasts): what just happened, in the bottom right corner over the board, the canvas and the
+                             results; the newest at the bottom, at most three. -->
+                        <ItemsControl Width="360" Margin="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Focusable="False"
+                                      ItemsSource="{Binding Toasts}" AutomationProperties.Name="Notifiche">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ToastViewModel}">
+                                    <Border Margin="0,8,0,0" Padding="12,8,4,8" Background="{DynamicResource Brace.SurfaceOverlay}"
+                                            BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1" CornerRadius="{StaticResource Brace.RadiusMd}"
+                                            Effect="{StaticResource Brace.ShadowOverlay}" Loaded="Toast_Loaded">
+                                        <DockPanel>
+                                            <Path x:Name="ToastIcon" DockPanel.Dock="Left" Margin="0,2,8,0" VerticalAlignment="Top" Style="{StaticResource Brace.Icon}"
+                                                  Data="{StaticResource Brace.Icon.CheckmarkCircle16}" TextElement.Foreground="{DynamicResource Brace.Success}" />
+                                            <Button DockPanel.Dock="Right" Margin="8,-2,0,0" VerticalAlignment="Top" Style="{StaticResource Brace.IconButton.Small}"
+                                                    ToolTip="Chiudi" AutomationProperties.Name="Chiudi notifica" Click="ToastDismiss_Click">
+                                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
+                                            </Button>
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brace.TextPrimary}" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                <TextBlock Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding Body}" TextWrapping="Wrap"
+                                                           Visibility="{Binding Body, Converter={StaticResource NullToVisibility}}" />
+                                                <StackPanel Margin="0,6,0,0" Orientation="Horizontal" Visibility="{Binding HasActions, Converter={StaticResource Visible}}">
+                                                    <Button Margin="0,0,4,0" Style="{StaticResource Brace.Button.Small}" Content="Annulla"
+                                                            ToolTip="Rimetti tutto com'era (Ctrl+Z)" Click="ToastUndo_Click"
+                                                            Visibility="{Binding CanUndo, Converter={StaticResource Visible}}" />
+                                                    <Button Style="{StaticResource Brace.Button.Small}" Content="Mostra" ToolTip="Vai dove sono finiti, con gli elementi selezionati"
+                                                            Click="ToastShow_Click" Visibility="{Binding CanShow, Converter={StaticResource Visible}}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Info">
+                                            <Setter TargetName="ToastIcon" Property="Data" Value="{StaticResource Brace.Icon.Info16}" />
+                                            <Setter TargetName="ToastIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Info}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Warning">
+                                            <Setter TargetName="ToastIcon" Property="Data" Value="{StaticResource Brace.Icon.Warning16}" />
+                                            <Setter TargetName="ToastIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Warning}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Danger">
+                                            <Setter TargetName="ToastIcon" Property="Data" Value="{StaticResource Brace.Icon.ErrorCircle16}" />
+                                            <Setter TargetName="ToastIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Danger}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </Grid>
                 </Grid>
             </DockPanel>

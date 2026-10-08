@@ -20,8 +20,12 @@ public interface IArchiveHost
 }
 
 /// <summary>One archive of the list.</summary>
-public sealed class ArchiveEntryViewModel(string path, bool isCurrent)
+public sealed partial class ArchiveEntryViewModel(string path, bool isCurrent) : ObservableObject
 {
+    /// <summary>"2,3 GB · disco E: 120 GB liberi su 465 GB": counted in the background, null until then.</summary>
+    [ObservableProperty]
+    private string? _details;
+
     public string Path { get; } = path;
 
     public string Name => System.IO.Path.GetFileName(System.IO.Path.TrimEndingDirectorySeparator(Path));
@@ -46,7 +50,9 @@ public sealed partial class ArchivesViewModel : ObservableObject
     private readonly IArchiveHost _host;
     private readonly IReadOnlyList<ReservedFolder> _reserved;
     private readonly Func<string, string, bool> _sameDrive;
+    private readonly Func<string, DiskSpace?> _diskOf;
     private CancellationTokenSource? _checking;
+    private CancellationTokenSource? _measuring;
 
     [ObservableProperty]
     private ArchiveEntryViewModel? _selected;
@@ -75,13 +81,15 @@ public sealed partial class ArchivesViewModel : ObservableObject
 
     /// <param name="reserved">Folders of Windows that cannot be archives.</param>
     /// <param name="sameDrive">Whether a move is on the same drive; tests can say otherwise.</param>
+    /// <param name="diskOf">How much room the disk of a folder has; tests can say otherwise.</param>
     internal ArchivesViewModel(AppSettings settings, IArchiveHost host, IReadOnlyList<ReservedFolder> reserved,
-        Func<string, string, bool>? sameDrive = null)
+        Func<string, string, bool>? sameDrive = null, Func<string, DiskSpace?>? diskOf = null)
     {
         _settings = settings;
         _host = host;
         _reserved = reserved;
         _sameDrive = sameDrive ?? ArchiveFolders.IsSameDrive;
+        _diskOf = diskOf ?? DiskSpace.Of;
         // On the same drive as the Desktop, moving its files into the archive is instant.
         _newParent = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         IsWelcome = host.CurrentRoot is null;
@@ -116,6 +124,35 @@ public sealed partial class ArchivesViewModel : ObservableObject
                    ?? Archives.FirstOrDefault(entry => entry.IsCurrent)
                    ?? Archives.FirstOrDefault();
         OnPropertyChanged(nameof(HasArchives));
+        MeasureArchives();
+    }
+
+    /// <summary>The window closes: the archives are not counted any further.</summary>
+    public void StopMeasuring() => _measuring?.Cancel();
+
+    /// <summary>
+    /// How much each archive takes, everything in it counted, and how much room its disk has left: in the background, one
+    /// archive after the other, each shown under its name as soon as it is known.
+    /// </summary>
+    private async void MeasureArchives()
+    {
+        _measuring?.Cancel();
+        var measuring = _measuring = new CancellationTokenSource();
+        var token = measuring.Token;
+        try
+        {
+            foreach (var entry in Archives.Where(entry => !entry.IsMissing).ToList())
+            {
+                var bytes = await Task.Run(() => FolderSize.Of([entry.Path], token), token);
+                entry.Details = _diskOf(entry.Path) is { } disk
+                    ? $"{ByteSize.Format(bytes)} · disco {disk.Name} {disk.Room}{(disk.IsLow ? ": poco spazio" : "")}"
+                    : ByteSize.Format(bytes);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The list was read again, or the window closed.
+        }
     }
 
     // ---- New archives ----
@@ -272,6 +309,16 @@ public sealed partial class ArchivesViewModel : ObservableObject
         Progress = 0;
         try
         {
+            // Better said now than a copy stopped halfway, with the archive in two pieces.
+            Status = $"Conto quanto occupa «{entry.Name}»…";
+            var destinationParent = Path.GetDirectoryName(target)!;
+            var needed = await Task.Run(() => FolderSize.Of([entry.Path]));
+            if (_diskOf(destinationParent) is { } disk && needed > disk.Free)
+            {
+                Status = $"Su {disk.Name} non c'è abbastanza spazio per l'archivio: servono {ByteSize.Format(needed)} e ne restano " +
+                         $"{ByteSize.Format(disk.Free)}. L'archivio resta dov'era.";
+                return;
+            }
             Status = $"Copia di «{entry.Name}» in corso…";
             if (!ShellFileOperations.Copy([entry.Path], Path.GetDirectoryName(target)!, OwnerWindow) || !Directory.Exists(target))
             {

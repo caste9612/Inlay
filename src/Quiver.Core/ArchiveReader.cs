@@ -64,7 +64,7 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
 
         foreach (var subfolder in TileFolders(folder))
         {
-            var color = metadata.ColorOf(ArchiveLayout.ToRelativeKey(Root, subfolder.FullName));
+            var color = metadata.ChosenColorOf(ArchiveLayout.ToRelativeKey(Root, subfolder.FullName));
             tiles.Add(ReadTile(subfolder.Name, subfolder.FullName, isGeneral: false, ReadItems(subfolder), color));
         }
 
@@ -133,7 +133,8 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
     private Topic ReadTopic(DirectoryInfo folder)
     {
         var children = InOrder(Directories(folder).Where(IsMarkedTopic)).Select(ReadTopic).ToList();
-        return new Topic(folder.FullName, ArchiveLayout.ToRelativeKey(Root, folder.FullName), children);
+        var key = ArchiveLayout.ToRelativeKey(Root, folder.FullName);
+        return new Topic(folder.FullName, key, children, metadata.ColorOf(key), metadata.IsColorAutomatic(key));
     }
 
     /// <summary>Those moved by the user keep their place, the others follow in name order (the sort is stable).</summary>

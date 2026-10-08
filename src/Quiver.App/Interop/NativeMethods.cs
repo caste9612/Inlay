@@ -125,6 +125,11 @@ internal static partial class NativeMethods
     [LibraryImport("kernel32.dll")]
     public static partial uint GetCurrentThreadId();
 
+    /// <summary>The space of the disk holding a folder: also for folders on the network and drives mounted in a folder.</summary>
+    [LibraryImport("kernel32.dll", EntryPoint = "GetDiskFreeSpaceExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetDiskFreeSpaceEx(string directoryName, out ulong freeBytesAvailable, out ulong totalBytes, out ulong totalFreeBytes);
+
     [LibraryImport("user32.dll", EntryPoint = "GetWindowTextW", StringMarshalling = StringMarshalling.Utf16)]
     public static partial int GetWindowText(nint hWnd, [Out] char[] lpString, int nMaxCount);
 

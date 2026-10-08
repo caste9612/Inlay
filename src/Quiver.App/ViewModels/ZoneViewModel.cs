@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Quiver.App.ViewModels;
@@ -25,6 +26,11 @@ public sealed partial class ZoneViewModel : ObservableObject
     [ObservableProperty]
     private Rect? _bounds;
 
+    /// <summary>The color of its topic: on the border and the name of the zone, and from afar a light tint. None for «Da smistare».</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasColor))]
+    private Brush? _colorBrush;
+
     public ZoneViewModel(string key, string title, TopicViewModel? topic)
     {
         Key = key;
@@ -39,6 +45,8 @@ public sealed partial class ZoneViewModel : ObservableObject
     public TopicViewModel? Topic { get; private set; }
 
     public bool IsInbox => Topic is null;
+
+    public bool HasColor => ColorBrush is not null;
 
     /// <summary>Inside the zone of another topic.</summary>
     public bool IsNested { get; init; }
@@ -60,6 +68,7 @@ public sealed partial class ZoneViewModel : ObservableObject
     {
         Title = title;
         Topic = topic;
+        ColorBrush = topic?.ColorBrush;
         var tileColumns = Tiles.Sum(tile => tile.Columns);
         var childColumns = Children.Sum(child => child.Columns);
         var columns = Math.Clamp(Math.Max(tileColumns, childColumns), 1, UsualColumns);

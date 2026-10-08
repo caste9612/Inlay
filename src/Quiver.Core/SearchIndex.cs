@@ -13,9 +13,20 @@ public sealed class SearchIndex
 {
     private readonly Entry[] _entries;
 
-    private SearchIndex(Entry[] entries) => _entries = entries;
+    private SearchIndex(Entry[] entries, int archiveCount, long archiveBytes)
+    {
+        _entries = entries;
+        ArchiveCount = archiveCount;
+        ArchiveBytes = archiveBytes;
+    }
 
     public int Count => _entries.Length;
+
+    /// <summary>The files and folders of the archive, without those of «Da smistare» that are on the Desktop.</summary>
+    public int ArchiveCount { get; }
+
+    /// <summary>What the files of the archive take, the hidden ones and «Da smistare» on the Desktop left out.</summary>
+    public long ArchiveBytes { get; }
 
     public static SearchIndex Build(string root, CancellationToken cancellationToken = default) =>
         Build(root, [], cancellationToken);
@@ -26,6 +37,8 @@ public sealed class SearchIndex
     public static SearchIndex Build(string root, IReadOnlyList<InboxSource> inboxSources, CancellationToken cancellationToken = default)
     {
         var entries = IndexArchive(Path.GetFullPath(root), cancellationToken);
+        var archiveCount = entries.Count;
+        var archiveBytes = entries.Sum(entry => entry.Item.Size ?? 0);
         foreach (var source in inboxSources)
         {
             foreach (var item in source.Folders.SelectMany(TopLevelItems))
@@ -36,7 +49,7 @@ public sealed class SearchIndex
                 entries.Add(new Entry(item, source.Title, SearchText.Normalize(item.DisplayName), SearchText.Normalize(source.Title)));
             }
         }
-        return new SearchIndex([.. entries]);
+        return new SearchIndex([.. entries], archiveCount, archiveBytes);
     }
 
     private static List<Entry> IndexArchive(string root, CancellationToken cancellationToken)
@@ -50,12 +63,13 @@ public sealed class SearchIndex
         var items = new FileSystemEnumerable<ArchiveItem>(
             root,
             (ref FileSystemEntry entry) => new ArchiveItem(
-                entry.ToFullPath(), entry.FileName.ToString(), entry.IsDirectory, entry.LastWriteTimeUtc.LocalDateTime),
+                entry.ToFullPath(), entry.FileName.ToString(), entry.IsDirectory, entry.LastWriteTimeUtc.LocalDateTime,
+                entry.IsDirectory ? null : entry.Length),
             options)
         {
             ShouldIncludePredicate = (ref FileSystemEntry entry) => !ArchiveLayout.IsHiddenName(entry.FileName),
             ShouldRecursePredicate = (ref FileSystemEntry entry) =>
-                !ArchiveLayout.IsHiddenName(entry.FileName) && !IsLinkToElsewhere(ref entry),
+                !ArchiveLayout.IsHiddenName(entry.FileName) && !ArchiveLayout.IsLinkToElsewhere(ref entry),
         };
 
         var entries = new List<Entry>();
@@ -121,9 +135,5 @@ public sealed class SearchIndex
     /// Symbolic links and junctions can lead outside the archive or back into it, so they are not followed.
     /// Other reparse points, like OneDrive placeholders, are ordinary folders and are searched.
     /// </summary>
-    private static bool IsLinkToElsewhere(ref FileSystemEntry entry) =>
-        (entry.Attributes & FileAttributes.ReparsePoint) != 0 &&
-        new DirectoryInfo(entry.ToFullPath()).LinkTarget is not null;
-
     private sealed record Entry(ArchiveItem Item, string RelativeDirectory, string NameKey, string PathKey);
 }

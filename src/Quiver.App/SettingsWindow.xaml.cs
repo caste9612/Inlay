@@ -27,8 +27,12 @@ public partial class SettingsWindow : Window
             WindowCorners.MakeSmall(handle);
         };
         Loaded += (_, _) => View.FocusStart();
-        // A check under way must not go on after the window: the archive stays where it was.
-        Closing += (_, _) => ViewModel.Archives.CancelCheck();
+        // A check under way must not go on after the window: the archive stays where it was. Nor the count of the archives.
+        Closing += (_, _) =>
+        {
+            ViewModel.Archives.CancelCheck();
+            ViewModel.Archives.StopMeasuring();
+        };
     }
 
     public SettingsViewModel ViewModel { get; }
