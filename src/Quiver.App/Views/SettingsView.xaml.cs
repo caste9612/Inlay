@@ -25,6 +25,8 @@ public partial class SettingsView : UserControl
             SectionList.Focus();
     }
 
+    private void Close_Click(object sender, RoutedEventArgs e) => Window.GetWindow(this)?.Close();
+
     /// <summary>A combination was pressed: it is tried at once, and the field shows the one in use afterwards.</summary>
     private void HotkeyField_ShortcutCaptured(object? sender, string shortcut)
     {

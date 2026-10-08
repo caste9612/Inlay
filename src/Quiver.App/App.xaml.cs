@@ -74,12 +74,13 @@ public partial class App : Application, ISettingsHost
             ? [new InboxSource("Desktop", [desktop])]
             : WindowsFolders.InboxSources(_settings);
         _viewModel = new MainViewModel(root, inboxSources: inboxSources);
-        _panel = new PanelWindow(_viewModel);
-        _panel.ArchivesRequested += (_, _) => ShowSettings(SettingsSection.Archives);
-        _panel.Prepare();
+        var panel = _panel = new PanelWindow(_viewModel, _settings);
+        panel.ArchivesRequested += (_, _) => ShowSettings(SettingsSection.Archives);
+        panel.Prepare();
 
         _tray = new TrayIcon(_settings.Hotkey, ShowPanelFromTray, OpenArchiveFolder,
-            () => ShowSettings(SettingsSection.Archives), () => ShowSettings(SettingsSection.Hotkey), Shutdown);
+            () => ShowSettings(SettingsSection.Archives), () => ShowSettings(SettingsSection.Hotkey),
+            () => panel.Topmost, value => panel.Topmost = value, Quit);
         _hotkey = new GlobalHotkey();
         _hotkey.Pressed += (_, _) => _panel.Toggle();
         if (!_hotkey.TryRegister(_settings.Hotkey))
@@ -110,6 +111,20 @@ public partial class App : Application, ISettingsHost
         base.OnExit(e);
     }
 
+    /// <summary>Windows is shutting down or signing out: the window closes for good, remembering where it was.</summary>
+    protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+    {
+        _panel?.AllowClose();
+        base.OnSessionEnding(e);
+    }
+
+    /// <summary>«Esci»: the only way the window really closes; otherwise it goes back to the notification area.</summary>
+    private void Quit()
+    {
+        _panel?.AllowClose();
+        Shutdown();
+    }
+
     private void Execute(string command, IReadOnlyList<string> arguments)
     {
         switch (command)
@@ -118,7 +133,7 @@ public partial class App : Application, ISettingsHost
             case Commands.Show: _panel?.ShowPanel(); break;
             case Commands.Hide: _panel?.HidePanel("--hide command", returnFocus: true); break;
             case Commands.Sort: SortFiles(arguments); break;
-            case Commands.Exit: Shutdown(); break;
+            case Commands.Exit: Quit(); break;
             default: Log.Write($"Unknown command: {command}"); break;
         }
     }
@@ -149,16 +164,20 @@ public partial class App : Application, ISettingsHost
             _viewModel.OpenFolder(_viewModel.Root);
     }
 
-    /// <summary>The window of the settings, from the tray or the panel: one at a time, on the page asked for.</summary>
+    /// <summary>
+    /// The window of the settings, from the tray or from Quiver: one at a time, on the page asked for. Opened from a visible
+    /// Quiver, it belongs to it and stays above it, pinned or not.
+    /// </summary>
     private void ShowSettings(SettingsSection section)
     {
-        _panel?.HidePanel("settings");
         if (_settingsWindow is { } open)
         {
             open.Show(section);
             return;
         }
         _settingsWindow = new SettingsWindow(NewSettingsViewModel(section));
+        if (_panel is { IsVisible: true } panel)
+            _settingsWindow.Owner = panel;
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
         _settingsWindow.Activate();

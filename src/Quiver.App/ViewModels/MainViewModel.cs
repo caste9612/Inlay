@@ -93,12 +93,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         LoadArchive(root);
     }
 
-    /// <summary>Raised after something was opened, so the panel can get out of the way.</summary>
-    public event EventHandler? ItemOpened;
-
     /// <summary>
     /// Raised when a file operation ends. The shell's own windows take the focus during the operation
-    /// and do not give it back, so the panel has to take it again.
+    /// and do not give it back, so the window has to take it again.
     /// </summary>
     public event EventHandler? FileOperationCompleted;
 
@@ -241,6 +238,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         CommitAllEdits();
     }
 
+    /// <summary>
+    /// The window came forward again, from the taskbar, Alt+Tab or a click: what changed meanwhile shows, dates included,
+    /// unless something is under way that a reload would throw away.
+    /// </summary>
+    public void OnWindowActivated()
+    {
+        if (!_isPanelVisible || Prompt is not null || Picker is not null || IsBusy || EditTargets().Any(target => target.IsEditing))
+            return;
+        Reload();
+    }
+
     public void ReportOpenTime(TimeSpan elapsed) => Log.Write($"Panel shown in {elapsed.TotalMilliseconds:N0} ms");
 
     /// <summary>Builds the search index synchronously, for preview rendering.</summary>
@@ -261,22 +269,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public void Open(IReadOnlyList<ItemViewModel> items)
     {
-        var opened = items.Count(item => TryShell(() => ShellLauncher.Open(item.Item.FullPath), item.Name));
-        if (opened > 0)
-            ItemOpened?.Invoke(this, EventArgs.Empty);
+        foreach (var item in items)
+            TryShell(() => ShellLauncher.Open(item.Item.FullPath), item.Name);
     }
 
-    public void Reveal(ItemViewModel item)
-    {
-        if (TryShell(() => ShellLauncher.Reveal(item.Item.FullPath), item.Name))
-            ItemOpened?.Invoke(this, EventArgs.Empty);
-    }
+    public void Reveal(ItemViewModel item) => TryShell(() => ShellLauncher.Reveal(item.Item.FullPath), item.Name);
 
-    public void OpenFolder(string path)
-    {
-        if (TryShell(() => ShellLauncher.Open(path), Path.GetFileName(path)))
-            ItemOpened?.Invoke(this, EventArgs.Empty);
-    }
+    public void OpenFolder(string path) => TryShell(() => ShellLauncher.Open(path), Path.GetFileName(path));
 
     public void OpenWith(ItemViewModel item) => TryShell(() => ShellLauncher.OpenWith(item.Item.FullPath), item.Name);
 

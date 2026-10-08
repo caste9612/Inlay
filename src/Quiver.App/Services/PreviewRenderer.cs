@@ -15,7 +15,8 @@ namespace Quiver.App.Services;
 internal static class PreviewRenderer
 {
     private static readonly Size PanelSize = new(1240, 780);
-    private static readonly Size SettingsSize = new(944, 611);
+    // The window less the frame of Windows, which is invisible: its title bar is in the view.
+    private static readonly Size SettingsSize = new(960, 650);
 
     public static void Render(CommandLineOptions options)
     {

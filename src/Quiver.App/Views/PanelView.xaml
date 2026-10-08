@@ -246,36 +246,60 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1">
+    <!-- No border of its own: in the window, the frame of Windows draws it in border-default (brace:Chrome.Dark). -->
+    <Border Background="{DynamicResource Brace.SurfaceBase}">
         <Grid>
             <DockPanel>
 
-                <!-- Title bar: logo, search, close -->
-                <Border DockPanel.Dock="Top" Height="48" Padding="14,0,8,0" Background="{DynamicResource Brace.SurfaceOverlay}"
-                        BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,0,0,1">
+                <!-- Title bar, as br-titlebar of Brace: logo and name, the search in the middle, the badge of the archive, the pin,
+                     then the buttons of the window. Where nothing takes the click, dragging it moves the window and a double click
+                     maximizes it. Its height is the CaptionHeight of PanelWindow. -->
+                <Border DockPanel.Dock="Top" Style="{StaticResource Quiver.TitleBar}">
                     <DockPanel>
                         <Image DockPanel.Dock="Left" Width="24" Height="24" Source="{StaticResource Quiver.Logo}"
                                RenderOptions.BitmapScalingMode="HighQuality" />
-                        <TextBlock DockPanel.Dock="Left" Margin="10,0,16,0" VerticalAlignment="Center"
+                        <TextBlock DockPanel.Dock="Left" Margin="8,0,0,0" VerticalAlignment="Center"
                                    Style="{StaticResource Brace.Text.Heading}" Text="Quiver" />
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton}" ToolTip="Chiudi (Esc)"
-                                AutomationProperties.Name="Chiudi" Click="Close_Click">
+                        <!-- The buttons of the window, from the right edge inwards. -->
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Quiver.TitleBarCloseButton}"
+                                ToolTip="Chiudi: Quiver resta nell'area di notifica (Esc)" AutomationProperties.Name="Chiudi" Click="Close_Click">
                             <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
                         </Button>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Quiver.MaximizeButton}" AutomationProperties.Name="Ingrandisci"
+                                Click="Maximize_Click">
+                            <Path Style="{StaticResource Quiver.MaximizeIcon}" />
+                        </Button>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Quiver.TitleBarButton}" ToolTip="Riduci a icona"
+                                AutomationProperties.Name="Riduci a icona" Click="Minimize_Click">
+                            <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Subtract16}" />
+                        </Button>
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Quiver.PinButton}" AutomationProperties.Name="Sempre in primo piano"
+                                      IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
+                            <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Pin16}" />
+                        </ToggleButton>
                         <!-- The archive in use, as the vault in Obsidian: a click opens the window of the archives. -->
-                        <Button DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center" Style="{StaticResource Brace.Button.Ghost}"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Quiver.ProjectBadge}"
                                 ToolTip="Archivi: cambia, crea, rinomina o sposta l'archivio" AutomationProperties.Name="Archivi"
                                 Click="Archives_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Folder16}" />
-                                <TextBlock VerticalAlignment="Center" MaxWidth="220" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
-                                <Path Margin="6,0,0,0" Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ChevronDown16}" />
-                            </StackPanel>
+                            <TextBlock MaxWidth="200" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
                         </Button>
-                        <TextBox x:Name="SearchBox" Width="440" HorizontalAlignment="Left" VerticalAlignment="Center"
-                                 Tag="Cerca in tutto l'archivio" AutomationProperties.Name="Cerca in tutto l'archivio"
-                                 Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
-                                 PreviewKeyDown="SearchBox_PreviewKeyDown" />
+                        <!-- The search in the middle of the bar, 280 wide and control-sm tall as in br-titlebar; narrower when the
+                             window is. Either side of it the bar is free to drag the window by. -->
+                        <Grid Margin="16,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10*" MaxWidth="280" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="SearchBox" Grid.Column="1" MinHeight="0" Height="{StaticResource Brace.ControlSm}" Padding="26,0,8,0"
+                                     VerticalAlignment="Center" Tag="Cerca in tutto l'archivio" AutomationProperties.Name="Cerca in tutto l'archivio"
+                                     WindowChrome.IsHitTestVisibleInChrome="True"
+                                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                                     PreviewKeyDown="SearchBox_PreviewKeyDown" />
+                            <Path Grid.Column="1" Margin="8,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"
+                                  Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Search16}"
+                                  TextElement.Foreground="{DynamicResource Brace.TextTertiary}" />
+                        </Grid>
                     </DockPanel>
                 </Border>
 

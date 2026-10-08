@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Interop;
+using Quiver.App.Interop;
 using Quiver.App.ViewModels;
 
 namespace Quiver.App;
@@ -19,7 +20,12 @@ public partial class SettingsWindow : Window
             Title = "Benvenuto in Quiver";
             viewModel.Archives.ArchiveOpened += (_, _) => Close();
         }
-        SourceInitialized += (_, _) => viewModel.Archives.OwnerWindow = new WindowInteropHelper(this).Handle;
+        SourceInitialized += (_, _) =>
+        {
+            var handle = new WindowInteropHelper(this).Handle;
+            viewModel.Archives.OwnerWindow = handle;
+            WindowCorners.MakeSmall(handle);
+        };
         Loaded += (_, _) => View.FocusStart();
         // A check under way must not go on after the window: the archive stays where it was.
         Closing += (_, _) => ViewModel.Archives.CancelCheck();

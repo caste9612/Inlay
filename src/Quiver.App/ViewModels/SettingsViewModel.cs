@@ -95,6 +95,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>The first time, before any archive: the window greets, and the other pages wait.</summary>
     public bool IsWelcome => Archives.IsWelcome;
 
+    /// <summary>What the title bar of the window says.</summary>
+    public string Heading => IsWelcome ? "Benvenuto in Quiver" : "Impostazioni";
+
     public bool HasHotkeyProblem => HotkeyProblem is not null;
 
     /// <summary>A combination pressed in the field: tried at once, kept only if Windows gives it to Quiver.</summary>

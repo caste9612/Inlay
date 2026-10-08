@@ -144,18 +144,26 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 - **Brace**, il design system personale, dà colori (tema scuro), caratteri (Inter, Cascadia Mono), icone (Fluent) e componenti. La sua versione WPF è copiata in `src/Quiver.App/Brace` e non si modifica lì: le correzioni vanno fatte in Brace, così valgono per tutti i software che lo usano.
 - **Icone dei file**: cartelle e tipi comuni hanno l'icona di Brace del loro concetto, dal suo dizionario «un concetto, un'icona». Ci sono PDF, Word, fogli di calcolo, presentazioni, immagini, video, audio, archivi compressi, codice, posta, pagine web e modelli 3D. Le icone sono monocromatiche come tutte quelle di Brace; quelle che mancavano sono state aggiunte a Brace stesso. I file che nessun programma del PC apre hanno il documento di Brace. I programmi, i collegamenti e i file dei programmi installati tengono l'icona di Windows, che per loro è un logo.
-- **Icona**: una bacheca con tre riquadri, uno dei quali ambra come un riquadro selezionato. È disegnata in `scripts/genera-icona.py`; il logo nel pannello è lo stesso disegno, in `Themes/Quiver.xaml`.
+- **Icona**: una bacheca con tre riquadri, uno dei quali ambra come un riquadro selezionato. È disegnata in `scripts/genera-icona.py`; il logo nella barra del titolo è lo stesso disegno, in `Themes/Quiver.xaml`.
+- **Barra del titolo** (dalla 0.2.2): la disegna Quiver, come `br-titlebar` dell'AppShell di Brace, perché Brace per WPF non ha ancora la sua.
+  - Alta `titlebar-height` (32 px), su `surface-base`: il logo e il nome, la ricerca al centro (280 × 24), l'archivio come badge, il pin, poi riduci, ingrandisci e chiudi, larghi 46 px e alti quanto la barra. Chiudi diventa `danger` al passaggio, con l'icona in `text-on-accent`.
+  - Si trascina dove non ci sono controlli, e il doppio clic ingrandisce, come chiede Brace.
+  - Il pin è quello di Pulse su Brace: un `Brace.IconButton` da 24 px che, attivo, ha l'icona in `accent` su `accent-subtle`, con l'icona `Pin16` normale in tutti e due gli stati. Dice «Sempre in primo piano: attivo» o «disattivato». C'è anche nel menu della tray, come in Hive e Pulse.
+  - Il badge dell'archivio è neutro, perché la barra tiene il suo unico ambra per il pin attivo.
+  - L'icona per ripristinare una finestra ingrandita manca in Brace: è disegnata in `Themes/Quiver.xaml` e va portata in Brace, insieme a una barra del titolo per WPF.
+  - La finestra Impostazioni ha la stessa barra, con il solo pulsante chiudi.
 
 ### Due modalità, stessa interfaccia
 
-- **Pannello** (prima versione): con la scorciatoia compare sopra le finestre, sul monitor attivo, con il cursore già nella casella di ricerca. Quando apri un elemento il pannello sparisce e il file si apre nel workspace in cui stavi lavorando. Si chiude con `Esc` o con un clic fuori.
+- **Finestra** (dalla 0.2.2): con la scorciatoia Quiver viene davanti, con il cursore nella casella di ricerca; se è già davanti, la scorciatoia lo rimette nell'area di notifica. È una finestra normale con una barra del titolo di Brace: si sposta, si ridimensiona, si ingrandisce, compare nella barra delle applicazioni e in Alt+Tab, e non si chiude da sola quando si clicca altrove. Il pin la tiene sopra le altre finestre, per trascinarci dentro i file da Explorer. La X, `Esc` e la scorciatoia la rimettono nell'area di notifica. Ricorda posizione, dimensione e pin.
+  - Fino alla 0.2.1 era un pannello che compariva al centro del monitor attivo e si nascondeva con un clic fuori. Con il mouse non si poteva spostare, né usarlo insieme a Explorer: per questo è cambiato.
 - **Workspace Home** (versione successiva): l'app resta aperta a schermo intero in un workspace dedicato di GlazeWM. Quando apri un elemento da qui, l'app torna prima al workspace in cui stavi lavorando (o a quello collegato all'argomento) e lo apre lì.
 
 ### Tastiera
 
 | Tasto | Azione |
 |---|---|
-| `Alt+E` (scorciatoia globale) | apre e chiude il pannello |
+| `Alt+E` (scorciatoia globale) | porta Quiver davanti, o lo rimette nell'area di notifica se è già davanti |
 | scrivere | cerca in tutto l'archivio |
 | frecce, `Tab` | spostarsi tra argomenti, riquadri ed elementi |
 | `Invio` | apre (anche più elementi insieme) |
@@ -235,12 +243,16 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 ## 7. Integrazione con GlazeWM
 
-- **Il pannello non va affiancato, e GlazeWM lo lascia già stare: non serve nessuna regola.** Verificato il 7 ottobre 2026 su GlazeWM 3.9.1, quello installato, in due modi:
-  - nel codice di GlazeWM (`is_manageable` in `packages/wm-platform/src/native_window.rs`): non gestisce le finestre con lo stile `WS_EX_TOOLWINDOW`, né quelle che hanno un proprietario e nessuna barra del titolo;
-  - sulla finestra del pannello di Quiver in esecuzione: ha entrambe le caratteristiche.
+- **Dalla 0.2.2 la finestra di Quiver è normale, e GlazeWM la affianca alle altre.** Fino alla 0.2.1 il pannello era una finestra di strumenti (`WS_EX_TOOLWINDOW`), che GlazeWM non gestisce: lo dice `is_manageable` in `packages/wm-platform/src/native_window.rs`, verificato il 7 ottobre 2026 su GlazeWM 3.9.1. Ora non lo è più.
+  - Per tenerla libera, sopra le finestre affiancate, basta una regola; nel config attuale le finestre libere non stanno sempre sopra (`shown_on_top: false`), e il pin di Quiver fa la sua parte. Da provare.
 
-  La regola `ignore` servirà solo se un giorno il pannello cambierà tipo di finestra. La finestra Home invece dovrà essere gestita da GlazeWM.
-- **Focus**: quando chiudi il pannello con `Esc` o con la scorciatoia, Quiver ridà il focus alla finestra in cui stavi lavorando, invece di lasciarlo scegliere a Windows: con GlazeWM potrebbe finire su una finestra di un altro workspace, che verrebbe portato in primo piano. Le finestre nascoste da GlazeWM ("cloaked") sono escluse.
+    ```yaml
+    window_rules:
+      - commands: ['set-floating']
+        match:
+          - window_process: { equals: 'Quiver' }
+    ```
+- **Focus**: quando nascondi Quiver con `Esc`, la X o la scorciatoia, Quiver ridà il focus alla finestra in cui stavi lavorando, invece di lasciarlo scegliere a Windows: con GlazeWM potrebbe finire su una finestra di un altro workspace, che verrebbe portato in primo piano. Le finestre nascoste da GlazeWM ("cloaked") sono escluse.
 - **Tasti già presi da GlazeWM** nel config attuale: `Alt+Invio` apre cmd, quindi in Quiver le Proprietà si aprono dal tasto destro, finché quel tasto resta a GlazeWM.
 - **Scorciatoia**: la registra l'app; `Alt+E` è libera nel config attuale. In alternativa può gestirla GlazeWM con `shell-exec`, lanciando `Quiver.exe --toggle`.
 - **Interfaccia di comando (IPC)**: GlazeWM espone un WebSocket su `127.0.0.1:6123` con messaggi JSON. Si possono inviare comandi (es. `focus --workspace 3`), fare interrogazioni (workspace attivo, finestre) e ricevere eventi (cambio di focus, workspace attivato). L'app lo usa per sapere qual è il workspace attivo, per passare al workspace di un argomento prima di aprirlo e, in modalità Home, per tornare al workspace precedente.
@@ -269,6 +281,9 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - `Quiver.App.Tests`: i test delle operazioni sui file fatte dalla shell e dei view model del pannello e degli archivi, su archivi temporanei.
 - **Librerie**: CommunityToolkit.Mvvm (MVVM), H.NotifyIcon (icona nella tray), Velopack (installer), System.Text.Json. L'aspetto viene da Brace (vedi "Aspetto"). Le poche chiamate alle API di Windows per ora sono scritte a mano; CsWin32 resta candidata per quando l'integrazione crescerà.
 - **Istanza unica**: se l'app viene lanciata una seconda volta (`Quiver.exe --toggle`, o `--sort` con i file di «Invia a Quiver»), passa il comando e i percorsi all'istanza già aperta tramite una named pipe, una riga per ciascuno, e si chiude.
+- **Cornice della finestra**: `WindowChrome` con `CaptionHeight` 32 e senza vetro, come Pulse su Brace: Windows tiene la sua cornice invisibile per i bordi da trascinare, l'ombra, gli angoli piccoli (`DWMWCP_ROUNDSMALL`) e l'aggancio ai lati. Da ingrandita, la cornice resta 8 px fuori dallo schermo (a 100 %): il contenuto rientra di altrettanto, calcolato per lo schermo su cui sta.
+  - Costo noto: in Reticle (TacticalUI) `WindowChrome` è stato misurato a 4K su una GPU integrata, con una finestra che scorre immagini: 60 fps senza, 32 con vetro 0, e circa 70 MB di memoria della GPU in più. Reticle 0.6.0 l'ha sostituito con la gestione diretta dei messaggi della cornice. Se Quiver dovesse risultare pesante, quella è la strada.
+- **Finestra creata una volta sola**: chiuderla, con la X, Alt+F4 o dalla barra delle applicazioni, la nasconde soltanto; si chiude davvero solo con **Esci** o quando Windows si spegne.
 - **Movimento**: il contenuto del pannello e le domande sopra la bacheca entrano con una dissolvenza e uno scorrimento di pochi pixel, con le durate e le curve di Brace (`Views/Motion.cs`); niente si muove se Windows ha le animazioni disattivate. Durante un trascinamento due adorner disegnano l'etichetta che segue il puntatore e la riga dove andrà un riquadro.
 - **Operazioni sui file**: passano tutte dalla shell di Windows, con le sue finestre di avanzamento e di conflitto, e usano il Cestino. Ognuna lascia un passo nel registro per annullarla, con quello che serve a rifarla al contrario, metadati compresi: dove sono finiti gli elementi, come si chiamavano, quando sono andati nel Cestino.
 - **Ripristino dal Cestino**: il Cestino di ogni disco tiene ogni elemento come due file, `$R…` con il contenuto e `$I…` con il percorso originale e la data.
@@ -307,7 +322,8 @@ Fatto:
 - con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`, e che la finestra Archivi resta libera perché non si ridimensiona;
 - dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli;
 - l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo;
-- sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo. Tutto pubblicato come pre-release 0.2.1.
+- sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo. Tutto pubblicato come pre-release 0.2.1;
+- dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, da provare dal vivo.
 
 1. Installare dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta, con «Sposta in…» e «Invia a Quiver».
 2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.

@@ -10,6 +10,11 @@
         Icon="Assets/quiver.ico"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen">
-    <!-- Not resizable: GlazeWM leaves such windows floating, centered, instead of tiling them. -->
+    <!-- Not resizable: GlazeWM leaves such windows floating, centered, instead of tiling them.
+         Its title bar is that of the view, as in the window of Quiver: the band at the top moves it. -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="0" GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
     <views:SettingsView x:Name="View" />
 </Window>

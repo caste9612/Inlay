@@ -29,6 +29,12 @@ internal sealed class AppSettings
     /// <summary>The files in Downloads appear among those to sort.</summary>
     public bool InboxDownloads { get; set; }
 
+    /// <summary>Where the window of Quiver was, to open it there again; null the first time, when it opens centered.</summary>
+    public WindowPlacement? Window { get; set; }
+
+    /// <summary>The window stays above the others: the pin in its title bar, as in Hive and Pulse, with the same name.</summary>
+    public bool Topmost { get; set; }
+
     /// <summary>Where these settings are saved; another file only in tests.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public string SavePath { get; set; } = FilePath;
@@ -93,4 +99,14 @@ internal sealed class AppSettings
     private static bool SamePath(string a, string b) =>
         string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)),
             StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
+/// Where a window was, in pixels of the screen, as Windows itself keeps it: the place it has when it is not maximized,
+/// and whether it was maximized. Windows puts it back on a visible screen if that one is gone.
+/// </summary>
+internal sealed record WindowPlacement(int Left, int Top, int Right, int Bottom, bool Maximized)
+{
+    /// <summary>Big enough to be a place for the window: anything smaller was written by hand, or went wrong.</summary>
+    public bool IsUsable() => Right - Left >= 200 && Bottom - Top >= 150;
 }

@@ -38,8 +38,9 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 
 ## Uso
 
-`Alt+E` apre e chiude il pannello (la scorciatoia si cambia in **Impostazioni**). Dentro, si usa come il desktop.
+`Alt+E` porta Quiver davanti; se è già la finestra in uso, lo rimette nell'area di notifica (la scorciatoia si cambia in **Impostazioni**). Dentro, si usa come il desktop.
 
+- **La finestra**: è una finestra normale, con in alto la barra del titolo di Quiver, disegnata come quella di Brace. Si sposta trascinando la barra, si ridimensiona dai bordi e un doppio clic sulla barra la ingrandisce. Il pin, accanto ai pulsanti della finestra, la tiene sopra le altre: comodo per trascinarci dentro i file da Explorer. Lo stesso fa **Sempre in primo piano** nel menu della tray. La X la rimette nell'area di notifica, come `Esc` e `Alt+E`; per uscire da Quiver c'è **Esci** nel menu della tray. Posizione, dimensione e pin restano per la volta dopo.
 - **Selezionare**: un clic seleziona, `Ctrl`+clic e `Maiusc`+clic aggiungono altri elementi. Con `Ctrl` si sceglie anche da riquadri diversi. Un clic su uno spazio vuoto deseleziona. Trascinando sul vuoto della bacheca si disegna un rettangolo che seleziona quello che tocca, anche in più riquadri; con `Ctrl` si aggiunge alla selezione.
 - **Aprire**: doppio clic o `Invio`. `Ctrl+Invio` mostra l'elemento in Explorer.
 - **Rinominare**: `F2`, oppure un secondo clic, lento, su un elemento già selezionato. Il nome si modifica sul posto e, come in Explorer, i collegamenti non mostrano `.lnk` o `.url`. `Invio` conferma, `Esc` annulla e un clic altrove conferma.
@@ -60,8 +61,8 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
   - gli allegati e i messaggi di Outlook, e i link e le immagini dal browser, diventano file nel riquadro;
   - un riquadro, preso per il titolo, cambia posto nella bacheca, e l'ordine resta: una riga mostra dove andrà. Lasciato su un argomento, ci entra dentro;
   - mentre trascini, un'etichetta accanto al puntatore dice cosa hai in mano: il nome, o quanti elementi;
-  - se porti qualcosa fuori dal pannello, il pannello si nasconde e puoi lasciarlo in un'altra app;
-  - per prendere file da Explorer, comincia a trascinarli, premi `Alt+E` senza lasciare il tasto del mouse e rilasciali sul riquadro.
+  - file e cartelle si portano anche fuori da Quiver, in Explorer, in una mail o in un'altra app;
+  - per prendere file da Explorer, tieni le due finestre affiancate, oppure fissa Quiver con il pin: resta sopra Explorer mentre trascini. Funziona anche cominciare a trascinare e premere `Alt+E` senza lasciare il tasto del mouse.
 - **Da smistare**: raccoglie in riquadri separati i file lasciati nella radice dell'archivio o nella cartella `_Da smistare` e quelli del Desktop, compreso quello comune a tutti gli utenti dove gli installer mettono i collegamenti. In **Impostazioni › Da smistare** si può togliere il Desktop o aggiungere Download. La ricerca trova anche questi file.
 - **Cercare**: basta scrivere. Con le frecce scegli un risultato, `Invio` lo apre ed `Esc` torna alla bacheca.
 - **Creare**:
@@ -81,7 +82,7 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 - **Impostazioni**: dal menu della tray. Le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito.
   - **Scorciatoia**: clicca nel campo e premi la combinazione, con Ctrl, Alt o Win e un tasto. Quiver la prova all'istante: se un altro programma la tiene, resta quella di prima e lo dice.
   - **Avvio ed Explorer**: gli interruttori per **Avvia Quiver con Windows** e per **Quiver nel menu Invia a**.
-- **Tray**: dall'icona puoi aprire il pannello o l'archivio in Explorer, gli archivi e le impostazioni, o uscire.
+- **Tray**: dall'icona puoi aprire Quiver o l'archivio in Explorer, tenere Quiver sempre in primo piano, aprire gli archivi e le impostazioni, o uscire.
 
 ## Aspetto
 

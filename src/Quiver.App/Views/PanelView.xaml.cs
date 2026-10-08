@@ -60,11 +60,8 @@ public partial class PanelView : UserControl
         _springTimer.Tick += SpringTimer_Tick;
     }
 
-    /// <summary>Esc with nothing left to cancel, or the close button.</summary>
+    /// <summary>Esc with nothing left to cancel, or the close button: the window goes back to the notification area.</summary>
     public event EventHandler? CloseRequested;
-
-    /// <summary>Something dragged from the panel went outside it: the panel should make way for the drop target.</summary>
-    public event EventHandler? DragLeftPanel;
 
     /// <summary>The name of the archive was clicked: the window of the archives should open.</summary>
     public event EventHandler? ArchivesRequested;
@@ -789,21 +786,14 @@ public partial class PanelView : UserControl
         HideInsertionLine();
     }
 
+    /// <summary>The drag went out of the window: no topic opens by itself any more, and no line shows where a tile would land.</summary>
     private void OnDragLeave(object sender, DragEventArgs e)
     {
         var position = e.GetPosition(this);
         if (position.X > 0 && position.Y > 0 && position.X < ActualWidth && position.Y < ActualHeight)
             return;
-        // Windows also says the drag left when another window comes between, like a tooltip or the progress of a file
-        // operation: only the pointer tells whether it really went out of the panel.
-        if (Window.GetWindow(this) is { } window && WindowInfo.IsCursorOn(new WindowInteropHelper(window).Handle))
-        {
-            Log.Write($"Drag over another window, still on the panel: {WindowInfo.UnderCursor()}");
-            return;
-        }
         HideInsertionLine();
         DisarmSpring();
-        DragLeftPanel?.Invoke(this, EventArgs.Empty);
     }
 
     private void DropTarget_DragOver(object sender, DragEventArgs e)
@@ -1175,6 +1165,22 @@ public partial class PanelView : UserControl
     // ---- Menus and buttons ----
 
     private void Close_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
+
+    private void Minimize_Click(object sender, RoutedEventArgs e)
+    {
+        if (Window.GetWindow(this) is { } window)
+            SystemCommands.MinimizeWindow(window);
+    }
+
+    private void Maximize_Click(object sender, RoutedEventArgs e)
+    {
+        if (Window.GetWindow(this) is not { } window)
+            return;
+        if (window.WindowState == WindowState.Maximized)
+            SystemCommands.RestoreWindow(window);
+        else
+            SystemCommands.MaximizeWindow(window);
+    }
 
     private void Archives_Click(object sender, RoutedEventArgs e) => ArchivesRequested?.Invoke(this, EventArgs.Empty);
 

@@ -39,7 +39,21 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="{DynamicResource Brace.SurfaceBase}">
+    <DockPanel Background="{DynamicResource Brace.SurfaceBase}">
+    <!-- Title bar, as that of Quiver: logo and title, and close. Dragged, it moves the window. -->
+    <Border DockPanel.Dock="Top" Style="{StaticResource Quiver.TitleBar}">
+        <DockPanel>
+            <Image DockPanel.Dock="Left" Width="24" Height="24" Source="{StaticResource Quiver.Logo}"
+                   RenderOptions.BitmapScalingMode="HighQuality" />
+            <Button DockPanel.Dock="Right" Style="{StaticResource Quiver.TitleBarCloseButton}" ToolTip="Chiudi"
+                    AutomationProperties.Name="Chiudi" Click="Close_Click">
+                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
+            </Button>
+            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.Text.Heading}" Text="{Binding Heading}" />
+        </DockPanel>
+    </Border>
+
+    <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
@@ -49,9 +63,7 @@
         <Border Width="196" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,0,1,0"
                 Visibility="{Binding IsWelcome, Converter={StaticResource Hidden}}">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Margin="16,18,16,8" Style="{StaticResource Brace.Text.Label}"
-                           Foreground="{DynamicResource Brace.TextTertiary}" Text="Impostazioni" />
-                <ListBox x:Name="SectionList" Margin="4,0" BorderThickness="0" Background="Transparent"
+                <ListBox x:Name="SectionList" Margin="4,10,4,0" BorderThickness="0" Background="Transparent"
                          ItemContainerStyle="{StaticResource SectionRow}" SelectedValuePath="Tag"
                          SelectedValue="{Binding Section, Mode=TwoWay}">
                     <ListBoxItem Tag="{x:Static vm:SettingsSection.Archives}">
@@ -91,7 +103,7 @@
             <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Hotkey}">
                 <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Scorciatoia" />
                 <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
-                           Text="La combinazione che apre e chiude il pannello, da qualunque programma." />
+                           Text="La combinazione che porta Quiver davanti da qualunque programma, e lo rimette nell'area di notifica se è già davanti." />
                 <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Combinazione" />
                 <!-- The style of Brace for text boxes does not reach a subclass by itself. -->
                 <views:HotkeyBox x:Name="HotkeyField" Style="{StaticResource {x:Type TextBox}}" Width="220" HorizontalAlignment="Left"
@@ -101,14 +113,14 @@
                 <TextBlock Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding HotkeyProblem}"
                            Visibility="{Binding HasHotkeyProblem, Converter={StaticResource Visible}}" />
                 <TextBlock Margin="0,18,0,0" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}"
-                           Text="Con GlazeWM puoi anche legare un tasto a Quiver.exe --toggle, che apre e chiude il pannello già in esecuzione." />
+                           Text="Con GlazeWM puoi anche legare un tasto a Quiver.exe --toggle, che fa lo stesso con il Quiver già in esecuzione." />
             </StackPanel>
 
             <!-- Da smistare -->
             <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Inbox}">
                 <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Da smistare" />
                 <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
-                           Text="Oltre ai file lasciati nella radice dell'archivio e nella cartella «_Da smistare», il pannello può raccogliere quelli di altri posti." />
+                           Text="Oltre ai file lasciati nella radice dell'archivio e nella cartella «_Da smistare», Quiver può raccogliere quelli di altri posti." />
                 <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding InboxDesktop, Mode=TwoWay}" Content="Il Desktop" />
                 <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
                            Text="Compreso quello comune a tutti gli utenti, dove gli installer mettono i collegamenti." />
@@ -127,9 +139,10 @@
                            Text="Parte nell'area di notifica, pronto per la scorciatoia." />
                 <ToggleButton Style="{StaticResource Switch}" Margin="0,14,0,0" IsChecked="{Binding SendTo, Mode=TwoWay}" Content="«Quiver» nel menu Invia a di Explorer" />
                 <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
-                           Text="Tasto destro su uno o più file, Invia a, Quiver: il pannello chiede in quale riquadro metterli." />
+                           Text="Tasto destro su uno o più file, Invia a, Quiver: Quiver chiede in quale riquadro metterli." />
                 <TextBlock Margin="0,14,0,0" Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding WindowsProblem}" />
             </StackPanel>
         </Grid>
     </Grid>
+    </DockPanel>
 </UserControl>

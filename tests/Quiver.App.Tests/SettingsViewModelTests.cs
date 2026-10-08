@@ -101,9 +101,12 @@ public sealed class SettingsViewModelTests : IDisposable
 
         Assert.True(viewModel.IsWelcome);
         Assert.Equal(SettingsSection.Archives, viewModel.Section);
+        Assert.Equal("Benvenuto in Quiver", viewModel.Heading);
 
         _host.CurrentRoot = _root;
-        Assert.False(Open(Settings(), SettingsSection.Hotkey).IsWelcome);
+        var later = Open(Settings(), SettingsSection.Hotkey);
+        Assert.False(later.IsWelcome);
+        Assert.Equal("Impostazioni", later.Heading);
     }
 
     private SettingsViewModel Open(AppSettings settings, SettingsSection section = SettingsSection.Archives) =>

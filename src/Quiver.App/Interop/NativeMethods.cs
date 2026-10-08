@@ -19,6 +19,7 @@ internal static partial class NativeMethods
 
     public static readonly nint HWND_TOPMOST = -1;
     public static readonly nint HWND_MESSAGE = -3;
+    public const uint SWP_NOZORDER = 0x0004;
     public const uint SWP_NOACTIVATE = 0x0010;
 
     public const uint MONITOR_DEFAULTTONEAREST = 2;
@@ -26,7 +27,7 @@ internal static partial class NativeMethods
 
     public const int DWMWA_CLOAKED = 14;
     public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-    public const int DWMWCP_ROUND = 2;
+    public const int DWMWCP_ROUNDSMALL = 3;
 
     public const int SHCNE_RENAMEITEM = 0x00000001;
     public const int SHCNE_RENAMEFOLDER = 0x00020000;
@@ -63,6 +64,24 @@ internal static partial class NativeMethods
         public RECT rcMonitor;
         public RECT rcWork;
         public uint dwFlags;
+    }
+
+    public const int SW_HIDE = 0;
+    public const int SW_SHOWNORMAL = 1;
+    public const int SW_SHOWMINIMIZED = 2;
+    public const int SW_SHOWMAXIMIZED = 3;
+    public const int WPF_RESTORETOMAXIMIZED = 0x0002;
+
+    /// <summary>Where a window is, as Windows keeps it: the place it has when not maximized, and how it is shown.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WINDOWPLACEMENT
+    {
+        public int length;
+        public int flags;
+        public int showCmd;
+        public POINT ptMinPosition;
+        public POINT ptMaxPosition;
+        public RECT rcNormalPosition;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -119,6 +138,14 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool SetWindowPos(nint hWnd, nint hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
 
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetWindowPlacement(nint hWnd, ref WINDOWPLACEMENT lpwndpl);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetWindowPlacement(nint hWnd, ref WINDOWPLACEMENT lpwndpl);
+
     [LibraryImport("user32.dll")]
     public static partial nint MonitorFromWindow(nint hwnd, uint dwFlags);
 
@@ -133,19 +160,21 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetCursorPos(out POINT lpPoint);
 
-    [LibraryImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool GetWindowRect(nint hWnd, out RECT lpRect);
-
-    [LibraryImport("user32.dll")]
-    public static partial nint WindowFromPoint(POINT point);
-
     // A StringBuilder buffer, which [LibraryImport] cannot marshal.
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern int GetClassName(nint hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
     [LibraryImport("user32.dll")]
     public static partial uint GetDpiForSystem();
+
+    [LibraryImport("user32.dll")]
+    public static partial uint GetDpiForWindow(nint hwnd);
+
+    public const int SM_CXSIZEFRAME = 32;
+    public const int SM_CXPADDEDBORDER = 92;
+
+    [LibraryImport("user32.dll")]
+    public static partial int GetSystemMetricsForDpi(int nIndex, uint dpi);
 
     [LibraryImport("user32.dll")]
     public static partial uint GetDoubleClickTime();

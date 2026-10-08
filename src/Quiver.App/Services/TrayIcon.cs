@@ -13,16 +13,25 @@ internal sealed class TrayIcon : IDisposable
     private readonly System.Drawing.Icon _icon;
     private readonly MenuItem _open;
 
-    public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action showSettings, Action exit)
+    /// <param name="isTopmost">Whether the window stays above the others now: the pin of its title bar.</param>
+    /// <param name="setTopmost">Changes it, as the pin does.</param>
+    public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action showSettings,
+        Func<bool> isTopmost, Action<bool> setTopmost, Action exit)
     {
         var menu = new ContextMenu();
         menu.Items.Add(_open = CreateItem("Apri Quiver", showPanel, shortcut));
         menu.Items.Add(CreateItem("Apri l'archivio in Explorer", openArchiveFolder));
+        // As in Hive and Pulse: the pin of the title bar, here too.
+        var topmost = new MenuItem { Header = "Sempre in primo piano", IsCheckable = true };
+        topmost.Click += (_, _) => setTopmost(topmost.IsChecked);
+        menu.Items.Add(topmost);
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateItem("Archivi…", showArchives));
         menu.Items.Add(CreateItem("Impostazioni…", showSettings));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateItem("Esci", exit));
+        // The pin may have changed in the title bar since the menu was last open.
+        menu.Opened += (_, _) => topmost.IsChecked = isTopmost();
 
         _icon = LoadIcon();
         _taskbarIcon = new TaskbarIcon
