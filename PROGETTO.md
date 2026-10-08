@@ -1,6 +1,6 @@
 # Quiver — documento di progetto
 
-*Stato: versione 0.2.1, pre-release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo, non ancora provati dal vivo. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 8 ottobre 2026.*
+*Stato: versione 0.2.2, pre-release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo, non ancora provati dal vivo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano». Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 8 ottobre 2026.*
 
 ## 1. Il problema
 
@@ -323,8 +323,8 @@ Fatto:
 - dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli;
 - l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo;
 - sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo. Tutto pubblicato come pre-release 0.2.1;
-- dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, da provare dal vivo.
+- dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, pubblicata come pre-release 0.2.2.
 
 1. Installare dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta, con «Sposta in…» e «Invia a Quiver».
-2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
+2. Provare dal vivo la finestra nuova, le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
 3. Della v0.2 restano il menu completo di Windows e la dimensione dei riquadri; poi la v0.3 con GlazeWM. Gli aggiornamenti automatici restano per dopo.
