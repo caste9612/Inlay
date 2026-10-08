@@ -20,7 +20,7 @@ public sealed class DestinationsTests : IDisposable
         _archive.AddFolder(".git");
         var metadata = new ArchiveMetadata();
         metadata.SetTopic("Lavoro/Clienti", true);
-        metadata.SetTileOrder(["Lavoro/Interni", "Lavoro/Archivio"]);
+        metadata.SetOrder(["Lavoro/Interni", "Lavoro/Archivio"]);
 
         var destinations = _archive.Reader(metadata).ReadDestinations();
 

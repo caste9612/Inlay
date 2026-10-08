@@ -1,6 +1,6 @@
 # Quiver — documento di progetto
 
-*Stato: versione 0.2.2, pre-release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo, non ancora provati dal vivo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano». Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 8 ottobre 2026.*
+*Stato: versione 0.2.3, release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano»; con la 0.2.2 il Desktop vero è stato svuotato nell'archivio. Dalla 0.2.3 le operazioni sui file in un thread a parte, la misura e l'ordine dei riquadri, gli argomenti trascinabili. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 8 ottobre 2026.*
 
 ## 1. Il problema
 
@@ -98,17 +98,22 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
 {
   "version": 1,
   "folders": {
-    "Lavoro/Clienti":                 { "kind": "topic" },
+    "Lavoro/Clienti":                 { "kind": "topic", "order": 0 },
     "Lavoro/Clienti/Rossi":           { "kind": "topic", "workspace": "3" },
     "Lavoro/Clienti/Bianchi":         { "kind": "topic" },
-    "Lavoro/Interni":                 { "kind": "topic" },
-    "Lavoro/Clienti/Rossi/Documenti": { "tile": { "x": 0, "y": 0, "w": 2, "h": 3 } },
-    "Lavoro/Clienti/Rossi/Programmi": { "tile": { "x": 2, "y": 0, "w": 1, "h": 2 }, "color": "#2D7FF9" }
+    "Lavoro/Interni":                 { "kind": "topic", "order": 1 },
+    "Lavoro/Clienti/Rossi/Documenti": { "size": { "columns": 2, "rows": 12 }, "sort": { "key": "modified", "descending": true } },
+    "Lavoro/Clienti/Rossi/Programmi": { "order": 0, "color": "#5DA9FF", "items": ["SolidWorks.lnk", "TeamViewer.lnk"] }
   }
 }
 ```
 
 - `"kind": "topic"` serve solo sotto il primo livello, perché le cartelle nella radice sono già argomenti.
+- `"order"`: il posto di un riquadro nella sua bacheca, o di un argomento tra quelli accanto, dato trascinandolo. Chi non ce l'ha segue in ordine di nome.
+- `"size"`: le colonne della bacheca che il riquadro occupa (da 1 a 3) e le righe che mostra prima di scorrere (da 2 a 40; senza, segue i suoi elementi fino a circa dieci).
+- `"sort"`: come sono ordinati gli elementi del riquadro: per nome (`name`, quello di sempre, che non ha bisogno di voce), data di modifica (`modified`), tipo (`type`) o dimensione (`size`), ognuno nei due versi. Le cartelle vengono prima, come in Explorer.
+- `"items"`: l'ordine dato agli elementi trascinandoli, per nome. Quelli arrivati dopo seguono; un elemento rinominato da Quiver tiene il suo posto. Ordine a mano e `"sort"` si sostituiscono a vicenda.
+- Il riquadro «Generale» usa la voce del suo argomento, perché ne contiene i file.
 - Se una cartella viene rinominata o spostata dall'app, i metadati si aggiornano subito. Se succede da Explorer con l'app aperta, l'app se ne accorge. Se succede ad app chiusa, i metadati rimasti senza cartella vengono riallineati all'avvio. Nel caso peggiore si perdono la posizione e il colore di un riquadro, mai i file.
 
 Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Quiver la prova all'istante e la tiene solo se Windows gliela dà.
@@ -136,8 +141,8 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 ```
 
 - **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre le Impostazioni sulla pagina **Archivi**) e il pulsante per chiudere.
-- **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare.
-- **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica.
+- **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale.
+- **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica. Un riquadro può occupare fino a tre colonne: se non ci sta in quello che resta della riga, va a capo.
 - **Barra di stato**: l'archivio e quanti elementi contiene, oppure l'esito dell'ultima operazione, e i tasti principali.
 
 ### Aspetto
@@ -186,12 +191,16 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Proprietà e Sposta nel Cestino. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
 - **Sposta in…** apre, sopra la bacheca, l'elenco dei riquadri e degli argomenti con i recenti in cima: si scrive una parte del nome e si conferma con un clic o con Invio. È lo stesso elenco che compare con **Invia a Quiver** dal menu «Invia a» di Explorer.
 - Dopo un'operazione, accanto al messaggio nella barra di stato ci sono **Annulla** e **Mostra**: la via per tornare indietro e quella per andare a vedere, senza tastiera.
-- Mentre si trascina, un'etichetta accanto al puntatore dice cosa si ha in mano; un riquadro trascinato mostra con una riga dove andrà.
+- Mentre si trascina, un'etichetta accanto al puntatore dice cosa si ha in mano; un riquadro, una riga o un argomento che cambia posto mostra con una riga dove andrà.
 - Drag & drop:
   - in entrata, da Explorer, dalla posta (allegati e messaggi di Outlook) o dal browser (link e immagini);
   - tra riquadri e argomenti: tenendo fermo l'elemento sopra un argomento, l'argomento si apre e lo si lascia nel riquadro giusto;
   - in uscita, per esempio per allegare un file a una mail;
-  - i riquadri si riordinano trascinandoli per il titolo.
+  - i riquadri si riordinano trascinandoli per il titolo; al passaggio del mouse una maniglia a puntini mostra dove prenderli;
+  - gli elementi si mettono nell'ordine voluto trascinandoli dentro il loro riquadro;
+  - gli argomenti si riordinano trascinandoli sopra o sotto un altro; lasciati al centro di un altro argomento ci entrano come sotto-argomenti, con la loro cartella. Due argomenti con lo stesso nome non si uniscono: Quiver chiede di rinominarne uno.
+- L'angolo in basso a destra di un riquadro, al passaggio del mouse, ne cambia la misura: in larghezza scatta a una, due o tre colonne, in altezza a righe. Il doppio clic sull'angolo, o «Misura automatica» nel menu, torna alla misura che segue gli elementi. Le righe sono misurate sullo schermo, non supposte: con la scala al 125 % Windows arrotonda una riga da 22 a 22,4 punti.
+- Il menu … del riquadro ha **Ordina per**: nome, data di modifica, tipo o dimensione, crescente o decrescente. Prende il posto dell'ordine dato a mano, e viceversa.
 - Spostare, copiare o collegare segue le regole di Explorer: sullo stesso disco si sposta, tra dischi diversi si copia; `Ctrl` copia, `Maiusc` sposta, `Alt` o `Ctrl+Maiusc` crea un collegamento. Con due eccezioni, coerenti con i principi:
   - quello che ha già un suo posto (programmi `.exe`, cartelle e file in rete) entra come collegamento;
   - quello che sta in «Da smistare» viene spostato anche su un altro disco.
@@ -216,10 +225,11 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - Inbox: `_Da smistare`, il Desktop e, se si vuole, Download. Ci finiscono anche i collegamenti che gli installer mettono sul desktop, così un programma appena installato si aggiunge con un gesto.
   - **Fatto**: «Da smistare» mostra un riquadro per ogni provenienza, il Desktop comprende quello comune a tutti gli utenti, Download si attiva dalle impostazioni e la ricerca trova anche questi file.
   - **Fatto**: «Sposta in…» dal tasto destro manda la selezione nel riquadro o nell'argomento scelto per nome, con le destinazioni recenti in cima (tenute per PC in `%APPDATA%\Quiver\recenti.json`); «Invia a Quiver» nel menu «Invia a» di Explorer fa lo stesso con i file scelti lì, passandoli all'istanza aperta con `--sort`.
-- **Fatto**: annulla (`Ctrl+Z`) per spostamenti, copie, collegamenti, rinomine, nuove cartelle, ordine dei riquadri, promozioni ed eliminazioni. Quello che è andato nel Cestino torna al suo posto.
+- **Fatto**: annulla (`Ctrl+Z`) per spostamenti, copie, collegamenti, rinomine, nuove cartelle, ordine dei riquadri e degli argomenti, ordinamenti, misure, promozioni ed eliminazioni. Quello che è andato nel Cestino torna al suo posto.
 - Menu contestuale completo di Windows (7-Zip e simili).
-- Riquadri con dimensione personalizzata.
+- **Fatto**: riquadri con dimensione personalizzata, dall'angolo: da una a tre colonne e da due a quaranta righe.
   - **Fatto**: il colore, scelto tra gli otto di Brace dal menu del riquadro, come striscia accanto al titolo; sta nei metadati e si annulla.
+- **Fatto**: elementi ordinati per nome, data, tipo o dimensione, oppure a mano trascinandoli; argomenti nell'ordine voluto, e dentro altri argomenti, trascinandoli nella barra laterale.
 - **Fatto**: selezione con il rettangolo, trascinando sul vuoto della bacheca, anche attraverso più riquadri; con `Ctrl` si aggiunge.
 - **Fatto**: aggiunta di collegamenti a programmi, cartelle esterne e siti:
   - trascinando: i programmi e quello che è in rete diventano collegamenti da soli, con `Alt` qualunque cosa;
@@ -286,6 +296,11 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Finestra creata una volta sola**: chiuderla, con la X, Alt+F4 o dalla barra delle applicazioni, la nasconde soltanto; si chiude davvero solo con **Esci** o quando Windows si spegne.
 - **Movimento**: il contenuto del pannello e le domande sopra la bacheca entrano con una dissolvenza e uno scorrimento di pochi pixel, con le durate e le curve di Brace (`Views/Motion.cs`); niente si muove se Windows ha le animazioni disattivate. Durante un trascinamento due adorner disegnano l'etichetta che segue il puntatore e la riga dove andrà un riquadro.
 - **Operazioni sui file**: passano tutte dalla shell di Windows, con le sue finestre di avanzamento e di conflitto, e usano il Cestino. Ognuna lascia un passo nel registro per annullarla, con quello che serve a rifarla al contrario, metadati compresi: dove sono finiti gli elementi, come si chiamavano, quando sono andati nel Cestino.
+  - Spostamenti, copie, eliminazioni e i loro annullamenti girano su un thread STA tutto loro (`FileOperationQueue`), uno dopo l'altro: durante una copia lunga la finestra resta usabile, con i LED di `br-activity` e quello che si sta facendo nella barra di stato. Ognuna aspetta il suo turno e parte dai file come li ha lasciati la precedente; un `Ctrl+Z` durante una copia aspetta che finisca e annulla quella.
+  - Le rinomine restano immediate: sono brevi, e il campo del nome aspetta la risposta.
+  - Mentre i file arrivano la bacheca non si rilegge e l'indice della ricerca aspetta: tutti e due si aggiornano una volta, alla fine. **Esci** aspetta che finisca l'operazione in corso, per non lasciare un file copiato a metà.
+  - A operazione finita la finestra si riprende il focus che le finestre della shell le hanno tolto, ma solo se nel frattempo non si è passati a un altro programma.
+  - Fino alla 0.2.2 le operazioni giravano nel thread dell'interfaccia, che restava bloccata finché la shell non finiva.
 - **Ripristino dal Cestino**: il Cestino di ogni disco tiene ogni elemento come due file, `$R…` con il contenuto e `$I…` con il percorso originale e la data.
   - Subito dopo un'eliminazione, Quiver annota quali `$I…` sono i suoi.
   - `Ctrl+Z` rimette al loro posto esattamente quegli elementi, anche se nel frattempo ne sono stati eliminati altri con lo stesso percorso, e toglie i `$I…`, come fa «Ripristina».
@@ -323,8 +338,9 @@ Fatto:
 - dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli;
 - l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo;
 - sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo. Tutto pubblicato come pre-release 0.2.1;
-- dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, pubblicata come pre-release 0.2.2.
+- dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, pubblicata come pre-release 0.2.2;
+- svuotando il Desktop con la 0.2.2: le operazioni sui file in un thread a parte, perché la finestra si bloccava durante le copie; la barra laterale come navigazione; gli argomenti trascinabili; la misura dei riquadri dall'angolo; l'ordinamento e l'ordine a mano degli elementi. Verificato con i test (anche sul thread a parte, con un dispatcher come quello della finestra), con le anteprime e sull'archivio vero: letto in sola lettura con il codice della 0.2.2 e con il nuovo, dà gli stessi argomenti, riquadri ed elementi nello stesso ordine. Pubblicato come 0.2.3, la prima release normale: da qui niente più pre-release.
 
 1. Installare dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta, con «Sposta in…» e «Invia a Quiver».
 2. Provare dal vivo la finestra nuova, le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
-3. Della v0.2 restano il menu completo di Windows e la dimensione dei riquadri; poi la v0.3 con GlazeWM. Gli aggiornamenti automatici restano per dopo.
+3. Della v0.2 resta il menu completo di Windows; poi la v0.3 con GlazeWM. Gli aggiornamenti automatici restano per dopo.

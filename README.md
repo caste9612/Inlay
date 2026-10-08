@@ -59,7 +59,9 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
   - quello che ha già un suo posto entra come collegamento, come chiede il progetto: i programmi (`.exe`, come fa Explorer) e le cartelle e i file in rete;
   - quello che arriva da **Da smistare** viene spostato anche su un altro disco: smistarlo è proprio lo scopo;
   - gli allegati e i messaggi di Outlook, e i link e le immagini dal browser, diventano file nel riquadro;
-  - un riquadro, preso per il titolo, cambia posto nella bacheca, e l'ordine resta: una riga mostra dove andrà. Lasciato su un argomento, ci entra dentro;
+  - un riquadro, preso per il titolo (al passaggio del mouse compare la maniglia a puntini), cambia posto nella bacheca, e l'ordine resta: una riga mostra dove andrà. Lasciato su un argomento, ci entra dentro;
+  - le righe di un riquadro, trascinate dentro il riquadro stesso, prendono l'ordine che vuoi; i file che arrivano dopo si mettono in fondo;
+  - un argomento, nella barra a sinistra, si sposta sopra o sotto un altro; lasciato al centro di un altro argomento ci entra dentro, con la sua cartella;
   - mentre trascini, un'etichetta accanto al puntatore dice cosa hai in mano: il nome, o quanti elementi;
   - file e cartelle si portano anche fuori da Quiver, in Explorer, in una mail o in un'altra app;
   - per prendere file da Explorer, tieni le due finestre affiancate, oppure fissa Quiver con il pin: resta sopra Explorer mentre trascini. Funziona anche cominciare a trascinare e premere `Alt+E` senza lasciare il tasto del mouse.
@@ -74,6 +76,9 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
   Come «Nuova cartella» sul desktop, il nuovo elemento nasce con il nome pronto da scrivere.
 - **Riquadri e argomenti**: dal menu di un riquadro puoi scegliere **Promuovi ad argomento**; da quello di un argomento annidato, **Riporta a riquadro**.
 - **Colore**: dal menu … di un riquadro, uno degli otto colori di Brace, o nessuno. Compare come una striscia accanto al titolo, resta nei metadati dell'archivio e `Ctrl+Z` lo toglie.
+- **Misura dei riquadri**: trascina l'angolo in basso a destra di un riquadro. In larghezza scatta a una, due o tre colonne, in altezza decide quante righe si vedono prima di scorrere. Il doppio clic sull'angolo, o **Misura automatica** nel menu …, torna alla misura che segue gli elementi.
+- **Ordina per**: dal menu … di un riquadro, nome, data di modifica, tipo o dimensione, crescente o decrescente; le cartelle vengono prima, come in Explorer. Sostituisce l'ordine dato a mano, e viceversa. Anche questo resta nei metadati, e `Ctrl+Z` lo annulla.
+- **Copie lunghe**: mentre Windows sposta o copia, Quiver resta usabile e la barra di stato dice cosa sta facendo. **Esci** aspetta che l'operazione finisca.
 - **Archivi**, come i vault di Obsidian: si aprono dal nome dell'archivio in alto nel pannello, o da **Archivi…** nel menu della tray.
   - Ogni archivio è una cartella normale; la cartella nascosta `.quiver` lo segna come archivio e ne tiene la disposizione.
   - Puoi crearne uno nuovo, usare come archivio una cartella che hai già, passare dall'uno all'altro, rinominarli e toglierli dall'elenco. Togliere dall'elenco non tocca i file.
@@ -106,7 +111,8 @@ L'icona di Quiver è una bacheca: tre riquadri, uno dei quali ambra, come un riq
 - `dotnet test` esegue tre gruppi di test:
   - le regole dell'archivio, la ricerca, i metadati, Da smistare, i tipi di file, il ripristino dal Cestino (su un Cestino finto, costruito dal test) e il confronto byte per byte di una copia;
   - le operazioni sui file: spostare, copiare, rinominare, i collegamenti e i file trascinati da Outlook e dal browser. Il Cestino vero è escluso, per non riempirlo;
-  - il pannello: rinomina sul posto, selezione dopo spostamenti e ricaricamenti, nuove cartelle e nuovi riquadri, ordine dei riquadri, `Ctrl+Z`, **Sposta in…** con le destinazioni recenti e i pulsanti della barra di stato;
+  - il pannello: rinomina sul posto, selezione dopo spostamenti e ricaricamenti, nuove cartelle e nuovi riquadri, ordine dei riquadri e degli argomenti, misura dei riquadri, ordinamento e ordine a mano degli elementi, `Ctrl+Z`, **Sposta in…** con le destinazioni recenti e i pulsanti della barra di stato;
+  - la coda delle operazioni sui file: un thread STA a parte, un'operazione dopo l'altra;
   - gli archivi: creare, aprire una cartella, rinominare e spostare l'archivio in uso, anche su un altro disco;
   - le impostazioni: la scorciatoia provata subito e tenuta solo se libera, gli interruttori salvati e applicati, su una Windows finta;
   - il collegamento di **Invia a**, fatto in una cartella del test, e il passaggio dei file tra due istanze, senza toccare la pipe vera.

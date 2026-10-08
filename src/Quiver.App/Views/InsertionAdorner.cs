@@ -5,10 +5,11 @@ using System.Windows.Media;
 namespace Quiver.App.Views;
 
 /// <summary>
-/// The line that shows where a tile dragged by its title will land: before the tile under the pointer, or after the
-/// last one. Drawn over the control of the tiles, so it scrolls with them.
+/// The line that shows where something dragged will land: a tile before another one or after the last, a row of a tile
+/// above another one or under the last, a topic above or under another one. Drawn over the control it belongs to, so it
+/// scrolls with it.
 /// </summary>
-internal sealed class InsertionAdorner(UIElement tiles, Brush brush) : Adorner(tiles)
+internal sealed class InsertionAdorner(UIElement host, Brush brush) : Adorner(host)
 {
     private Rect _line = Rect.Empty;
 
@@ -31,17 +32,23 @@ internal sealed class InsertionAdorner(UIElement tiles, Brush brush) : Adorner(t
         {
             line = Rect.Empty;
         }
+        Show(line);
+    }
+
+    /// <summary>Along the top edge of <paramref name="row"/>, or along its bottom edge: where a row or a topic will land.</summary>
+    public void ShowAt(FrameworkElement row, bool atBottom)
+    {
+        var origin = row.TranslatePoint(new Point(0, atBottom ? row.ActualHeight : 0), AdornedElement);
+        Show(new Rect(origin.X, origin.Y - 1, row.ActualWidth, 2));
+    }
+
+    public void Hide() => Show(Rect.Empty);
+
+    private void Show(Rect line)
+    {
         if (line == _line)
             return;
         _line = line;
-        InvalidateVisual();
-    }
-
-    public void Hide()
-    {
-        if (_line.IsEmpty)
-            return;
-        _line = Rect.Empty;
         InvalidateVisual();
     }
 

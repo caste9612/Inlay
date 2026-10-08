@@ -85,12 +85,59 @@ public sealed class ArchiveReaderTests : IDisposable
         foreach (var name in new[] { "A", "B", "C", "D" })
             _archive.AddFolder($"Rossi/{name}");
         var metadata = new ArchiveMetadata();
-        metadata.SetTileOrder(["Rossi/C", "Rossi/A"]);
+        metadata.SetOrder(["Rossi/C", "Rossi/A"]);
 
         var reader = _archive.Reader(metadata);
         var tiles = reader.ReadBoard(Assert.Single(reader.ReadTopics())).Tiles;
 
         Assert.Equal(new[] { "C", "A", "B", "D" }, tiles.Select(t => t.Title));
+    }
+
+    [Fact]
+    public void TopicsFollowTheSavedOrder_InTheRootAndInsideATopic()
+    {
+        foreach (var name in new[] { "Lavoro", "Personale", "Strumenti" })
+            _archive.AddFolder(name);
+        foreach (var name in new[] { "Bianchi", "Rossi", "Verdi" })
+            _archive.AddFolder($"Lavoro/{name}");
+        var metadata = new ArchiveMetadata();
+        foreach (var name in new[] { "Bianchi", "Rossi", "Verdi" })
+            metadata.SetTopic($"Lavoro/{name}", true);
+        metadata.SetOrder(["Strumenti", "Lavoro"]);
+        metadata.SetOrder(["Lavoro/Verdi"]);
+
+        var topics = _archive.Reader(metadata).ReadTopics();
+
+        Assert.Equal(["Strumenti", "Lavoro", "Personale"], topics.Select(topic => topic.Name));
+        Assert.Equal(["Verdi", "Bianchi", "Rossi"], topics[1].Children.Select(topic => topic.Name));
+    }
+
+    [Fact]
+    public void ATile_ShowsItsItemsInItsOrder_WithItsSize_AndGeneraleGoesByTheTopic()
+    {
+        _archive.AddFile("Rossi/a.txt", "aaa");
+        _archive.AddFile("Rossi/b.txt", "b");
+        _archive.AddFile("Rossi/Documenti/x.txt");
+        _archive.AddFile("Rossi/Documenti/y.txt");
+        var metadata = new ArchiveMetadata();
+        metadata.SetSort("Rossi", new ItemSort(SortKey.Size, Descending: false));
+        metadata.SetSize("Rossi", new TileSize(2, null));
+        metadata.SetItemOrder("Rossi/Documenti", ["y.txt", "x.txt"]);
+
+        var reader = _archive.Reader(metadata);
+        var tiles = reader.ReadBoard(Assert.Single(reader.ReadTopics())).Tiles;
+
+        var general = tiles[0];
+        Assert.Equal(["b.txt", "a.txt"], general.Items.Select(item => item.Name));
+        Assert.Equal(3, general.Items[1].Size);
+        Assert.Equal(new ItemSort(SortKey.Size, Descending: false), general.Sort);
+        Assert.Equal(new TileSize(2, null), general.Size);
+        Assert.False(general.ByHand);
+        var documents = tiles[1];
+        Assert.Equal(["y.txt", "x.txt"], documents.Items.Select(item => item.Name));
+        Assert.True(documents.ByHand);
+        Assert.Null(documents.Sort);
+        Assert.Null(documents.Size);
     }
 
     [Fact]

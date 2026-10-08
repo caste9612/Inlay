@@ -537,6 +537,143 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal([documenti, archivio], viewModel.Tiles);
     });
 
+    // ---- Topics in their order, tiles in their size, items in their order ----
+
+    [Fact]
+    public void ATopicDraggedAboveAnother_KeepsThatPlace_AndCtrlZPutsItBack() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var lavoro = viewModel.Topics.Single(topic => topic.Name == "Lavoro");
+        var personale = viewModel.Topics.Single(topic => topic.Name == "Personale");
+
+        viewModel.MoveTopic(personale, parent: null, before: lavoro);
+
+        Assert.Equal([personale, lavoro], viewModel.Topics);
+        using (var reopened = Open())
+            Assert.Equal(["Personale", "Lavoro"], reopened.Topics.Select(topic => topic.Name));
+        Assert.Equal("Annulla lo spostamento dell'argomento", viewModel.UndoLabel);
+
+        viewModel.Undo();
+
+        Assert.Equal([lavoro, personale], viewModel.Topics);
+    });
+
+    [Fact]
+    public void ATopicDroppedInsideAnother_TakesItsFolderThere_StillATopic_AndCtrlZBringsItBack() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var lavoro = viewModel.Topics.Single(topic => topic.Name == "Lavoro");
+        var personale = viewModel.Topics.Single(topic => topic.Name == "Personale");
+        viewModel.MoveTopic(personale, parent: null, before: lavoro);
+        viewModel.SelectTopicCommand.Execute(personale);
+
+        viewModel.MoveTopic(personale, parent: lavoro, before: null);
+
+        Assert.True(File.Exists(Path.Combine(_root, "Lavoro", "Personale", "Casa", "bollette.csv")));
+        Assert.True(MetadataStore.Load(_root).IsTopic("Lavoro/Personale"));
+        var only = Assert.Single(viewModel.Topics);
+        var moved = Assert.Single(only.Children);
+        Assert.Equal("Personale", moved.Name);
+        // The board stays on it, and its folder is still a tile there.
+        Assert.Same(moved, viewModel.SelectedTopic);
+        Assert.Equal(["Casa"], viewModel.Tiles.Select(tile => tile.Title));
+
+        viewModel.Undo();
+
+        Assert.True(File.Exists(Path.Combine(_root, "Personale", "Casa", "bollette.csv")));
+        Assert.Equal(["Personale", "Lavoro"], viewModel.Topics.Select(topic => topic.Name));
+    });
+
+    [Fact]
+    public void ATopic_DoesNotGoInsideOneOfItsOwn() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var lavoro = viewModel.Topics.Single(topic => topic.Name == "Lavoro");
+        viewModel.NewTopic(lavoro);
+        var inside = Assert.Single(lavoro.Children);
+
+        Assert.False(MainViewModel.CanGoUnder(lavoro, inside));
+        viewModel.MoveTopic(lavoro, parent: inside, before: null);
+
+        Assert.True(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuovo argomento")));
+        Assert.Same(lavoro, viewModel.Topics.Single(topic => topic.Name == "Lavoro"));
+    });
+
+    [Fact]
+    public void AResizedTile_KeepsItsSize_AndCtrlZGivesBackTheUsualOne() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var tile = viewModel.Tiles.Single(candidate => candidate.Title == "Documenti");
+        Assert.Equal(0, tile.Rows);
+        Assert.Equal(TileViewModel.UsualListHeight, tile.ListMaxHeight);
+
+        viewModel.ResizeTile(tile, new TileSize(2, 15));
+
+        Assert.Equal(new TileSize(2, 15), tile.Size);
+        Assert.Equal(2, tile.Columns);
+        Assert.Equal(15, tile.Rows);
+        Assert.Equal(double.PositiveInfinity, tile.ListMaxHeight);
+        Assert.Equal(new TileSize(2, 15), MetadataStore.Load(_root).SizeOf("Lavoro/Documenti"));
+        Assert.Equal("Annulla il ridimensionamento", viewModel.UndoLabel);
+
+        viewModel.Undo();
+
+        Assert.Null(tile.Size);
+        Assert.Equal(1, tile.Columns);
+        Assert.Empty(MetadataStore.Load(_root).Folders);
+    });
+
+    [Fact]
+    public void ATileSortedByDate_ShowsTheNewestFirst_EitherWay_AndCtrlZTakesItBack() => StaThread.Run(() =>
+    {
+        File.SetLastWriteTime(Path.Combine(_root, "Lavoro", "Documenti", "a.txt"), DateTime.Now.AddDays(-2));
+        using var viewModel = Open();
+        var tile = viewModel.Tiles.Single(candidate => candidate.Title == "Documenti");
+        Assert.Equal(SortKey.Name, tile.SortedBy);
+
+        viewModel.SortTile(tile, SortKey.Modified);
+        Assert.Equal(["b.txt", "a.txt"], tile.Items.Select(item => item.Name));
+        Assert.Equal(SortKey.Modified, tile.SortedBy);
+        Assert.True(tile.IsDescending);
+
+        viewModel.SetSortDirection(tile, descending: false);
+        Assert.Equal(["a.txt", "b.txt"], tile.Items.Select(item => item.Name));
+        Assert.Equal("Annulla l'ordinamento", viewModel.UndoLabel);
+
+        viewModel.Undo();
+        Assert.Equal(["b.txt", "a.txt"], tile.Items.Select(item => item.Name));
+        viewModel.Undo();
+        Assert.Equal(["a.txt", "b.txt"], tile.Items.Select(item => item.Name));
+        Assert.Equal(SortKey.Name, tile.SortedBy);
+    });
+
+    [Fact]
+    public void ItemsDraggedInTheirTile_KeepThatOrder_NewOnesFollow_AndARenameKeepsItsPlace() => StaThread.Run(() =>
+    {
+        AddFile("Lavoro/Documenti/c.txt");
+        using var viewModel = Open();
+        var tile = viewModel.Tiles.Single(candidate => candidate.Title == "Documenti");
+
+        viewModel.MoveItems(tile, [Item(viewModel, "c.txt")], before: Item(viewModel, "a.txt"));
+
+        Assert.Equal(["c.txt", "a.txt", "b.txt"], tile.Items.Select(item => item.Name));
+        Assert.True(tile.ByHand);
+        Assert.Null(tile.SortedBy);
+        Assert.Equal(["c.txt"], viewModel.SelectedItems().Select(item => item.Name));
+
+        AddFile("Lavoro/Documenti/0.txt");
+        var renamed = Item(viewModel, "a.txt");
+        viewModel.BeginRename(renamed);
+        renamed.EditName = "z.txt";
+        Assert.Null(viewModel.CommitRename(renamed));
+        Assert.Equal(["c.txt", "z.txt", "b.txt", "0.txt"], tile.Items.Select(item => item.Name));
+
+        // «Ordina per» takes the place of the order given by hand.
+        viewModel.SortTile(tile, SortKey.Name);
+        Assert.Equal(["0.txt", "b.txt", "c.txt", "z.txt"], tile.Items.Select(item => item.Name));
+        Assert.False(tile.ByHand);
+    });
+
     // ---- «Sposta in…» ----
 
     [Fact]

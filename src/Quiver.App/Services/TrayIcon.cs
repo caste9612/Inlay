@@ -48,6 +48,8 @@ internal sealed class TrayIcon : IDisposable
 
     public void ShowWarning(string message) => _taskbarIcon.ShowNotification("Quiver", message, NotificationIcon.Warning);
 
+    public void ShowInfo(string message) => _taskbarIcon.ShowNotification("Quiver", message, NotificationIcon.Info);
+
     /// <summary>The shortcut changed in the settings: the tooltip and the menu say the new one.</summary>
     public void UpdateShortcut(string shortcut)
     {

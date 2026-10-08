@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:views="clr-namespace:Quiver.App.Views"
              xmlns:vm="clr-namespace:Quiver.App.ViewModels"
              mc:Ignorable="d"
@@ -26,6 +27,7 @@
         <views:BoolToVisibilityConverter x:Key="Visible" />
         <views:BoolToVisibilityConverter x:Key="Hidden" Invert="True" />
         <views:SameColorConverter x:Key="SameColor" />
+        <views:EqualsToVisibilityConverter x:Key="EqualsVisible" />
 
         <!-- Icon of a kind of thing (folder, topic): text-secondary, like br-tree-kind. -->
         <Style x:Key="Kind" TargetType="Path" BasedOn="{StaticResource Brace.Icon}">
@@ -40,15 +42,22 @@
             <Setter Property="Margin" Value="-3,0,0,0" />
         </Style>
 
-        <!-- A row like those of the tree, for "Da smistare". -->
+        <!-- The sidebar is the main navigation of Quiver, not a tree of files: rows of 32 px with 14 px names and the icons of
+             navigation (icon-md, 20 px), as an item of br-sidebar. The one chosen shows on accent-subtle with its filled
+             icon in accent: Brace keeps the filled icons for the selection of the main navigation. -->
+        <sys:Double x:Key="NavRowHeight">32</sys:Double>
+        <sys:Double x:Key="NavTextSize">14</sys:Double>
+
+        <!-- "Da smistare", as a row of the topics. -->
         <Style x:Key="InboxRow" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource Brace.TextPrimary}" />
             <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="FontSize" Value="{StaticResource NavTextSize}" />
             <Setter Property="FocusVisualStyle" Value="{StaticResource Brace.FocusVisual.Inset}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Height="{DynamicResource Brace.RowHeight}" Padding="8,0" CornerRadius="4"
+                        <Border x:Name="Bd" Height="{StaticResource NavRowHeight}" Padding="10,0,8,0" CornerRadius="4"
                                 Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
                             <ContentPresenter VerticalAlignment="Center" />
                         </Border>
@@ -62,6 +71,63 @@
                             <DataTrigger Binding="{Binding IsInboxShown}" Value="True">
                                 <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
                             </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- A topic of the sidebar: the row of Brace's tree (indent of 16 px for each level, the arrow to open it), at the size
+             of the navigation. -->
+        <Style x:Key="TopicItem" TargetType="TreeViewItem">
+            <Setter Property="Foreground" Value="{DynamicResource Brace.TextPrimary}" />
+            <Setter Property="FontSize" Value="{StaticResource NavTextSize}" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource Brace.FocusVisual.TreeItem}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <Setter Property="AllowDrop" Value="True" />
+            <Setter Property="ContextMenu" Value="{DynamicResource TopicMenu}" />
+            <EventSetter Event="DragOver" Handler="DropTarget_DragOver" />
+            <EventSetter Event="DragLeave" Handler="DropTarget_DragLeave" />
+            <EventSetter Event="Drop" Handler="DropTarget_Drop" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <StackPanel>
+                            <Border x:Name="Bd" Height="{StaticResource NavRowHeight}" Margin="6,1" CornerRadius="4" Background="Transparent"
+                                    Padding="{Binding RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource Brace.TreeIndent}}"
+                                    SnapsToDevicePixels="True">
+                                <DockPanel>
+                                    <ToggleButton x:Name="Expander" DockPanel.Dock="Left" Style="{StaticResource Brace.TreeExpander}" ClickMode="Press"
+                                                  IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                                    <ContentPresenter x:Name="PART_Header" ContentSource="Header" Margin="4,0,0,0" VerticalAlignment="Center"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                </DockPanel>
+                            </Border>
+                            <ItemsPresenter x:Name="ItemsHost" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                            </Trigger>
+                            <Trigger SourceName="Bd" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.SurfaceHover}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True" />
+                                    <Condition Property="Selector.IsSelectionActive" Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.SelectionInactive}" />
+                            </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -160,6 +226,57 @@
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
+            <!-- As in Explorer: the items by name, date, type or size, each way. Chosen here, it takes the place of the order
+                 given by dragging the items, which the last entry tells about. -->
+            <MenuItem Header="Ordina per" IsEnabled="{Binding CanArrange}">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSort16}" /></MenuItem.Icon>
+                <MenuItem Header="Nome" Tag="Name" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Name}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Data di modifica" Tag="Modified" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Modified}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Tipo" Tag="Type" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Type}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Dimensione" Tag="Size" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Size}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Crescente" Tag="ascending" Click="TileSortDirection_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding Direction, Converter={StaticResource EqualsVisible}, ConverterParameter=ascending}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Decrescente" Tag="descending" Click="TileSortDirection_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding Direction, Converter={StaticResource EqualsVisible}, ConverterParameter=descending}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="A mano: trascina gli elementi nel riquadro" IsEnabled="False">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding ByHand, Converter={StaticResource EqualsVisible}, ConverterParameter=True}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <!-- The size given with the corner of the tile goes; the tile follows its items again. -->
+            <MenuItem Header="Misura automatica" Click="TileAutoSize_Click" IsEnabled="{Binding HasSize}" />
             <Separator />
             <MenuItem Header="Sposta il riquadro nel Cestino" Style="{StaticResource Brace.MenuItem.Danger}" Click="TileRecycle_Click" IsEnabled="{Binding IsOwnFolder}">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
@@ -244,6 +361,12 @@
             <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
             <Setter Property="ContextMenu" Value="{DynamicResource ItemMenu}" />
         </Style>
+
+        <!-- The rows of a tile are all row-compact tall: the height given to a tile is a number of them (TileList). Search
+             results keep two lines. -->
+        <Style x:Key="TileRow" TargetType="ListBoxItem" BasedOn="{StaticResource ItemContainer}">
+            <Setter Property="Height" Value="{StaticResource Brace.RowCompact}" />
+        </Style>
     </UserControl.Resources>
 
     <!-- No border of its own: in the window, the frame of Windows draws it in border-default (brace:Chrome.Dark). -->
@@ -326,6 +449,9 @@
                             <TextBlock Margin="4,0,0,0" Text="chiudi" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
+                            <!-- A move, copy or deletion under way, in the background: the LEDs of br-activity, next to what is being done. -->
+                            <Control Style="{StaticResource Brace.Activity}" Margin="0,0,8,0"
+                                     Visibility="{Binding IsBusy, Converter={StaticResource Visible}}" />
                             <TextBlock MaxWidth="600" VerticalAlignment="Center" Text="{Binding Status}" TextTrimming="CharacterEllipsis"
                                        ToolTip="{Binding Status}" />
                             <!-- After an operation: the way back, and the way to go and see, next to the message. -->
@@ -342,14 +468,14 @@
 
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="248" />
+                        <ColumnDefinition Width="264" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
                     <!-- Sidebar: topics and the inbox -->
                     <Border Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,0,1,0">
                         <DockPanel>
-                            <DockPanel DockPanel.Dock="Top" Height="34" Margin="14,0,6,0">
+                            <DockPanel DockPanel.Dock="Top" Height="40" Margin="16,4,8,0">
                                 <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}" VerticalAlignment="Center"
                                         ToolTip="Nuovo argomento" AutomationProperties.Name="Nuovo argomento" Click="NewTopic_Click">
                                     <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Add16}" />
@@ -357,43 +483,62 @@
                                 <TextBlock VerticalAlignment="Center" Style="{StaticResource Brace.Text.Label}"
                                            Foreground="{DynamicResource Brace.TextTertiary}" Text="Argomenti" />
                             </DockPanel>
-                            <Border DockPanel.Dock="Bottom" Padding="4,6" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,1,0,0">
-                                <Button Style="{StaticResource InboxRow}" Command="{Binding ShowInboxCommand}"
+                            <Border DockPanel.Dock="Bottom" Padding="6,6" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,1,0,0">
+                                <Button x:Name="InboxButton" Style="{StaticResource InboxRow}" Command="{Binding ShowInboxCommand}"
                                         AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
                                     <DockPanel>
                                         <ContentControl DockPanel.Dock="Right" Style="{StaticResource Brace.TabCount}" Content="{Binding InboxCount}"
                                                         Visibility="{Binding HasInboxItems, Converter={StaticResource Visible}}" />
-                                        <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.ArrowDownload16}" />
+                                        <Path x:Name="InboxIcon" DockPanel.Dock="Left" Margin="0,0,10,0">
+                                            <Path.Style>
+                                                <Style TargetType="Path" BasedOn="{StaticResource Brace.Icon20}">
+                                                    <Setter Property="Data" Value="{StaticResource Brace.Icon.ArrowDownload20}" />
+                                                    <Setter Property="TextElement.Foreground" Value="{DynamicResource Brace.TextSecondary}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsInboxShown}" Value="True">
+                                                            <Setter Property="Data" Value="{StaticResource Brace.Icon.ArrowDownloadFilled20}" />
+                                                            <Setter Property="TextElement.Foreground" Value="{DynamicResource Brace.Accent}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Path.Style>
+                                        </Path>
                                         <TextBlock VerticalAlignment="Center" Text="Da smistare" />
                                     </DockPanel>
                                 </Button>
                             </Border>
-                            <TreeView x:Name="TopicTree" Background="Transparent" BorderThickness="0" ItemsSource="{Binding Topics}"
-                                      SelectedItemChanged="TopicTree_SelectedItemChanged">
-                                <TreeView.Resources>
-                                    <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
-                                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                                        <Setter Property="AllowDrop" Value="True" />
-                                        <Setter Property="ContextMenu" Value="{DynamicResource TopicMenu}" />
-                                        <EventSetter Event="DragOver" Handler="DropTarget_DragOver" />
-                                        <EventSetter Event="DragLeave" Handler="DropTarget_DragLeave" />
-                                        <EventSetter Event="Drop" Handler="DropTarget_Drop" />
-                                    </Style>
-                                </TreeView.Resources>
+                            <!-- Topics: chosen with a click, dragged above or below another to change place, or into the middle of
+                                 another to go inside it; a line or the row lit up shows where it will go. -->
+                            <TreeView x:Name="TopicTree" Padding="0,2" Background="Transparent" BorderThickness="0" ItemsSource="{Binding Topics}"
+                                      ItemContainerStyle="{StaticResource TopicItem}" AllowDrop="True"
+                                      SelectedItemChanged="TopicTree_SelectedItemChanged"
+                                      PreviewMouseLeftButtonDown="TopicTree_PreviewMouseLeftButtonDown" PreviewMouseMove="TopicTree_PreviewMouseMove"
+                                      DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
                                 <TreeView.ItemTemplate>
-                                    <HierarchicalDataTemplate DataType="{x:Type vm:TopicViewModel}" ItemsSource="{Binding Children}">
+                                    <HierarchicalDataTemplate DataType="{x:Type vm:TopicViewModel}" ItemsSource="{Binding Children}"
+                                                              ItemContainerStyle="{StaticResource TopicItem}">
                                         <DockPanel Background="Transparent">
-                                            <Path DockPanel.Dock="Left" Margin="0,0,6,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Folder16}" />
+                                            <Path x:Name="TopicIcon" DockPanel.Dock="Left" Margin="0,0,10,0" Style="{StaticResource Brace.Icon20}"
+                                                  Data="{StaticResource Brace.Icon.Folder20}" TextElement.Foreground="{DynamicResource Brace.TextSecondary}" />
                                             <Grid>
-                                                <TextBlock VerticalAlignment="Center" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                <TextBlock x:Name="TopicName" VerticalAlignment="Center" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
                                                            Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
-                                                <TextBox Style="{StaticResource EditBox}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                                <TextBox Style="{StaticResource EditBox}" Height="24" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
                                                          Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
                                                          IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
                                                          LostKeyboardFocus="EditBox_LostKeyboardFocus" />
                                             </Grid>
                                         </DockPanel>
+                                        <HierarchicalDataTemplate.Triggers>
+                                            <!-- The topics of the first level stand out a little from those inside them. -->
+                                            <DataTrigger Binding="{Binding Parent}" Value="{x:Null}">
+                                                <Setter TargetName="TopicName" Property="FontWeight" Value="Medium" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter TargetName="TopicIcon" Property="Data" Value="{StaticResource Brace.Icon.FolderFilled20}" />
+                                                <Setter TargetName="TopicIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Accent}" />
+                                            </DataTrigger>
+                                        </HierarchicalDataTemplate.Triggers>
                                     </HierarchicalDataTemplate>
                                 </TreeView.ItemTemplate>
                             </TreeView>
@@ -455,49 +600,89 @@
                                                 <views:TileGridPanel MinColumnWidth="280" Spacing="16" />
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
+                                        <!-- The columns each tile takes, from the size given to it with its corner. -->
+                                        <ItemsControl.ItemContainerStyle>
+                                            <Style TargetType="ContentPresenter">
+                                                <Setter Property="views:TileGridPanel.Columns" Value="{Binding Columns}" />
+                                            </Style>
+                                        </ItemsControl.ItemContainerStyle>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="{x:Type vm:TileViewModel}">
-                                                <GroupBox Style="{StaticResource Brace.Panel}" Padding="0" ContextMenu="{StaticResource TileMenu}"
-                                                          AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
-                                                    <GroupBox.Header>
-                                                        <DockPanel Background="Transparent" ToolTip="Trascina il titolo per spostare il riquadro"
-                                                                   PreviewMouseLeftButtonDown="TileHeader_PreviewMouseLeftButtonDown"
-                                                                   PreviewMouseMove="TileHeader_PreviewMouseMove">
-                                                            <!-- The color of the tile, as a stripe before its title. -->
-                                                            <Border DockPanel.Dock="Left" Width="4" Margin="0,3,8,3" CornerRadius="2" Background="{Binding ColorBrush}"
-                                                                    Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
-                                                            <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}"
-                                                                    ToolTip="Azioni sul riquadro" AutomationProperties.Name="Azioni sul riquadro" Click="TileActions_Click">
-                                                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
-                                                            </Button>
-                                                            <ContentControl DockPanel.Dock="Right" Margin="6,0" VerticalAlignment="Center"
-                                                                            Style="{StaticResource Brace.TabCount}" Content="{Binding Count}" />
-                                                            <Grid>
-                                                                <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="{Binding Title}"
-                                                                           Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
-                                                                <TextBox Style="{StaticResource EditBox}" FontWeight="Normal"
-                                                                         Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
-                                                                         Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
-                                                                         IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
-                                                                         LostKeyboardFocus="EditBox_LostKeyboardFocus" />
-                                                            </Grid>
-                                                        </DockPanel>
-                                                    </GroupBox.Header>
-                                                    <Grid>
-                                                        <TextBlock Margin="12,10" Foreground="{DynamicResource Brace.TextTertiary}" TextWrapping="Wrap"
-                                                                   Text="Vuoto. Trascina qui dei file, o incollali con Ctrl+V."
-                                                                   Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
-                                                        <ListBox MaxHeight="268" SelectionMode="Extended" ItemsSource="{Binding Items}" VirtualizingPanel.IsVirtualizing="False"
-                                                                 ItemContainerStyle="{StaticResource ItemContainer}" ItemTemplate="{StaticResource ItemRow}"
-                                                                 SelectionChanged="ItemList_SelectionChanged"
-                                                                 PreviewMouseLeftButtonDown="ItemList_PreviewMouseLeftButtonDown"
-                                                                 PreviewMouseLeftButtonUp="ItemList_PreviewMouseLeftButtonUp"
-                                                                 PreviewMouseRightButtonDown="ItemList_PreviewMouseRightButtonDown"
-                                                                 PreviewMouseMove="ItemList_PreviewMouseMove"
-                                                                 PreviewMouseWheel="ItemList_PreviewMouseWheel"
-                                                                 MouseDoubleClick="ItemList_MouseDoubleClick" KeyDown="ItemList_KeyDown" />
-                                                    </Grid>
-                                                </GroupBox>
+                                                <Grid x:Name="TileRoot">
+                                                    <GroupBox Style="{StaticResource Brace.Panel}" Padding="0" ContextMenu="{StaticResource TileMenu}"
+                                                              AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                                                        <GroupBox.Header>
+                                                            <DockPanel Background="Transparent" ToolTip="Trascina il titolo per spostare il riquadro"
+                                                                       PreviewMouseLeftButtonDown="TileHeader_PreviewMouseLeftButtonDown"
+                                                                       PreviewMouseMove="TileHeader_PreviewMouseMove">
+                                                                <!-- The handle, under the pointer, in the margin before the title: where a tile is taken. -->
+                                                                <Path x:Name="Grip" DockPanel.Dock="Left" Margin="-11,0,-3,0" Style="{StaticResource Brace.Icon}"
+                                                                      Data="{StaticResource Quiver.Icon.Grip16}" TextElement.Foreground="{DynamicResource Brace.TextTertiary}"
+                                                                      Cursor="SizeAll" Visibility="Hidden" />
+                                                                <!-- The color of the tile, as a stripe before its title. -->
+                                                                <Border DockPanel.Dock="Left" Width="4" Margin="0,3,8,3" CornerRadius="2" Background="{Binding ColorBrush}"
+                                                                        Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
+                                                                <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}"
+                                                                        ToolTip="Azioni sul riquadro" AutomationProperties.Name="Azioni sul riquadro" Click="TileActions_Click">
+                                                                    <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
+                                                                </Button>
+                                                                <ContentControl DockPanel.Dock="Right" Margin="6,0" VerticalAlignment="Center"
+                                                                                Style="{StaticResource Brace.TabCount}" Content="{Binding Count}" />
+                                                                <Grid>
+                                                                    <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="{Binding Title}"
+                                                                               Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
+                                                                    <TextBox Style="{StaticResource EditBox}" FontWeight="Normal"
+                                                                             Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                                                             Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
+                                                                             IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
+                                                                             LostKeyboardFocus="EditBox_LostKeyboardFocus" />
+                                                                </Grid>
+                                                            </DockPanel>
+                                                        </GroupBox.Header>
+                                                        <Grid>
+                                                            <TextBlock Margin="12,10" Foreground="{DynamicResource Brace.TextTertiary}" TextWrapping="Wrap"
+                                                                       Text="Vuoto. Trascina qui dei file, o incollali con Ctrl+V."
+                                                                       Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
+                                                            <!-- About ten rows, then it scrolls; as many as the corner says, when given a height. The
+                                                                 style of Brace for lists does not reach a subclass by itself. -->
+                                                            <views:TileList Style="{StaticResource {x:Type ListBox}}" Rows="{Binding Rows}"
+                                                                     MaxHeight="{Binding ListMaxHeight}" SelectionMode="Extended"
+                                                                     ItemsSource="{Binding Items}" VirtualizingPanel.IsVirtualizing="False"
+                                                                     ItemContainerStyle="{StaticResource TileRow}" ItemTemplate="{StaticResource ItemRow}"
+                                                                     SelectionChanged="ItemList_SelectionChanged"
+                                                                     PreviewMouseLeftButtonDown="ItemList_PreviewMouseLeftButtonDown"
+                                                                     PreviewMouseLeftButtonUp="ItemList_PreviewMouseLeftButtonUp"
+                                                                     PreviewMouseRightButtonDown="ItemList_PreviewMouseRightButtonDown"
+                                                                     PreviewMouseMove="ItemList_PreviewMouseMove"
+                                                                     PreviewMouseWheel="ItemList_PreviewMouseWheel"
+                                                                     MouseDoubleClick="ItemList_MouseDoubleClick" KeyDown="ItemList_KeyDown" />
+                                                        </Grid>
+                                                    </GroupBox>
+                                                    <!-- The corner: dragged, the tile takes one, two or three columns, and as many rows as wanted. -->
+                                                    <Thumb x:Name="ResizeGrip" Style="{StaticResource Quiver.ResizeGrip}" HorizontalAlignment="Right"
+                                                           VerticalAlignment="Bottom" Margin="0,0,1,1" Visibility="Hidden"
+                                                           DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta"
+                                                           DragCompleted="ResizeGrip_DragCompleted" MouseDoubleClick="ResizeGrip_MouseDoubleClick" />
+                                                </Grid>
+                                                <DataTemplate.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
+                                                            <Condition Binding="{Binding IsOwnFolder}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter TargetName="Grip" Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
+                                                            <Condition Binding="{Binding CanArrange}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                    <Trigger SourceName="ResizeGrip" Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
+                                                    </Trigger>
+                                                </DataTemplate.Triggers>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>

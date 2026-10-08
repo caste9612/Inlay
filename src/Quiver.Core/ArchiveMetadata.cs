@@ -64,15 +64,15 @@ public sealed class ArchiveMetadata
         return true;
     }
 
-    /// <summary>Remembers the order of a board's tiles after one of them was moved.</summary>
+    /// <summary>Remembers the order of a board's tiles, or of the topics next to each other, after one of them was moved.</summary>
     /// <returns>Whether anything changed.</returns>
-    public bool SetTileOrder(IReadOnlyList<string> tileKeys)
+    public bool SetOrder(IReadOnlyList<string> keys)
     {
         var changed = false;
-        for (var i = 0; i < tileKeys.Count; i++)
+        for (var i = 0; i < keys.Count; i++)
         {
-            if (!Folders.TryGetValue(tileKeys[i], out var folder))
-                Folders[tileKeys[i]] = folder = new FolderMetadata();
+            if (!Folders.TryGetValue(keys[i], out var folder))
+                Folders[keys[i]] = folder = new FolderMetadata();
             if (folder.Order != i)
             {
                 folder.Order = i;
@@ -80,6 +80,79 @@ public sealed class ArchiveMetadata
             }
         }
         return changed;
+    }
+
+    /// <summary>The size given to a tile; null for the usual one.</summary>
+    public TileSize? SizeOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Size : null;
+
+    /// <summary>Gives a tile a size, or the usual one back with null.</summary>
+    /// <returns>Whether anything changed.</returns>
+    public bool SetSize(string relativeKey, TileSize? size)
+    {
+        var kept = size?.Clamped() is { IsUsual: false } clamped ? clamped : null;
+        return Change(relativeKey, folder =>
+        {
+            if (folder.Size == kept)
+                return false;
+            folder.Size = kept;
+            return true;
+        });
+    }
+
+    /// <summary>How the items of a tile are sorted; null for by name, or when they were put in order by hand.</summary>
+    public ItemSort? SortOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Sort : null;
+
+    /// <summary>The order the items of a tile were given by hand, by name; null when they follow a sort.</summary>
+    public IReadOnlyList<string>? ItemOrderOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Items : null;
+
+    /// <summary>Sorts the items of a tile: the order given by hand goes. By name from A is the usual sort, and needs no entry.</summary>
+    /// <returns>Whether anything changed.</returns>
+    public bool SetSort(string relativeKey, ItemSort sort) =>
+        SetArrangement(relativeKey, sort is { Key: SortKey.Name, Descending: false } ? null : sort, null);
+
+    /// <summary>Puts the items of a tile in the order given by hand, which replaces any sort.</summary>
+    /// <returns>Whether anything changed.</returns>
+    public bool SetItemOrder(string relativeKey, IReadOnlyList<string> names) =>
+        SetArrangement(relativeKey, null, names.Count > 0 ? names.ToList() : null);
+
+    /// <summary>Gives a tile back the sort, or the order by hand, it had: what an undo does.</summary>
+    /// <returns>Whether anything changed.</returns>
+    public bool SetArrangement(string relativeKey, ItemSort? sort, IReadOnlyList<string>? names) =>
+        Change(relativeKey, folder =>
+        {
+            if (folder.Sort == sort && FolderMetadata.SameNames(folder.Items, names))
+                return false;
+            folder.Sort = sort;
+            folder.Items = names;
+            return true;
+        });
+
+    /// <summary>An item of a tile was renamed: it keeps its place in the order given by hand.</summary>
+    /// <returns>Whether anything changed.</returns>
+    public bool RenameItem(string relativeKey, string oldName, string newName)
+    {
+        if (ItemOrderOf(relativeKey) is not { } names || !names.Contains(oldName, StringComparer.OrdinalIgnoreCase))
+            return false;
+        var renamed = names.Select(name => string.Equals(name, oldName, StringComparison.OrdinalIgnoreCase) ? newName : name).ToList();
+        return Change(relativeKey, folder =>
+        {
+            folder.Items = renamed;
+            return true;
+        });
+    }
+
+    /// <summary>Applies a change to the entry of a folder, made if missing and dropped if left empty.</summary>
+    private bool Change(string relativeKey, Func<FolderMetadata, bool> change)
+    {
+        if (!Folders.TryGetValue(relativeKey, out var folder))
+            folder = new FolderMetadata();
+        if (!change(folder))
+            return false;
+        if (folder.IsEmpty)
+            Folders.Remove(relativeKey);
+        else
+            Folders[relativeKey] = folder;
+        return true;
     }
 
     /// <summary>Gives a tile back a place it had: a position, or none to follow in name order.</summary>
@@ -184,23 +257,67 @@ public sealed class FolderMetadata
 
     public string? Color { get; set; }
 
-    public TilePlacement? Tile { get; set; }
+    /// <summary>The size given to the tile; null for the usual one.</summary>
+    public TileSize? Size { get; set; }
 
-    /// <summary>Position of the tile on its board.</summary>
+    /// <summary>Position of the tile on its board, or of the topic among the topics next to it.</summary>
     public int? Order { get; set; }
 
-    [JsonIgnore]
-    public bool IsEmpty => Kind is null && Workspace is null && Color is null && Tile is null && Order is null;
+    /// <summary>How the items of the tile are sorted; null for by name.</summary>
+    public ItemSort? Sort { get; set; }
 
-    // Every property is a string, a record or a number: a shallow copy is a full one.
+    /// <summary>
+    /// The order the items of the tile were given by dragging them, by name. Those not in it, arrived since, follow.
+    /// Replaced as a whole, never changed in place.
+    /// </summary>
+    public IReadOnlyList<string>? Items { get; set; }
+
+    [JsonIgnore]
+    public bool IsEmpty =>
+        Kind is null && Workspace is null && Color is null && Size is null && Order is null && Sort is null && Items is null;
+
+    // Every property is a string, a number, a record or a list that is replaced, never changed: a shallow copy is a full one.
     public FolderMetadata Clone() => (FolderMetadata)MemberwiseClone();
 
     public bool SameAs(FolderMetadata other) =>
-        Kind == other.Kind && Workspace == other.Workspace && Color == other.Color && Tile == other.Tile && Order == other.Order;
+        Kind == other.Kind && Workspace == other.Workspace && Color == other.Color && Size == other.Size &&
+        Order == other.Order && Sort == other.Sort && SameNames(Items, other.Items);
+
+    internal static bool SameNames(IReadOnlyList<string>? a, IReadOnlyList<string>? b) =>
+        a is null || b is null ? a is null && b is null : a.SequenceEqual(b, StringComparer.Ordinal);
 }
 
-/// <summary>Position and size of a tile on its board, in grid cells.</summary>
-public sealed record TilePlacement(int X, int Y, int W, int H);
+/// <summary>The size of a tile: the columns of the board it takes, and the rows of items it shows before scrolling.</summary>
+/// <param name="Rows">Null for as many as it has, up to the usual limit.</param>
+public sealed record TileSize(int Columns, int? Rows)
+{
+    public const int MaxColumns = 3;
+    public const int MinRows = 2;
+    public const int MaxRows = 40;
+
+    /// <summary>One column and the automatic height: the size of a tile nobody resized.</summary>
+    public bool IsUsual => Columns <= 1 && Rows is null;
+
+    /// <summary>Within what a board can show: one to three columns, two to forty rows.</summary>
+    public TileSize Clamped() =>
+        new(Math.Clamp(Columns, 1, MaxColumns), Rows is { } rows ? Math.Clamp(rows, MinRows, MaxRows) : null);
+}
+
+/// <summary>What the items of a tile can be sorted by.</summary>
+public enum SortKey
+{
+    Name,
+    Modified,
+    Type,
+    Size,
+}
+
+/// <param name="Descending">From the last: Z to A, the newest, the largest.</param>
+public sealed record ItemSort(SortKey Key, bool Descending)
+{
+    /// <summary>The direction a sort starts in when chosen: names from A, the newest first, types from A, the largest first.</summary>
+    public static ItemSort For(SortKey key) => new(key, key is SortKey.Modified or SortKey.Size);
+}
 
 /// <summary>Reads and writes &lt;root&gt;/.quiver/archive.json.</summary>
 public static class MetadataStore
@@ -211,6 +328,8 @@ public static class MetadataStore
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         RespectNullableAnnotations = true,
         WriteIndented = true,
+        // "modified" rather than 1: the file stays readable, and a new kind of sort never shifts the old ones.
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
 
     public static string GetPath(string root) =>

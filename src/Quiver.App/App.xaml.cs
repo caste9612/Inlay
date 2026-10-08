@@ -21,6 +21,7 @@ public partial class App : Application, ISettingsHost
     private MainViewModel? _viewModel;
     private SettingsWindow? _settingsWindow;
     private AppSettings _settings = new();
+    private bool _quitting;
 
     /// <summary>The archive chosen the first time, before the panel exists.</summary>
     private string? _chosenRoot;
@@ -118,9 +119,22 @@ public partial class App : Application, ISettingsHost
         base.OnSessionEnding(e);
     }
 
-    /// <summary>«Esci»: the only way the window really closes; otherwise it goes back to the notification area.</summary>
-    private void Quit()
+    /// <summary>
+    /// «Esci»: the only way the window really closes; otherwise it goes back to the notification area. A move or a copy
+    /// under way finishes first: cut halfway, it would leave a file half copied.
+    /// </summary>
+    private async void Quit()
     {
+        if (_quitting)
+            return;
+        _quitting = true;
+        if (_viewModel is { IsBusy: true } viewModel)
+        {
+            const string waiting = "Quiver si chiude appena finisce l'operazione sui file in corso.";
+            viewModel.Status = waiting;
+            _tray?.ShowInfo(waiting);
+            await viewModel.WhenIdle();
+        }
         _panel?.AllowClose();
         Shutdown();
     }

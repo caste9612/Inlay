@@ -45,9 +45,10 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
         .Where(source => source.Folders.Count > 0)
         .ToList();
 
+    /// <summary>The topics in the root, and inside them those marked, in the order given by dragging them, the others by name.</summary>
     public IReadOnlyList<Topic> ReadTopics() =>
-        Directories(new DirectoryInfo(Root))
-            .Where(folder => !folder.Name.Equals(ArchiveLayout.InboxFolderName, StringComparison.OrdinalIgnoreCase))
+        InOrder(Directories(new DirectoryInfo(Root))
+                .Where(folder => !folder.Name.Equals(ArchiveLayout.InboxFolderName, StringComparison.OrdinalIgnoreCase)))
             .Select(ReadTopic)
             .ToList();
 
@@ -56,17 +57,28 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
         var folder = new DirectoryInfo(topic.FullPath);
         var tiles = new List<Tile>();
 
+        // "Generale" goes by the topic's own key: it holds the files of the topic's folder.
         var looseFiles = Files(folder).Select(ArchiveItem.From).ToList();
         if (looseFiles.Count > 0)
-            tiles.Add(new Tile(GeneralTileTitle, folder.FullName, IsGeneral: true, looseFiles));
+            tiles.Add(ReadTile(GeneralTileTitle, folder.FullName, isGeneral: true, looseFiles, color: null));
 
         foreach (var subfolder in TileFolders(folder))
         {
             var color = metadata.ColorOf(ArchiveLayout.ToRelativeKey(Root, subfolder.FullName));
-            tiles.Add(new Tile(subfolder.Name, subfolder.FullName, IsGeneral: false, ReadItems(subfolder), color));
+            tiles.Add(ReadTile(subfolder.Name, subfolder.FullName, isGeneral: false, ReadItems(subfolder), color));
         }
 
         return new Board(topic, tiles);
+    }
+
+    /// <summary>A tile with what its metadata says: its size, and the order of its items.</summary>
+    private Tile ReadTile(string title, string folder, bool isGeneral, IReadOnlyList<ArchiveItem> items, string? color)
+    {
+        var key = ArchiveLayout.ToRelativeKey(Root, folder);
+        var sort = metadata.SortOf(key);
+        var byHand = metadata.ItemOrderOf(key);
+        return new Tile(title, folder, isGeneral, ItemArrangement.Arrange(items, sort, byHand), color, metadata.SizeOf(key),
+            byHand is { Count: > 0 } ? null : sort, ByHand: byHand is { Count: > 0 });
     }
 
     /// <summary>
@@ -120,9 +132,13 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
 
     private Topic ReadTopic(DirectoryInfo folder)
     {
-        var children = Directories(folder).Where(IsMarkedTopic).Select(ReadTopic).ToList();
+        var children = InOrder(Directories(folder).Where(IsMarkedTopic)).Select(ReadTopic).ToList();
         return new Topic(folder.FullName, ArchiveLayout.ToRelativeKey(Root, folder.FullName), children);
     }
+
+    /// <summary>Those moved by the user keep their place, the others follow in name order (the sort is stable).</summary>
+    private IEnumerable<DirectoryInfo> InOrder(IEnumerable<DirectoryInfo> folders) =>
+        folders.OrderBy(folder => metadata.OrderOf(ArchiveLayout.ToRelativeKey(Root, folder.FullName)) ?? int.MaxValue);
 
     private void AddDestinations(Topic topic, string location, List<Destination> destinations)
     {
@@ -134,11 +150,9 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
             AddDestinations(child, inside, destinations);
     }
 
-    /// <summary>The subfolders of a topic that are its tiles: those moved by the user keep their place, the others follow in name order (the sort is stable).</summary>
+    /// <summary>The subfolders of a topic that are its tiles, in the order of its board.</summary>
     private IEnumerable<DirectoryInfo> TileFolders(DirectoryInfo topicFolder) =>
-        Directories(topicFolder)
-            .Where(sub => !IsMarkedTopic(sub))
-            .OrderBy(sub => metadata.OrderOf(ArchiveLayout.ToRelativeKey(Root, sub.FullName)) ?? int.MaxValue);
+        InOrder(Directories(topicFolder).Where(sub => !IsMarkedTopic(sub)));
 
     private bool IsMarkedTopic(DirectoryInfo folder) =>
         metadata.IsTopic(ArchiveLayout.ToRelativeKey(Root, folder.FullName));

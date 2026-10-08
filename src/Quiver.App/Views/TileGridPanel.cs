@@ -4,59 +4,87 @@ using System.Windows.Controls;
 namespace Quiver.App.Views;
 
 /// <summary>
-/// Lays tiles out in as many equal columns as fit, row by row. Each tile keeps its own height,
-/// aligned to the top of its row, so a short tile next to a long one does not stretch.
+/// Lays tiles out in as many equal columns as fit, row by row. A tile can take more than one column; when it does not fit
+/// in what is left of a row it starts the next one. Each tile keeps its own height, aligned to the top of its row, so a
+/// short tile next to a long one does not stretch.
 /// </summary>
 public sealed class TileGridPanel : Panel
 {
+    /// <summary>The columns a tile takes, set on the container of each tile; more than the board has means all of them.</summary>
+    public static readonly DependencyProperty ColumnsProperty = DependencyProperty.RegisterAttached(
+        "Columns", typeof(int), typeof(TileGridPanel),
+        new FrameworkPropertyMetadata(1, FrameworkPropertyMetadataOptions.AffectsParentMeasure | FrameworkPropertyMetadataOptions.AffectsParentArrange));
+
+    public static int GetColumns(DependencyObject element) => (int)element.GetValue(ColumnsProperty);
+
+    public static void SetColumns(DependencyObject element, int value) => element.SetValue(ColumnsProperty, value);
+
     public double MinColumnWidth { get; set; } = 280;
 
     public double Spacing { get; set; } = 16;
 
+    /// <summary>How many columns the board has now, and how wide each one is: what the corner of a tile snaps to.</summary>
+    public int ColumnCount { get; private set; } = 1;
+
+    public double ColumnWidth { get; private set; }
+
     protected override Size MeasureOverride(Size availableSize)
     {
         var width = double.IsInfinity(availableSize.Width) ? MinColumnWidth * 3 + Spacing * 2 : availableSize.Width;
-        var columns = ColumnCount(width);
-        var columnWidth = ColumnWidth(width, columns);
+        var columns = ColumnsFor(width);
+        var columnWidth = WidthOfColumn(width, columns);
         var height = 0.0;
-        var rowHeight = 0.0;
-        for (var i = 0; i < InternalChildren.Count; i++)
+        foreach (var row in Rows(columns))
         {
-            var child = InternalChildren[i];
-            child.Measure(new Size(columnWidth, double.PositiveInfinity));
-            rowHeight = Math.Max(rowHeight, child.DesiredSize.Height);
-            var lastInRow = i % columns == columns - 1 || i == InternalChildren.Count - 1;
-            if (lastInRow)
+            var rowHeight = 0.0;
+            foreach (var (child, span, _) in row)
             {
-                height += rowHeight + (i == InternalChildren.Count - 1 ? 0 : Spacing);
-                rowHeight = 0;
+                child.Measure(new Size(WidthOf(span, columnWidth), double.PositiveInfinity));
+                rowHeight = Math.Max(rowHeight, child.DesiredSize.Height);
             }
+            height += rowHeight + Spacing;
         }
-        return new Size(width, height);
+        return new Size(width, Math.Max(0, height - Spacing));
     }
 
     protected override Size ArrangeOverride(Size finalSize)
     {
-        var columns = ColumnCount(finalSize.Width);
-        var columnWidth = ColumnWidth(finalSize.Width, columns);
+        var columns = ColumnCount = ColumnsFor(finalSize.Width);
+        var columnWidth = ColumnWidth = WidthOfColumn(finalSize.Width, columns);
         var y = 0.0;
-        for (var start = 0; start < InternalChildren.Count; start += columns)
+        foreach (var row in Rows(columns))
         {
-            var end = Math.Min(start + columns, InternalChildren.Count);
-            var rowHeight = 0.0;
-            for (var i = start; i < end; i++)
-                rowHeight = Math.Max(rowHeight, InternalChildren[i].DesiredSize.Height);
-            for (var i = start; i < end; i++)
-            {
-                var x = (i - start) * (columnWidth + Spacing);
-                InternalChildren[i].Arrange(new Rect(x, y, columnWidth, InternalChildren[i].DesiredSize.Height));
-            }
+            var rowHeight = row.Max(cell => cell.Child.DesiredSize.Height);
+            foreach (var (child, span, column) in row)
+                child.Arrange(new Rect(column * (columnWidth + Spacing), y, WidthOf(span, columnWidth), child.DesiredSize.Height));
             y += rowHeight + Spacing;
         }
         return finalSize;
     }
 
-    private int ColumnCount(double width) => Math.Max(1, (int)((width + Spacing) / (MinColumnWidth + Spacing)));
+    /// <summary>The tiles row by row, each with the columns it takes and the one it starts at.</summary>
+    private List<List<(UIElement Child, int Span, int Column)>> Rows(int columns)
+    {
+        var rows = new List<List<(UIElement Child, int Span, int Column)>>();
+        List<(UIElement Child, int Span, int Column)>? row = null;
+        var used = 0;
+        foreach (UIElement child in InternalChildren)
+        {
+            var span = Math.Clamp(GetColumns(child), 1, columns);
+            if (row is null || used + span > columns)
+            {
+                rows.Add(row = []);
+                used = 0;
+            }
+            row.Add((child, span, used));
+            used += span;
+        }
+        return rows;
+    }
 
-    private double ColumnWidth(double width, int columns) => Math.Max(0, (width - Spacing * (columns - 1)) / columns);
+    private double WidthOf(int span, double columnWidth) => span * columnWidth + (span - 1) * Spacing;
+
+    private int ColumnsFor(double width) => Math.Max(1, (int)((width + Spacing) / (MinColumnWidth + Spacing)));
+
+    private double WidthOfColumn(double width, int columns) => Math.Max(0, (width - Spacing * (columns - 1)) / columns);
 }

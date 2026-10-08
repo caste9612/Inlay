@@ -26,6 +26,9 @@ public partial class PanelView : UserControl
     /// <summary>Data of a tile dragged by its title: its folder.</summary>
     private const string TileFormat = "Quiver.Tile";
 
+    /// <summary>Data of a topic dragged in the sidebar: its metadata key.</summary>
+    private const string TopicFormat = "Quiver.Topic";
+
     // As in Explorer, a second click on the selected item renames it once it is clear that it is not a double click.
     private readonly DispatcherTimer _renameTimer = new() { Interval = TimeSpan.FromMilliseconds(NativeMethods.GetDoubleClickTime()) };
 
@@ -38,9 +41,22 @@ public partial class PanelView : UserControl
     private bool _pendingClickRenames;
     private ItemViewModel? _renameCandidate;
     private TileViewModel? _pressedTile;
+    private TopicViewModel? _pressedTopic;
     private IInputElement? _focusBeforePrompt;
     private DragLabelAdorner? _dragLabel;
     private InsertionAdorner? _insertionLine;
+    private InsertionAdorner? _topicLine;
+
+    // Rows dragged from a tile of the board, while the drag lasts: dropped in the same tile, they change place in it.
+    private IReadOnlyList<ItemViewModel> _draggedItems = [];
+    private TileViewModel? _dragSourceTile;
+
+    // The corner of a tile being dragged: where the drag started, and the size the tile had then.
+    private Point _resizeStart;
+    private double _resizeStartWidth;
+    private double _resizeStartListHeight;
+    private TileList? _resizeList;
+    private TileSize? _sizeBefore;
 
     // Selecting with a rectangle: where the press was, the rectangle on screen, and what Ctrl keeps selected.
     private Point? _bandStart;
@@ -187,9 +203,9 @@ public partial class PanelView : UserControl
                 return;
             // Text typed and erased is the box's to bring back first.
             if (key == Key.Z && !SearchBox.CanUndo)
-                ViewModel.Undo();
+                Observe(ViewModel.Undo());
             else if (key == Key.V && FileClipboard.HasFiles && ViewModel.BoardFolder is { } board)
-                ViewModel.PasteInto(board);
+                Observe(ViewModel.PasteInto(board));
             else
                 return;
             e.Handled = true;
@@ -199,7 +215,7 @@ public partial class PanelView : UserControl
         switch (key)
         {
             case Key.Z when modifiers == ModifierKeys.Control:
-                ViewModel.Undo();
+                Observe(ViewModel.Undo());
                 break;
             case Key.F2 when modifiers == ModifierKeys.None:
                 RenameFocused();
@@ -220,7 +236,7 @@ public partial class PanelView : UserControl
                 break;
             case Key.V when modifiers == ModifierKeys.Control:
                 if (PasteTarget() is { } folder)
-                    ViewModel.PasteInto(folder);
+                    Observe(ViewModel.PasteInto(folder));
                 break;
             case Key.C when modifiers == (ModifierKeys.Control | ModifierKeys.Shift):
                 if (ViewModel.SelectedItems().FirstOrDefault() is { } first)
@@ -347,6 +363,52 @@ public partial class PanelView : UserControl
     {
         if (e.NewValue is TopicViewModel topic && !ReferenceEquals(topic, ViewModel.SelectedTopic))
             ViewModel.SelectTopicCommand.Execute(topic);
+    }
+
+    /// <summary>A press on a topic, not on its arrow nor on its name being edited: dragged, it changes place.</summary>
+    private void TopicTree_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _pressedTopic = null;
+        if (IsInside<ToggleButton>(e.OriginalSource) || IsInside<TextBox>(e.OriginalSource) || IsInside<ScrollBar>(e.OriginalSource))
+            return;
+        if (FindAncestor<TreeViewItem>(e.OriginalSource as DependencyObject) is { DataContext: TopicViewModel topic })
+        {
+            _pressedTopic = topic;
+            _dragStart = e.GetPosition(this);
+        }
+    }
+
+    private void TopicTree_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_pressedTopic is not { } topic || e.LeftButton != MouseButtonState.Pressed || !MovedEnough(e))
+            return;
+        _pressedTopic = null;
+        if (topic.IsEditing || FindTopic(topic.Topic.RelativePath) is null)
+            return;
+        // Only Quiver understands it: a topic is not dragged out to Explorer, where it would leave the archive.
+        var data = new DataObject(TopicFormat, topic.Topic.RelativePath);
+        ShowDragLabel(topic.Name);
+        try
+        {
+            DragDrop.DoDragDrop(TopicTree, data, DragDropEffects.Move);
+        }
+        finally
+        {
+            HideDragLabel();
+            HideInsertionLine();
+        }
+    }
+
+    private TopicViewModel? FindTopic(string relativePath) =>
+        ViewModel.Topics.SelectMany(topic => topic.SelfAndDescendants())
+            .FirstOrDefault(topic => string.Equals(topic.Topic.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The topic after this one among those next to it; null for the last.</summary>
+    private TopicViewModel? NextSibling(TopicViewModel topic)
+    {
+        var siblings = topic.Parent?.Children ?? ViewModel.Topics;
+        var index = siblings.IndexOf(topic);
+        return index >= 0 && index + 1 < siblings.Count ? siblings[index + 1] : null;
     }
 
     private void FocusSelectedTopic()
@@ -493,17 +555,24 @@ public partial class PanelView : UserControl
             UnselectAll();
             item.IsSelected = true;
         }
-        var paths = ViewModel.SelectedItems().Select(selected => selected.Item.FullPath).ToArray();
+        var selected = ViewModel.SelectedItems();
+        var paths = selected.Select(row => row.Item.FullPath).ToArray();
         // A plain list of files: Explorer, mail and other programs understand it too.
         var data = new DataObject(DataFormats.FileDrop, paths.Length > 0 ? paths : [item.Item.FullPath]);
         ShowDragLabel(paths.Length > 1 ? $"{paths.Length} elementi" : item.Name);
+        // Dropped in the same tile, the rows change place there: only those of that tile are in hand.
+        _dragSourceTile = list.DataContext as TileViewModel;
+        _draggedItems = _dragSourceTile is { } source && selected.All(source.Items.Contains) ? selected : [];
         try
         {
             DragDrop.DoDragDrop(list, data, DragDropEffects.Move | DragDropEffects.Copy | DragDropEffects.Link);
         }
         finally
         {
+            _dragSourceTile = null;
+            _draggedItems = [];
             HideDragLabel();
+            HideInsertionLine();
         }
     }
 
@@ -762,6 +831,78 @@ public partial class PanelView : UserControl
         menu.IsOpen = true;
     }
 
+    // ---- Tiles: their size, from the corner ----
+
+    private void ResizeGrip_DragStarted(object sender, DragStartedEventArgs e)
+    {
+        if (sender is not Thumb { DataContext: TileViewModel tile, Parent: FrameworkElement tileRoot })
+            return;
+        _sizeBefore = tile.Size;
+        _resizeStart = Mouse.GetPosition(TilesControl);
+        _resizeStartWidth = tileRoot.ActualWidth;
+        _resizeList = FindDescendants<TileList>(tileRoot).FirstOrDefault();
+        _resizeStartListHeight = _resizeList?.ActualHeight ?? 0;
+    }
+
+    /// <summary>
+    /// The tile follows the corner: in width it snaps to the columns of the board, in height to its rows. A drag that
+    /// hardly moves up or down leaves the height as it was, automatic included.
+    /// </summary>
+    private void ResizeGrip_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (sender is not Thumb { DataContext: TileViewModel tile } || _resizeList is not { } list ||
+            FindDescendants<TileGridPanel>(TilesControl).FirstOrDefault() is not { } board)
+            return;
+        // From where the drag started: the corner itself jumps along with the tile.
+        var moved = Mouse.GetPosition(TilesControl) - _resizeStart;
+        var columns = (int)Math.Round((_resizeStartWidth + moved.X + board.Spacing) / (board.ColumnWidth + board.Spacing));
+        columns = Math.Clamp(columns, 1, Math.Max(1, Math.Min(TileSize.MaxColumns, board.ColumnCount)));
+        var rows = _sizeBefore?.Rows;
+        if (rows is not null || Math.Abs(moved.Y) >= list.RowPitch / 2)
+            rows = Math.Clamp(list.RowsFor(_resizeStartListHeight + moved.Y), TileSize.MinRows, TileSize.MaxRows);
+        var size = new TileSize(columns, rows);
+        tile.Size = size.IsUsual ? null : size;
+    }
+
+    private void ResizeGrip_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        if (sender is not Thumb { DataContext: TileViewModel tile })
+            return;
+        if (e.Canceled)
+            tile.Size = _sizeBefore;
+        else
+            ViewModel.ResizeTile(tile, tile.Size);
+        _sizeBefore = null;
+        _resizeList = null;
+    }
+
+    /// <summary>A double click on the corner gives the tile back the size that follows its items.</summary>
+    private void ResizeGrip_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Thumb { DataContext: TileViewModel tile })
+            return;
+        ViewModel.ResizeTile(tile, null);
+        e.Handled = true;
+    }
+
+    private void TileAutoSize_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<TileViewModel>(sender) is { } tile)
+            ViewModel.ResizeTile(tile, null);
+    }
+
+    private void TileSort_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string tag } && Enum.TryParse<SortKey>(tag, out var key) && DataContextOf<TileViewModel>(sender) is { } tile)
+            ViewModel.SortTile(tile, key);
+    }
+
+    private void TileSortDirection_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string tag } && DataContextOf<TileViewModel>(sender) is { } tile)
+            ViewModel.SetSortDirection(tile, descending: tag == "descending");
+    }
+
     // ---- Dropping ----
 
     private enum DropAction
@@ -770,13 +911,52 @@ public partial class PanelView : UserControl
         Transfer,
         MoveTile,
 
+        /// <summary>A topic dragged in the sidebar: another place next to the others, or inside another topic.</summary>
+        MoveTopic,
+
+        /// <summary>Rows dragged inside their own tile: they change place there.</summary>
+        ArrangeItems,
+
         /// <summary>Files that are not on disk yet, like a mail attachment: they are saved, a copy of the original.</summary>
         SaveDropped,
     }
 
-    private sealed record DropPlan(DropAction Action, string[] Paths, string Destination, TransferKind Kind, TileViewModel? Tile, TileViewModel? Before)
+    private sealed record DropPlan(DropAction Action)
     {
-        public static readonly DropPlan Nothing = new(DropAction.None, [], "", TransferKind.None, null, null);
+        public static readonly DropPlan Nothing = new(DropAction.None);
+
+        public string[] Paths { get; init; } = [];
+
+        public string Destination { get; init; } = "";
+
+        public TransferKind Kind { get; init; }
+
+        /// <summary>The tile dragged by its title, or the one whose rows change place.</summary>
+        public TileViewModel? Tile { get; init; }
+
+        /// <summary>The tile it lands before; null for after the last.</summary>
+        public TileViewModel? Before { get; init; }
+
+        public TopicViewModel? Topic { get; init; }
+
+        /// <summary>Where the topic goes: inside this topic, or among those in the root when null.</summary>
+        public TopicViewModel? TopicParent { get; init; }
+
+        /// <summary>The topic it lands before; null for after the last.</summary>
+        public TopicViewModel? TopicBefore { get; init; }
+
+        /// <summary>Into the middle of another topic: the row lights up instead of a line.</summary>
+        public bool Inside { get; init; }
+
+        public IReadOnlyList<ItemViewModel> Items { get; init; } = [];
+
+        /// <summary>The row they land before; null for after the last.</summary>
+        public ItemViewModel? ItemBefore { get; init; }
+
+        /// <summary>Where the line goes: along the top of this row, or along its bottom.</summary>
+        public FrameworkElement? LineRow { get; init; }
+
+        public bool LineAtBottom { get; init; }
     }
 
     /// <summary>Outside the drop targets nothing can be dropped; a target that wants the line shows it again right after.</summary>
@@ -802,17 +982,28 @@ public partial class PanelView : UserControl
         var plan = PlanDrop(sender, e);
         e.Effects = plan.Action switch
         {
-            DropAction.MoveTile => DragDropEffects.Move,
+            DropAction.MoveTile or DropAction.MoveTopic or DropAction.ArrangeItems => DragDropEffects.Move,
             DropAction.SaveDropped => DragDropEffects.Copy,
             DropAction.Transfer when plan.Kind == TransferKind.Copy => DragDropEffects.Copy,
             DropAction.Transfer when plan.Kind == TransferKind.Link => DragDropEffects.Link,
             DropAction.Transfer => DragDropEffects.Move,
             _ => DragDropEffects.None,
         };
-        // Files light up the border of their target; a tile on its way shows where it will land with a line.
-        SetDropHighlight(sender, plan.Action is DropAction.Transfer or DropAction.SaveDropped);
-        if (plan.Action == DropAction.MoveTile)
-            ShowInsertionLine(plan.Before);
+        // Files light up the border of their target, and a topic the row it goes into; a tile, a row or a topic that
+        // changes place shows where it will land with a line.
+        SetDropHighlight(sender, plan.Action is DropAction.Transfer or DropAction.SaveDropped || plan.Inside);
+        switch (plan.Action)
+        {
+            case DropAction.MoveTile:
+                ShowInsertionLine(plan.Before);
+                break;
+            case DropAction.ArrangeItems when plan.LineRow is { } row:
+                ShowLine(ref _insertionLine, TilesControl, row, plan.LineAtBottom);
+                break;
+            case DropAction.MoveTopic when !plan.Inside && plan.LineRow is { } row:
+                ShowLine(ref _topicLine, TopicTree, row, plan.LineAtBottom);
+                break;
+        }
         e.Handled = true;
     }
 
@@ -838,8 +1029,14 @@ public partial class PanelView : UserControl
             case DropAction.MoveTile:
                 Dispatcher.BeginInvoke(() => ViewModel.MoveTile(plan.Tile!, plan.Before));
                 break;
+            case DropAction.MoveTopic:
+                Dispatcher.BeginInvoke(() => Observe(ViewModel.MoveTopic(plan.Topic!, plan.TopicParent, plan.TopicBefore)));
+                break;
+            case DropAction.ArrangeItems:
+                Dispatcher.BeginInvoke(() => ViewModel.MoveItems(plan.Tile!, plan.Items, plan.ItemBefore));
+                break;
             case DropAction.Transfer:
-                Dispatcher.BeginInvoke(() => ViewModel.Transfer(plan.Paths, plan.Destination, plan.Kind));
+                Dispatcher.BeginInvoke(() => Observe(ViewModel.Transfer(plan.Paths, plan.Destination, plan.Kind)));
                 break;
             case DropAction.SaveDropped:
                 // Now or never: the content is only there while the drop lasts.
@@ -854,9 +1051,11 @@ public partial class PanelView : UserControl
     /// </summary>
     private void ArmSpring(object target, DragEventArgs e)
     {
-        // A tile dragged by its title moves into the topic it is dropped on: its own board must stay. The board's
-        // background shares the panel's data with the "Da smistare" row, and opens nothing.
-        var opens = !e.Data.GetDataPresent(TileFormat) && !ReferenceEquals(target, BoardArea) &&
+        // A tile dragged by its title moves into the topic it is dropped on: its own board must stay. A topic changing
+        // place opens nothing either. The board's background and the empty part of the sidebar share the panel's data
+        // with the "Da smistare" row, and open nothing.
+        var opens = !e.Data.GetDataPresent(TileFormat) && !e.Data.GetDataPresent(TopicFormat) &&
+                    !ReferenceEquals(target, BoardArea) && !ReferenceEquals(target, TopicTree) &&
                     ((target as FrameworkElement)?.DataContext switch
                     {
                         TopicViewModel topic => !ReferenceEquals(topic, ViewModel.SelectedTopic),
@@ -903,17 +1102,29 @@ public partial class PanelView : UserControl
         var onBoard = ReferenceEquals(target, BoardArea);
         var context = (target as FrameworkElement)?.DataContext;
 
+        if (e.Data.GetDataPresent(TopicFormat))
+            return PlanTopicDrop(target, e);
+        // The empty part of the sidebar takes topics only.
+        if (ReferenceEquals(target, TopicTree))
+            return DropPlan.Nothing;
+
         // A tile dragged by its title and dropped on its board changes place there.
         if (e.Data.GetDataPresent(TileFormat) && (onBoard || context is TileViewModel) &&
             e.Data.GetData(TileFormat) is string tilePath &&
             ViewModel.Tiles.FirstOrDefault(tile => string.Equals(tile.FolderPath, tilePath, StringComparison.OrdinalIgnoreCase)) is { } moving)
         {
             if (onBoard)
-                return new DropPlan(DropAction.MoveTile, [], "", TransferKind.None, moving, null);
+                return new DropPlan(DropAction.MoveTile) { Tile = moving };
             return context is TileViewModel { IsOwnFolder: true } before && !ReferenceEquals(before, moving)
-                ? new DropPlan(DropAction.MoveTile, [], "", TransferKind.None, moving, before)
+                ? new DropPlan(DropAction.MoveTile) { Tile = moving, Before = before }
                 : DropPlan.Nothing;
         }
+
+        // Rows dragged inside their own tile change place there, unless Ctrl or Alt asks for something else.
+        if (context is TileViewModel { CanArrange: true } arranged && ReferenceEquals(arranged, _dragSourceTile) && _draggedItems.Count > 0 &&
+            !e.KeyStates.HasFlag(DragDropKeyStates.ControlKey) && !e.KeyStates.HasFlag(DragDropKeyStates.AltKey) &&
+            target is DependencyObject box && FindDescendants<ListBox>(box).FirstOrDefault() is { } rows)
+            return PlanArrangeDrop(arranged, rows, e);
 
         var paths = e.Data.GetData(DataFormats.FileDrop) as string[] ?? [];
         var destination = onBoard
@@ -929,7 +1140,7 @@ public partial class PanelView : UserControl
             return DropPlan.Nothing;
         // An attachment from Outlook, a link or an image from the browser: no file on disk yet, only its content.
         if (paths.Length == 0 && VirtualFiles.ArePresent(e.Data) && e.AllowedEffects.HasFlag(DragDropEffects.Copy))
-            return new DropPlan(DropAction.SaveDropped, [], destination, TransferKind.Copy, null, null);
+            return new DropPlan(DropAction.SaveDropped) { Destination = destination, Kind = TransferKind.Copy };
         if (paths.Length == 0)
             return DropPlan.Nothing;
 
@@ -949,7 +1160,60 @@ public partial class PanelView : UserControl
             kind = TransferKind.None;
         return kind == TransferKind.None
             ? DropPlan.Nothing
-            : new DropPlan(DropAction.Transfer, paths, destination, kind, null, null);
+            : new DropPlan(DropAction.Transfer) { Paths = paths, Destination = destination, Kind = kind };
+    }
+
+    /// <summary>
+    /// A topic over another one: on the upper part of its row it goes before it, on the lower part after it, in the middle
+    /// inside it. Over the empty part of the sidebar it goes last among the topics of the root.
+    /// </summary>
+    private DropPlan PlanTopicDrop(object target, DragEventArgs e)
+    {
+        if (e.Data.GetData(TopicFormat) is not string key || FindTopic(key) is not { } moving)
+            return DropPlan.Nothing;
+        if (ReferenceEquals(target, TopicTree))
+        {
+            var last = ViewModel.Topics.LastOrDefault() is { } lastTopic ? FindContainer(TopicTree, lastTopic) : null;
+            return new DropPlan(DropAction.MoveTopic) { Topic = moving, LineRow = last, LineAtBottom = true };
+        }
+        if (target is not TreeViewItem { DataContext: TopicViewModel over } item || item.Template?.FindName("Bd", item) is not FrameworkElement row ||
+            ReferenceEquals(over, moving))
+            return DropPlan.Nothing;
+
+        var y = e.GetPosition(row).Y;
+        var plan = y < row.ActualHeight * 0.3
+            ? new DropPlan(DropAction.MoveTopic) { Topic = moving, TopicParent = over.Parent, TopicBefore = over, LineRow = row }
+            : y > row.ActualHeight * 0.7
+                // Under a topic and everything open inside it.
+                ? new DropPlan(DropAction.MoveTopic) { Topic = moving, TopicParent = over.Parent, TopicBefore = NextSibling(over), LineRow = item, LineAtBottom = true }
+                : new DropPlan(DropAction.MoveTopic) { Topic = moving, TopicParent = over, Inside = true };
+        return MainViewModel.CanGoUnder(moving, plan.TopicParent) ? plan : DropPlan.Nothing;
+    }
+
+    /// <summary>Rows over their own tile: they go before the row under the pointer, or after the last one in view.</summary>
+    private DropPlan PlanArrangeDrop(TileViewModel tile, ListBox list, DragEventArgs e)
+    {
+        var pointer = e.GetPosition(list).Y;
+        FrameworkElement? lastVisible = null;
+        foreach (var item in list.Items.OfType<ItemViewModel>())
+        {
+            if (list.ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement row)
+                continue;
+            var top = row.TranslatePoint(new Point(0, 0), list).Y;
+            // A tile scrolls its own rows: those above its view are not on screen, and the first one below it comes after
+            // the last one in view.
+            if (top + row.ActualHeight <= 0)
+                continue;
+            if (top >= list.ActualHeight)
+                return Arranged(item, lastVisible, atBottom: true);
+            if (pointer < top + row.ActualHeight / 2)
+                return Arranged(item, row, atBottom: false);
+            lastVisible = row;
+        }
+        return Arranged(null, lastVisible, atBottom: true);
+
+        DropPlan Arranged(ItemViewModel? before, FrameworkElement? line, bool atBottom) =>
+            new(DropAction.ArrangeItems) { Tile = tile, Items = _draggedItems, ItemBefore = before, LineRow = line, LineAtBottom = atBottom };
     }
 
     private void SetDropHighlight(object target, bool on)
@@ -990,7 +1254,24 @@ public partial class PanelView : UserControl
         _insertionLine.ShowBefore(target, last, spacing);
     }
 
-    private void HideInsertionLine() => _insertionLine?.Hide();
+    /// <summary>The line along a row of a tile, or along a topic of the sidebar, on the adorner layer of their control.</summary>
+    private void ShowLine(ref InsertionAdorner? line, UIElement host, FrameworkElement row, bool atBottom)
+    {
+        if (line is null)
+        {
+            if (AdornerLayer.GetAdornerLayer(host) is not { } layer)
+                return;
+            line = new InsertionAdorner(host, (Brush)FindResource("Brace.Accent"));
+            layer.Add(line);
+        }
+        line.ShowAt(row, atBottom);
+    }
+
+    private void HideInsertionLine()
+    {
+        _insertionLine?.Hide();
+        _topicLine?.Hide();
+    }
 
     private void ShowDragLabel(string text)
     {
@@ -1188,22 +1469,22 @@ public partial class PanelView : UserControl
 
     private void NewTile_Click(object sender, RoutedEventArgs e) => ViewModel.NewTile();
 
-    private void Undo_Click(object sender, RoutedEventArgs e) => ViewModel.Undo();
+    private void Undo_Click(object sender, RoutedEventArgs e) => Observe(ViewModel.Undo());
 
-    private void NoticeUndo_Click(object sender, RoutedEventArgs e) => ViewModel.Undo();
+    private void NoticeUndo_Click(object sender, RoutedEventArgs e) => Observe(ViewModel.Undo());
 
     private void NoticeShow_Click(object sender, RoutedEventArgs e) => ViewModel.ShowNotice();
 
     private void BoardPaste_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel.BoardFolder is { } folder)
-            ViewModel.PasteInto(folder);
+            Observe(ViewModel.PasteInto(folder));
     }
 
     private void BoardPasteLink_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel.BoardFolder is { } folder)
-            ViewModel.PasteLinksInto(folder);
+            Observe(ViewModel.PasteLinksInto(folder));
     }
 
     private void BoardNewLink_Click(object sender, RoutedEventArgs e)
@@ -1298,13 +1579,13 @@ public partial class PanelView : UserControl
     private void TilePaste_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<TileViewModel>(sender) is { } tile)
-            ViewModel.PasteInto(tile.FolderPath);
+            Observe(ViewModel.PasteInto(tile.FolderPath));
     }
 
     private void TilePasteLink_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<TileViewModel>(sender) is { } tile)
-            ViewModel.PasteLinksInto(tile.FolderPath);
+            Observe(ViewModel.PasteLinksInto(tile.FolderPath));
     }
 
     private void TileNewLink_Click(object sender, RoutedEventArgs e)
@@ -1359,13 +1640,13 @@ public partial class PanelView : UserControl
     private void TopicPaste_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<TopicViewModel>(sender) is { } topic)
-            ViewModel.PasteInto(topic.Topic.FullPath);
+            Observe(ViewModel.PasteInto(topic.Topic.FullPath));
     }
 
     private void TopicPasteLink_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<TopicViewModel>(sender) is { } topic)
-            ViewModel.PasteLinksInto(topic.Topic.FullPath);
+            Observe(ViewModel.PasteLinksInto(topic.Topic.FullPath));
     }
 
     private void TopicNewTile_Click(object sender, RoutedEventArgs e)
@@ -1399,6 +1680,9 @@ public partial class PanelView : UserControl
     }
 
     // ---- Helpers ----
+
+    /// <summary>An operation that goes on after the click or the key: an unexpected error still reaches the handler of the app.</summary>
+    private static async void Observe(Task operation) => await operation;
 
     private bool MovedEnough(MouseEventArgs e)
     {

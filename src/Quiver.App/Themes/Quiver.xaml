@@ -1,11 +1,47 @@
-<!-- What Quiver adds to Brace: its logo, the buttons of its title bars, and the icon to restore a maximized window, which
-     Brace does not have yet. Everything else comes from Brace (Brace\Brace.xaml). -->
+<!-- What Quiver adds to Brace: its logo, the buttons of its title bars, and the icons Brace does not have yet (restore a
+     maximized window, the handle of what can be dragged, the corner that resizes). Everything else comes from Brace
+     (Brace\Brace.xaml). -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Restore: two squares, the front one as Brace.Icon.Maximize16 draws its square (1 px, rounded corners), the back one
          showing above and to the right of it. To be moved into Brace, so that every app uses the same. -->
     <StreamGeometry x:Key="Quiver.Icon.Restore16">F1 M 5 5 V 4.5 C 5 3.67 5.67 3 6.5 3 H 11.5 C 12.33 3 13 3.67 13 4.5 V 9.5 C 13 10.33 12.33 11 11.5 11 H 11 V 10 H 11.5 A .5 .5 0 0 0 12 9.5 V 4.5 A .5 .5 0 0 0 11.5 4 H 6.5 A .5 .5 0 0 0 6 4.5 V 5 Z M 4.5 5 C 3.67 5 3 5.67 3 6.5 V 11.5 C 3 12.33 3.67 13 4.5 13 H 9.5 C 10.33 13 11 12.33 11 11.5 V 6.5 C 11 5.67 10.33 5 9.5 5 Z M 4.5 6 H 9.5 A .5 .5 0 0 1 10 6.5 V 11.5 A .5 .5 0 0 1 9.5 12 H 4.5 A .5 .5 0 0 1 4 11.5 V 6.5 A .5 .5 0 0 1 4.5 6 Z</StreamGeometry>
+
+    <!-- What can be dragged: six dots in two columns, as the handle of a row or a card. Brace has none yet. -->
+    <StreamGeometry x:Key="Quiver.Icon.Grip16">F1 M 4.9 4 A 1.1 1.1 0 1 0 7.1 4 A 1.1 1.1 0 1 0 4.9 4 Z M 8.9 4 A 1.1 1.1 0 1 0 11.1 4 A 1.1 1.1 0 1 0 8.9 4 Z M 4.9 8 A 1.1 1.1 0 1 0 7.1 8 A 1.1 1.1 0 1 0 4.9 8 Z M 8.9 8 A 1.1 1.1 0 1 0 11.1 8 A 1.1 1.1 0 1 0 8.9 8 Z M 4.9 12 A 1.1 1.1 0 1 0 7.1 12 A 1.1 1.1 0 1 0 4.9 12 Z M 8.9 12 A 1.1 1.1 0 1 0 11.1 12 A 1.1 1.1 0 1 0 8.9 12 Z</StreamGeometry>
+
+    <!-- The corner that resizes: six dots in a triangle, as the size grip of Windows. Brace has none yet. -->
+    <StreamGeometry x:Key="Quiver.Icon.ResizeCorner16">F1 M 11 12 A 1 1 0 1 0 13 12 A 1 1 0 1 0 11 12 Z M 7 12 A 1 1 0 1 0 9 12 A 1 1 0 1 0 7 12 Z M 11 8 A 1 1 0 1 0 13 8 A 1 1 0 1 0 11 8 Z M 3 12 A 1 1 0 1 0 5 12 A 1 1 0 1 0 3 12 Z M 7 8 A 1 1 0 1 0 9 8 A 1 1 0 1 0 7 8 Z M 11 4 A 1 1 0 1 0 13 4 A 1 1 0 1 0 11 4 Z</StreamGeometry>
+
+    <!-- The corner of a tile: dragged, it gives the tile its size; a double click gives back the usual one. text-tertiary, and
+         text-secondary under the pointer, like the other quiet tools of a panel. -->
+    <Style x:Key="Quiver.ResizeGrip" TargetType="Thumb">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Cursor" Value="SizeNWSE" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Foreground" Value="{DynamicResource Brace.TextTertiary}" />
+        <Setter Property="ToolTip" Value="Trascina per cambiare la misura del riquadro; doppio clic per quella automatica" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent">
+                        <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Quiver.Icon.ResizeCorner16}"
+                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource Brace.TextSecondary}" />
+            </Trigger>
+            <Trigger Property="IsDragging" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource Brace.Accent}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
 
     <!-- The title bar of a window drawn by Quiver, as br-titlebar of Brace: titlebar-height, surface-base, and a border that
          sets it apart from the panels below. Where nothing takes the click, the frame of the window moves it. -->

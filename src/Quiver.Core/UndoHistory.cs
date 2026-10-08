@@ -64,6 +64,23 @@ public sealed record RecycleStep(IReadOnlyList<RecycledItem> Items, int NotInBin
 /// <param name="PreviousOrder">By metadata key; null for tiles that were in name order.</param>
 public sealed record TileOrderStep(IReadOnlyDictionary<string, int?> PreviousOrder) : UndoStep;
 
+/// <summary>A topic dragged under another one: undoing moves its folder back, to the place it had among the topics there.</summary>
+/// <param name="PreviousOrder">Its place before; null when it was in name order.</param>
+public sealed record TopicMoveStep(MoveStep Move, int? PreviousOrder) : UndoStep;
+
+/// <summary>Topics put in another order in the sidebar: undoing gives each the place it had.</summary>
+/// <param name="PreviousOrder">By metadata key; null for topics that were in name order.</param>
+public sealed record TopicOrderStep(IReadOnlyDictionary<string, int?> PreviousOrder) : UndoStep;
+
+/// <summary>The items of a tile sorted, or put in order by hand: undoing gives the tile back the order it had.</summary>
+/// <param name="Sort">The sort it had; null for by name.</param>
+/// <param name="Items">The order by hand it had; null for none.</param>
+public sealed record ArrangeStep(string Key, string Name, ItemSort? Sort, IReadOnlyList<string>? Items) : UndoStep;
+
+/// <summary>A tile resized: undoing gives it back the size it had.</summary>
+/// <param name="Previous">Null for the usual size.</param>
+public sealed record SizeStep(string Key, string Name, TileSize? Previous) : UndoStep;
+
 /// <summary>A tile promoted to topic, or a topic made a tile again: undoing turns it back.</summary>
 public sealed record TopicStep(string Key, string Name, bool WasTopic) : UndoStep;
 

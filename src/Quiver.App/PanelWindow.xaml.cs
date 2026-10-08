@@ -38,9 +38,11 @@ public partial class PanelWindow : Window
         Topmost = settings.Topmost;
         View.CloseRequested += (_, _) => HidePanel("closed", returnFocus: true);
         View.ArchivesRequested += (_, _) => ArchivesRequested?.Invoke(this, EventArgs.Empty);
+        // The shell's dialogs took the focus and do not give it back. If the user went to another program while the
+        // files went, the focus stays there.
         viewModel.FileOperationCompleted += (_, _) =>
         {
-            if (IsVisible && WindowState != WindowState.Minimized)
+            if (IsVisible && WindowState != WindowState.Minimized && ForegroundIsOurs())
                 BringToFront();
         };
         // Back from the taskbar, Alt+Tab or a click: what changed meanwhile shows. Right after being shown, it was read already.
@@ -166,6 +168,16 @@ public partial class PanelWindow : Window
     private static bool IsStillThere(nint window) =>
         window != 0 && NativeMethods.IsWindow(window) && NativeMethods.IsWindowVisible(window) && !NativeMethods.IsIconic(window) &&
         !(NativeMethods.DwmGetWindowAttribute(window, NativeMethods.DWMWA_CLOAKED, out var cloaked, sizeof(int)) == 0 && cloaked != 0);
+
+    /// <summary>Nothing is in front, or a window of Quiver is: its own, or a dialog of the shell on its behalf.</summary>
+    private static bool ForegroundIsOurs()
+    {
+        var foreground = NativeMethods.GetForegroundWindow();
+        if (foreground == 0)
+            return true;
+        NativeMethods.GetWindowThreadProcessId(foreground, out var process);
+        return process == Environment.ProcessId;
+    }
 
     private void BringToFront()
     {

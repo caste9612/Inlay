@@ -11,7 +11,7 @@ public sealed class MetadataSnapshotTests
         var metadata = new ArchiveMetadata();
         metadata.SetTopic("Lavoro/Clienti", true);
         metadata.SetTopic("Lavoro/Clienti/Rossi", true);
-        metadata.SetTileOrder(["Lavoro/Clienti/Rossi/Documenti"]);
+        metadata.SetOrder(["Lavoro/Clienti/Rossi/Documenti"]);
         var before = metadata.Snapshot(["Lavoro/Clienti", "Archivio/Clienti"]);
 
         metadata.MoveFolder("Lavoro/Clienti", "Archivio/Clienti");
@@ -27,10 +27,10 @@ public sealed class MetadataSnapshotTests
     public void ASnapshot_IsACopy_LaterChangesDoNotTouchIt()
     {
         var metadata = new ArchiveMetadata();
-        metadata.SetTileOrder(["A/B", "A/C"]);
+        metadata.SetOrder(["A/B", "A/C"]);
         var before = metadata.Snapshot(["A/B", "A/C"]);
 
-        metadata.SetTileOrder(["A/C", "A/B"]);
+        metadata.SetOrder(["A/C", "A/B"]);
         metadata.Restore(before);
 
         Assert.Equal(0, metadata.OrderOf("A/B"));

@@ -102,13 +102,79 @@ public sealed class MetadataStoreTests : IDisposable
     {
         var metadata = new ArchiveMetadata();
 
-        Assert.True(metadata.SetTileOrder(["Rossi/B", "Rossi/A"]));
-        Assert.False(metadata.SetTileOrder(["Rossi/B", "Rossi/A"]));
+        Assert.True(metadata.SetOrder(["Rossi/B", "Rossi/A"]));
+        Assert.False(metadata.SetOrder(["Rossi/B", "Rossi/A"]));
         metadata.MoveFolder("Rossi/B", "Rossi/Bozze");
 
         Assert.Equal(0, metadata.OrderOf("Rossi/Bozze"));
         Assert.Equal(1, metadata.OrderOf("Rossi/A"));
         Assert.Null(metadata.OrderOf("Rossi/B"));
+    }
+
+    [Fact]
+    public void ATileSize_IsKeptWithinTheBoard_AndTheUsualOneNeedsNoEntry()
+    {
+        var metadata = new ArchiveMetadata();
+
+        Assert.True(metadata.SetSize("Rossi/Documenti", new TileSize(5, 100)));
+        Assert.Equal(new TileSize(TileSize.MaxColumns, TileSize.MaxRows), metadata.SizeOf("Rossi/Documenti"));
+        Assert.False(metadata.SetSize("Rossi/Documenti", new TileSize(3, 40)));
+
+        Assert.True(metadata.SetSize("Rossi/Documenti", new TileSize(1, null)));
+        Assert.Null(metadata.SizeOf("Rossi/Documenti"));
+        Assert.Empty(metadata.Folders);
+    }
+
+    [Fact]
+    public void ASort_AndAnOrderByHand_TakeEachOthersPlace()
+    {
+        var metadata = new ArchiveMetadata();
+
+        Assert.True(metadata.SetItemOrder("Rossi/Documenti", ["b.txt", "a.txt"]));
+        Assert.True(metadata.SetSort("Rossi/Documenti", ItemSort.For(SortKey.Modified)));
+        Assert.Null(metadata.ItemOrderOf("Rossi/Documenti"));
+        Assert.Equal(new ItemSort(SortKey.Modified, Descending: true), metadata.SortOf("Rossi/Documenti"));
+
+        Assert.True(metadata.SetItemOrder("Rossi/Documenti", ["b.txt", "a.txt"]));
+        Assert.Null(metadata.SortOf("Rossi/Documenti"));
+        Assert.False(metadata.SetItemOrder("Rossi/Documenti", ["b.txt", "a.txt"]));
+
+        // By name from A is the usual order: it needs no entry.
+        Assert.True(metadata.SetSort("Rossi/Documenti", ItemSort.For(SortKey.Name)));
+        Assert.Empty(metadata.Folders);
+    }
+
+    [Fact]
+    public void ARenamedItem_KeepsItsPlaceInTheOrderByHand()
+    {
+        var metadata = new ArchiveMetadata();
+        metadata.SetItemOrder("Rossi/Documenti", ["b.txt", "a.txt", "c.txt"]);
+
+        Assert.True(metadata.RenameItem("Rossi/Documenti", "A.TXT", "z.txt"));
+        Assert.False(metadata.RenameItem("Rossi/Documenti", "manca.txt", "y.txt"));
+
+        Assert.Equal(["b.txt", "z.txt", "c.txt"], metadata.ItemOrderOf("Rossi/Documenti"));
+    }
+
+    [Fact]
+    public void SizeSortAndOrderByHand_AreSavedWithReadableNames()
+    {
+        var metadata = new ArchiveMetadata();
+        metadata.SetSize("Rossi/Documenti", new TileSize(2, 12));
+        metadata.SetSort("Rossi/Documenti", ItemSort.For(SortKey.Modified));
+        metadata.SetItemOrder("Rossi/Programmi", ["Calcolatrice.lnk", "Blocco note.lnk"]);
+
+        MetadataStore.Save(_archive.Root, metadata);
+        var json = File.ReadAllText(MetadataStore.GetPath(_archive.Root));
+        var loaded = MetadataStore.Load(_archive.Root);
+
+        Assert.Contains("\"columns\": 2", json);
+        Assert.Contains("\"key\": \"modified\"", json);
+        Assert.Contains("\"items\": [", json);
+        Assert.Equal(new TileSize(2, 12), loaded.SizeOf("rossi/documenti"));
+        Assert.Equal(new ItemSort(SortKey.Modified, Descending: true), loaded.SortOf("Rossi/Documenti"));
+        Assert.Equal(["Calcolatrice.lnk", "Blocco note.lnk"], loaded.ItemOrderOf("Rossi/Programmi"));
+        Assert.True(loaded.Folders["Rossi/Programmi"].SameAs(metadata.Folders["Rossi/Programmi"]));
     }
 
     [Fact]
