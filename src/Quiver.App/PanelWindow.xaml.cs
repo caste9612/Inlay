@@ -77,6 +77,7 @@ public partial class PanelWindow : Window
         Show();
         BringToFront();
         View.FocusSearch();
+        View.AnimateIn();
         Dispatcher.InvokeAsync(
             () => _viewModel.ReportOpenTime(Stopwatch.GetElapsedTime(started)),
             DispatcherPriority.ContextIdle);

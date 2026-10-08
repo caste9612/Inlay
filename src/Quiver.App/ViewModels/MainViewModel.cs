@@ -20,6 +20,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private readonly bool _live;
     private readonly IReadOnlyList<InboxSource> _inboxSources;
     private readonly RecycleBin _recycleBin;
+    private readonly RecentDestinations _recent;
     private readonly UndoHistory _history = new();
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private readonly HashSet<string> _cutPaths = new(StringComparer.OrdinalIgnoreCase);
@@ -34,6 +35,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private string _summary = "";
     private bool _isPanelVisible;
     private bool _reloadPending;
+    private bool _noticeFollows;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSearching), nameof(IsBoardVisible))]
@@ -55,6 +57,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _status = "";
 
+    /// <summary>What the buttons next to the status message can do: take the last operation back, or go and see.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanShowNotice))]
+    private StatusNotice? _notice;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasInboxItems))]
     private int _inboxCount;
@@ -65,17 +72,24 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private PromptViewModel? _prompt;
 
+    /// <summary>«Sposta in…», open over the board.</summary>
+    [ObservableProperty]
+    private DestinationPickerViewModel? _picker;
+
     /// <param name="live">
     /// Indexes the archive in the background and follows its changes. Without it (previews, tests) the board is read
     /// only when asked, and the search needs <see cref="BuildIndexNow"/>.
     /// </param>
     /// <param name="inboxSources">Places outside the archive shown in "Da smistare", like the Desktop.</param>
     /// <param name="recycleBin">Where Ctrl+Z finds what went to the Recycle Bin; by default, the one of Windows.</param>
-    public MainViewModel(string root, bool live = true, IReadOnlyList<InboxSource>? inboxSources = null, RecycleBin? recycleBin = null)
+    /// <param name="recent">Where files were sent last, offered first by «Sposta in…»; by default, those of this PC.</param>
+    internal MainViewModel(string root, bool live = true, IReadOnlyList<InboxSource>? inboxSources = null, RecycleBin? recycleBin = null,
+        RecentDestinations? recent = null)
     {
         _live = live;
         _inboxSources = inboxSources ?? [];
         _recycleBin = recycleBin ?? new RecycleBin(WindowsFolders.RecycleBinOf);
+        _recent = recent ?? RecentDestinations.Load();
         LoadArchive(root);
     }
 
@@ -124,6 +138,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public bool HasInboxItems => InboxCount > 0;
 
     public bool CanUndo => _history.Last is not null;
+
+    /// <summary>«Mostra» has somewhere to go: the items of the last operation are in a folder.</summary>
+    public bool CanShowNotice => Notice?.ShowFolder is not null;
 
     /// <summary>For the tests: what Ctrl+Z would undo.</summary>
     internal UndoStep? LastUndoStep => _history.Last;
@@ -194,6 +211,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _isPanelVisible = true;
         Query = "";
         Prompt = null;
+        Picker = null;
         // The message about the last operation was for the previous time.
         Status = _summary;
         // Read again every time: the watcher reports names only, so a file saved meanwhile would show its old date,
@@ -205,6 +223,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         _isPanelVisible = false;
         Prompt = null;
+        Picker = null;
         // A name being typed is kept, as on the desktop when you click elsewhere.
         CommitAllEdits();
     }
@@ -512,9 +531,75 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             var inBin = _recycleBin.FindDeleted(gone, since);
             Remember(new RecycleStep(inBin, gone.Count - inBin.Count, forgotten.Restrict(ArchiveKeys(gone))));
+            var where = inBin.Count == gone.Count ? "nel Cestino" : "stat{0} eliminat{0} definitivamente, senza passare dal Cestino";
+            Report(gone.Count == 1
+                    ? $"«{DisplayNameOf(gone[0])}» è {string.Format(where, "o")}."
+                    : $"{gone.Count} elementi sono {string.Format(where, "i")}.",
+                new StatusNotice(null, gone));
         }
         Reload();
         return done;
+    }
+
+    // ---- «Sposta in…» ----
+
+    /// <summary>
+    /// Asks where the files go, among the tiles and topics of the archive, the recent ones first. What has a place of
+    /// its own, like a program or a folder on the server, enters as a shortcut; everything else is moved, even from
+    /// another drive: sending it to the archive is the point.
+    /// </summary>
+    public void AskDestination(IReadOnlyList<string> paths)
+    {
+        var sources = paths.Select(Path.GetFullPath).ToList();
+        if (sources.Count == 0)
+            return;
+        var link = sources.All(path => TransferRules.HasItsOwnPlace(path, _root) && !IsInInbox(path));
+        var destinations = _reader.ReadDestinations()
+            .Where(destination => KindFor(sources, destination.FullPath, link) != TransferKind.None)
+            .ToList();
+        var name = DisplayNameOf(sources[0]);
+        var title = (sources.Count, link) switch
+        {
+            (1, false) => $"Sposta «{name}» in…",
+            (_, false) => $"Sposta {sources.Count} elementi in…",
+            (1, true) => $"Crea un collegamento a «{name}» in…",
+            _ => $"Crea {sources.Count} collegamenti in…",
+        };
+        ShowPicker(new DestinationPickerViewModel(title, link ? "Collega" : "Sposta", destinations, _recent.For(_root),
+            destination => SendTo(sources, destination, link)));
+    }
+
+    private static TransferKind KindFor(IReadOnlyList<string> sources, string destination, bool link) =>
+        TransferRules.Choose(sources, destination, forceCopy: false, forceMove: !link, forceLink: link);
+
+    /// <returns>Why nothing was done, for the picker; null when the files went.</returns>
+    private string? SendTo(IReadOnlyList<string> sources, Destination destination, bool link)
+    {
+        var kind = KindFor(sources, destination.FullPath, link);
+        if (kind == TransferKind.None)
+            return "I file sono già lì.";
+        _recent.Remember(_root, destination.RelativeKey);
+        Transfer(sources, destination.FullPath, kind);
+        return null;
+    }
+
+    /// <summary>«Mostra», next to the message of the last operation: the board goes where the items went, with them selected.</summary>
+    public void ShowNotice()
+    {
+        if (Notice is not { ShowFolder: { } folder } notice)
+            return;
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+        if (SamePath(full, _reader.InboxPath) || !IsInsideArchive(full))
+        {
+            IsInboxShown = true;
+        }
+        else
+        {
+            IsInboxShown = false;
+            _selectedTopicPath = KeyOf(full);
+        }
+        SelectAfterReload(notice.Paths);
+        Reload();
     }
 
     // ---- Moving ----
@@ -578,8 +663,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 Remember(new CopyStep(arrived));
         }
 
+        var present = arrived.Where(Path.Exists).ToList();
         if (!done)
             Status = kind == TransferKind.Copy ? "La copia non è stata completata." : "Lo spostamento non è stato completato.";
+        else if (present.Count > 0)
+            Report(Done(present, kind == TransferKind.Copy ? ("copiato", "copiati") : ("spostato", "spostati"), destinationFolder),
+                new StatusNotice(destinationFolder, present));
         // What arrived is selected, as in Explorer.
         SelectAfterReload(arrived);
         Reload();
@@ -608,6 +697,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             Remember(new CopyStep(created));
             SelectAfterReload(created);
+            Report(Done(created, ("salvato", "salvati"), destinationFolder), new StatusNotice(destinationFolder, created));
         }
         Reload();
     }
@@ -646,9 +736,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             Remember(new LinkStep(links));
             SelectAfterReload(links);
+            Report(links.Count == 1
+                    ? $"Collegamento «{DisplayNameOf(links[0])}» creato in «{Path.GetFileName(destinationFolder)}»."
+                    : $"{links.Count} collegamenti creati in «{Path.GetFileName(destinationFolder)}».",
+                new StatusNotice(destinationFolder, links));
         }
         Reload();
     }
+
+    /// <summary>"«Offerta.pdf» spostato in «Documenti»", or "3 elementi spostati in «Documenti»".</summary>
+    private static string Done(IReadOnlyList<string> paths, (string One, string Many) verb, string folder) =>
+        paths.Count == 1
+            ? $"«{DisplayNameOf(paths[0])}» {verb.One} in «{Path.GetFileName(folder)}»."
+            : $"{paths.Count} elementi {verb.Many} in «{Path.GetFileName(folder)}».";
 
     /// <summary>Puts a tile in another place on its board, before <paramref name="before"/> (null: at the end).</summary>
     public void MoveTile(TileViewModel tile, TileViewModel? before)
@@ -942,7 +1042,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         var board = _reader.ReadBoard(topic.Topic);
         BoardTitle = topic.Name;
-        BoardPath = string.Join(" › ", topic.Ancestors().Reverse().Select(ancestor => ancestor.Name));
+        BoardPath = string.Join(ArchiveReader.PathSeparator, topic.Ancestors().Reverse().Select(ancestor => ancestor.Name));
         Reconciler.Reconcile(SubTopics, topic.Children, child => child.Topic.RelativePath, child => child.Topic.RelativePath,
             child => child, (_, _) => { });
         Reconciler.Reconcile(Tiles, board.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, tile.IsGeneral), tile => tile.Key,
@@ -990,6 +1090,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     partial void OnQueryChanged(string value) => RunSearch();
+
+    /// <summary>A new message means the buttons of the last operation no longer apply, unless they come with it.</summary>
+    partial void OnStatusChanged(string value)
+    {
+        if (!_noticeFollows)
+            Notice = null;
+    }
 
     /// <summary>Reads topics and the current board again, keeping the selection if that topic still exists.</summary>
     private void Reload()
@@ -1277,6 +1384,34 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Prompt = prompt;
     }
 
+    private void ShowPicker(DestinationPickerViewModel picker)
+    {
+        Prompt = null;
+        picker.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(Picker, picker))
+                Picker = null;
+            if (_reloadPending && _isPanelVisible)
+                Reload();
+        };
+        Picker = picker;
+    }
+
+    /// <summary>A message about an operation just done, with what the buttons next to it can do.</summary>
+    private void Report(string message, StatusNotice notice)
+    {
+        _noticeFollows = true;
+        try
+        {
+            Status = message;
+        }
+        finally
+        {
+            _noticeFollows = false;
+        }
+        Notice = notice;
+    }
+
     private void RunSearch()
     {
         Results.Clear();
@@ -1344,7 +1479,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         // Reloading while a name is being typed, or during an operation, would throw that work away.
         var editing = EditTargets().Any(target => target.IsEditing);
-        if (_isPanelVisible && Prompt is null && !IsBusy && !editing)
+        if (_isPanelVisible && Prompt is null && Picker is null && !IsBusy && !editing)
             Reload();
         else
             _reloadPending = true;

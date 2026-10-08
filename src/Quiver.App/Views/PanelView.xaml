@@ -18,7 +18,8 @@
              PreviewMouseDown="OnPreviewMouseDown"
              GotKeyboardFocus="OnGotKeyboardFocus"
              PreviewDragOver="OnPreviewDragOver"
-             DragLeave="OnDragLeave">
+             DragLeave="OnDragLeave"
+             GiveFeedback="OnGiveFeedback">
 
     <UserControl.Resources>
         <views:NullToVisibilityConverter x:Key="NullToVisibility" />
@@ -66,6 +67,14 @@
             </Setter>
         </Style>
 
+        <!-- The actions next to the message of the last operation, in the status bar: the way back, and the way to go and see. -->
+        <Style x:Key="NoticeAction" TargetType="Button" BasedOn="{StaticResource Brace.StatusBar.Button}">
+            <Setter Property="Foreground" Value="{DynamicResource Brace.Accent}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="8,0" />
+        </Style>
+
         <!-- Items: the same commands as the desktop's right-click menu. -->
         <ContextMenu x:Key="ItemMenu" x:Shared="False">
             <MenuItem Header="Apri" FontWeight="SemiBold" InputGestureText="Invio" Click="ItemOpen_Click">
@@ -78,6 +87,10 @@
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
+            <!-- Where the selection goes: a tile or a topic, chosen by name, the recent ones first. -->
+            <MenuItem Header="Sposta in…" Click="ItemMoveTo_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowRight16}" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="Taglia" InputGestureText="Ctrl+X" Click="ItemCut_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Cut16}" /></MenuItem.Icon>
             </MenuItem>
@@ -236,7 +249,7 @@
                     </DockPanel>
                 </Border>
 
-                <!-- Status bar: where the archive is, and the keys worth knowing -->
+                <!-- Status bar: where the archive is, or what just happened with its buttons, and the keys worth knowing -->
                 <Border DockPanel.Dock="Bottom" Height="{DynamicResource Brace.StatusBarHeight}" Padding="10,0"
                         Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
                         BorderThickness="0,1,0,0" TextElement.FontSize="{DynamicResource Brace.StatusBarTextSize}"
@@ -258,7 +271,18 @@
                             <ContentControl Style="{StaticResource Brace.Kbd}" Content="Alt+E" />
                             <TextBlock Margin="4,0,0,0" Text="chiudi" />
                         </StackPanel>
-                        <TextBlock VerticalAlignment="Center" Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock MaxWidth="600" VerticalAlignment="Center" Text="{Binding Status}" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Status}" />
+                            <!-- After an operation: the way back, and the way to go and see, next to the message. -->
+                            <StackPanel Margin="8,0,0,0" Orientation="Horizontal"
+                                        Visibility="{Binding Notice, Converter={StaticResource NullToVisibility}}">
+                                <Button Style="{StaticResource NoticeAction}" Content="Annulla" ToolTip="{Binding UndoLabel}"
+                                        IsEnabled="{Binding CanUndo}" Click="NoticeUndo_Click" />
+                                <Button Style="{StaticResource NoticeAction}" Content="Mostra" ToolTip="Vai dove sono finiti, con gli elementi selezionati"
+                                        Click="NoticeShow_Click" Visibility="{Binding CanShowNotice, Converter={StaticResource Visible}}" />
+                            </StackPanel>
+                        </StackPanel>
                     </DockPanel>
                 </Border>
 
@@ -370,7 +394,7 @@
                                            Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding EmptyMessage}" />
                                 <ScrollViewer x:Name="BoardScroller" Padding="20,0,20,20" Focusable="False"
                                               HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                                    <ItemsControl Focusable="False" ItemsSource="{Binding Tiles}">
+                                    <ItemsControl x:Name="TilesControl" Focusable="False" ItemsSource="{Binding Tiles}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <views:TileGridPanel MinColumnWidth="280" Spacing="16" />
@@ -460,7 +484,7 @@
 
             <!-- Confirmations, over everything -->
             <Grid Background="{DynamicResource Brace.Scrim}" Visibility="{Binding Prompt, Converter={StaticResource NullToVisibility}}">
-                <Border Width="440" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                <Border x:Name="PromptBox" Width="440" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
                         Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
                         BorderThickness="1" CornerRadius="6" Effect="{StaticResource Brace.ShadowOverlay}"
                         DataContext="{Binding Prompt}" KeyboardNavigation.TabNavigation="Cycle">
@@ -478,6 +502,55 @@
                                     Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Hidden}}" />
                             <Button x:Name="PromptConfirmDanger" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Danger}" Content="{Binding ConfirmLabel}"
                                     Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Visible}}" />
+                            <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- «Sposta in…»: where the chosen files go, the recent places first, narrowed down by what is typed -->
+            <Grid Background="{DynamicResource Brace.Scrim}" Visibility="{Binding Picker, Converter={StaticResource NullToVisibility}}">
+                <Border x:Name="PickerBox" Width="520" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                        BorderThickness="1" CornerRadius="6" Effect="{StaticResource Brace.ShadowOverlay}"
+                        DataContext="{Binding Picker}" KeyboardNavigation.TabNavigation="Cycle">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,10" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}" TextWrapping="Wrap" />
+                        <TextBox x:Name="PickerFilter" Tag="Scrivi il nome di un riquadro o di un argomento" AutomationProperties.Name="Destinazione"
+                                 Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" />
+                        <Grid Margin="0,8,0,0" MinHeight="60" MaxHeight="296">
+                            <TextBlock Margin="8,10" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding EmptyMessage}"
+                                       Visibility="{Binding HasCandidates, Converter={StaticResource Hidden}}" />
+                            <ListBox x:Name="PickerList" BorderThickness="0" Background="Transparent" ItemsSource="{Binding Candidates}"
+                                     SelectedItem="{Binding Selected, Mode=TwoWay}" VirtualizingPanel.IsVirtualizing="False"
+                                     MouseDoubleClick="PickerList_MouseDoubleClick"
+                                     Visibility="{Binding HasCandidates, Converter={StaticResource Visible}}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:DestinationViewModel}">
+                                        <DockPanel Margin="0,4" Background="Transparent" ToolTip="{Binding Destination.FullPath}">
+                                            <ContentControl DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.Badge.Plain}"
+                                                            Content="recente" Visibility="{Binding IsRecent, Converter={StaticResource Visible}}" />
+                                            <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,1,10,0" VerticalAlignment="Top">
+                                                <Path Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Folder16}"
+                                                      Visibility="{Binding IsTopic, Converter={StaticResource Hidden}}" />
+                                                <Path Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.FolderOpen16}"
+                                                      Visibility="{Binding IsTopic, Converter={StaticResource Visible}}" />
+                                            </Grid>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Detail}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                        <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource Brace.Danger}" Text="{Binding Error}" TextWrapping="Wrap"
+                                   Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+                        <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button x:Name="PickerConfirm" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}" Content="{Binding ConfirmLabel}"
+                                    Command="{Binding ConfirmCommand}" />
                             <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
                         </StackPanel>
                     </StackPanel>

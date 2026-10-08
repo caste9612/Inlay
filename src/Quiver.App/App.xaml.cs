@@ -8,7 +8,7 @@ namespace Quiver.App;
 
 /// <summary>
 /// Quiver lives in the notification area: the panel is created at startup and shown with the global shortcut,
-/// the tray icon, or a command from a second Quiver.exe (Quiver.exe --toggle).
+/// the tray icon, or a command from a second Quiver.exe (Quiver.exe --toggle, or --sort from «Invia a Quiver»).
 /// </summary>
 public partial class App : Application, IArchiveHost
 {
@@ -41,7 +41,9 @@ public partial class App : Application, IArchiveHost
         _singleInstance = new SingleInstance();
         if (!_singleInstance.IsFirstInstance)
         {
-            SingleInstance.Send(options.Command ?? Commands.Toggle);
+            // Files from «Invia a Quiver» go to the running Quiver, which asks where to put them.
+            var command = options.Command ?? (options.SortPaths.Count > 0 ? Commands.Sort : Commands.Toggle);
+            SingleInstance.Send(command, options.SortPaths);
             Shutdown();
             return;
         }
@@ -86,11 +88,13 @@ public partial class App : Application, IArchiveHost
                 $"Puoi cambiarla in {AppSettings.FilePath}.");
         }
 
-        _singleInstance.CommandReceived += command => Dispatcher.InvokeAsync(() => Execute(command));
+        _singleInstance.CommandReceived += (command, arguments) => Dispatcher.InvokeAsync(() => Execute(command, arguments));
         _singleInstance.StartListening(_stopping.Token);
         Log.Write($"Started. Archive: {root}. Shortcut: {_settings.Hotkey}.");
 
-        if (options.Command is Commands.Show or Commands.Toggle)
+        if (options.SortPaths.Count > 0)
+            SortFiles(options.SortPaths);
+        else if (options.Command is Commands.Show or Commands.Toggle)
             _panel.ShowPanel();
     }
 
@@ -104,16 +108,33 @@ public partial class App : Application, IArchiveHost
         base.OnExit(e);
     }
 
-    private void Execute(string command)
+    private void Execute(string command, IReadOnlyList<string> arguments)
     {
         switch (command)
         {
             case Commands.Toggle: _panel?.Toggle(); break;
             case Commands.Show: _panel?.ShowPanel(); break;
             case Commands.Hide: _panel?.HidePanel("--hide command", returnFocus: true); break;
+            case Commands.Sort: SortFiles(arguments); break;
             case Commands.Exit: Shutdown(); break;
             default: Log.Write($"Unknown command: {command}"); break;
         }
+    }
+
+    /// <summary>«Invia a Quiver» from Explorer: the panel opens, asking where the files go.</summary>
+    private void SortFiles(IReadOnlyList<string> paths)
+    {
+        if (_panel is null || _viewModel is null)
+            return;
+        var existing = paths.Where(Path.Exists).Select(Path.GetFullPath).ToList();
+        Log.Write($"Sort requested for {paths.Count} paths, {existing.Count} found");
+        _panel.ShowPanel();
+        if (existing.Count == 0)
+        {
+            _viewModel.Status = "I file da mandare nell'archivio non ci sono più.";
+            return;
+        }
+        _viewModel.AskDestination(existing);
     }
 
     /// <summary>Waits for the tray menu to close first, otherwise it would take the focus back from the panel.</summary>

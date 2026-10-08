@@ -28,7 +28,9 @@ internal static class ShellLinks
         return path;
     }
 
-    public static void Create(string linkPath, string target)
+    /// <param name="arguments">What the target is started with, like "--sort" for the shortcut of «Invia a».</param>
+    /// <param name="description">The tooltip Explorer shows for the shortcut.</param>
+    public static void Create(string linkPath, string target, string? arguments = null, string? description = null)
     {
         var link = (IShellLinkW)new ShellLink();
         try
@@ -36,7 +38,28 @@ internal static class ShellLinks
             link.SetPath(target);
             // Programs often look for their files in the folder they start from.
             link.SetWorkingDirectory(Directory.Exists(target) ? target : Path.GetDirectoryName(target) ?? "");
+            if (arguments is not null)
+                link.SetArguments(arguments);
+            if (description is not null)
+                link.SetDescription(description);
             ((IPersistFile)link).Save(linkPath, fRemember: true);
+        }
+        finally
+        {
+            Marshal.FinalReleaseComObject(link);
+        }
+    }
+
+    /// <summary>What a shortcut starts its target with; empty when nothing.</summary>
+    public static string ArgumentsOf(string linkPath)
+    {
+        var link = (IShellLinkW)new ShellLink();
+        try
+        {
+            ((IPersistFile)link).Load(linkPath, 0);
+            var arguments = new StringBuilder(32768);
+            link.GetArguments(arguments, arguments.Capacity);
+            return arguments.ToString();
         }
         finally
         {

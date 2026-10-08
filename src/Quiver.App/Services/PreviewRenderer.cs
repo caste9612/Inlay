@@ -31,7 +31,9 @@ internal static class PreviewRenderer
 
         // The real Desktop stays out of previews: a folder can stand in for it.
         IReadOnlyList<InboxSource> sources = options.DesktopStandIn is { } desktop ? [new InboxSource("Desktop", [desktop])] : [];
-        using var viewModel = new MainViewModel(root, live: false, inboxSources: sources);
+        // Recent places of the preview only, in a file of its own: the first tile of the board, as the place used last.
+        var recent = RecentDestinations.Load(Path.Combine(Path.GetTempPath(), "quiver-preview-recenti.json"));
+        using var viewModel = new MainViewModel(root, live: false, inboxSources: sources, recent: recent);
         viewModel.BuildIndexNow();
         if (options.PreviewTopic is { } topic)
             viewModel.SelectTopicByPath(topic);
@@ -48,6 +50,19 @@ internal static class PreviewRenderer
             viewModel.AskNewLink(folder);
             viewModel.Prompt!.Text = "rossi";
             viewModel.Prompt.ConfirmCommand.Execute(null);
+        }
+        // «Sposta in…» for the first item of the board.
+        if (options.PreviewPicker && viewModel.Tiles.SelectMany(candidate => candidate.Items).FirstOrDefault() is { } first)
+        {
+            if (viewModel.Tiles.FirstOrDefault(candidate => candidate.IsOwnFolder) is { RelativePath: { } key })
+                recent.Remember(root, key);
+            viewModel.AskDestination([first.Item.FullPath]);
+        }
+        // The status bar as after a move, with its buttons; nothing is moved.
+        if (options.PreviewNotice && viewModel.Tiles.FirstOrDefault(candidate => candidate.IsOwnFolder) is { } destination)
+        {
+            viewModel.Status = $"3 elementi spostati in «{destination.Title}».";
+            viewModel.Notice = new StatusNotice(destination.FolderPath, []);
         }
 
         Save(new PanelView { DataContext = viewModel }, PanelSize, output);

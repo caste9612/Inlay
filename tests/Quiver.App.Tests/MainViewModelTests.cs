@@ -1,3 +1,4 @@
+using Quiver.App.Services;
 using Quiver.App.ViewModels;
 using Quiver.Core;
 
@@ -12,15 +13,23 @@ public sealed class MainViewModelTests : IDisposable
     private readonly string _root = Directory.CreateDirectory(
         Path.Combine(Path.GetTempPath(), "quiver-app-tests", Guid.NewGuid().ToString("N"))).FullName;
 
+    // The recent places of the test, outside the archive and never those of the PC.
+    private readonly RecentDestinations _recent;
+
     public MainViewModelTests()
     {
+        _recent = RecentDestinations.Load(_root + "-recenti.json");
         AddFile("Lavoro/Documenti/a.txt");
         AddFile("Lavoro/Documenti/b.txt");
         Directory.CreateDirectory(Path.Combine(_root, "Lavoro", "Archivio"));
         AddFile("Personale/Casa/bollette.csv");
     }
 
-    public void Dispose() => Directory.Delete(_root, recursive: true);
+    public void Dispose()
+    {
+        Directory.Delete(_root, recursive: true);
+        File.Delete(_root + "-recenti.json");
+    }
 
     [Fact]
     public void RenamingTheSelectedItem_KeepsItSelectedUnderTheNewName() => StaThread.Run(() =>
@@ -528,7 +537,101 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal([documenti, archivio], viewModel.Tiles);
     });
 
-    private MainViewModel Open() => new(_root, live: false);
+    // ---- «Sposta in…» ----
+
+    [Fact]
+    public void SpostaIn_OffersTilesAndTopics_ExceptWhereTheItemsAre_RecentFirst() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        _recent.Remember(_root, "Personale/Casa");
+        var item = Item(viewModel, "a.txt");
+
+        viewModel.AskDestination([item.Item.FullPath]);
+
+        var picker = Assert.IsType<DestinationPickerViewModel>(viewModel.Picker);
+        Assert.Equal("Sposta «a.txt» in…", picker.Title);
+        Assert.Equal("Sposta", picker.ConfirmLabel);
+        // Not Documenti, where a.txt already is; Casa first, as the place used last.
+        Assert.Equal(["Casa", "Lavoro", "Archivio", "Personale"], picker.Candidates.Select(candidate => candidate.Title));
+        Assert.True(picker.Candidates[0].IsRecent);
+        Assert.Same(picker.Candidates[0], picker.Selected);
+
+        picker.Filter = "arch";
+        Assert.Equal(["Archivio"], picker.Candidates.Select(candidate => candidate.Title));
+    });
+
+    [Fact]
+    public void SpostaIn_MovesTheFiles_RemembersThePlace_AndOffersUndoAndShow() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var source = Path.Combine(_root, "Lavoro", "Documenti", "a.txt");
+        viewModel.AskDestination([source]);
+        var picker = viewModel.Picker!;
+        picker.Filter = "casa";
+
+        picker.ConfirmCommand.Execute(null);
+
+        Assert.Null(viewModel.Picker);
+        var moved = Path.Combine(_root, "Personale", "Casa", "a.txt");
+        Assert.True(File.Exists(moved));
+        Assert.False(File.Exists(source));
+        Assert.Equal(["Personale/Casa"], _recent.For(_root));
+        Assert.Equal("«a.txt» spostato in «Casa».", viewModel.Status);
+        Assert.NotNull(viewModel.Notice);
+        Assert.True(viewModel.CanShowNotice);
+        Assert.IsType<MoveStep>(viewModel.LastUndoStep);
+
+        viewModel.ShowNotice();
+        Assert.Equal("Personale", viewModel.BoardTitle);
+        Assert.Equal(["a.txt"], viewModel.SelectedItems().Select(selected => selected.Name));
+
+        viewModel.Undo();
+        Assert.True(File.Exists(source));
+        Assert.Null(viewModel.Notice);
+    });
+
+    [Fact]
+    public void SpostaIn_LinksWhatHasAPlaceOfItsOwn() => StaThread.Run(() =>
+    {
+        var program = Path.Combine(Path.GetTempPath(), "quiver-app-tests", Guid.NewGuid().ToString("N") + ".exe");
+        File.WriteAllText(program, "");
+        try
+        {
+            using var viewModel = Open();
+            viewModel.AskDestination([program]);
+            var picker = viewModel.Picker!;
+            Assert.StartsWith("Crea un collegamento a", picker.Title);
+            Assert.Equal("Collega", picker.ConfirmLabel);
+            picker.Filter = "archivio";
+
+            picker.ConfirmCommand.Execute(null);
+
+            Assert.True(File.Exists(program));
+            var link = Assert.Single(Assert.IsType<LinkStep>(viewModel.LastUndoStep).Links);
+            Assert.Equal(Path.Combine(_root, "Lavoro", "Archivio"), Path.GetDirectoryName(link));
+            Assert.StartsWith("Collegamento «", viewModel.Status);
+            Assert.True(viewModel.CanShowNotice);
+        }
+        finally
+        {
+            File.Delete(program);
+        }
+    });
+
+    [Fact]
+    public void AMessageTypedLater_TakesTheButtonsAway() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var documents = Path.Combine(_root, "Lavoro", "Documenti");
+        viewModel.Transfer([Path.Combine(documents, "a.txt")], Path.Combine(_root, "Lavoro", "Archivio"), TransferKind.Move);
+        Assert.NotNull(viewModel.Notice);
+
+        viewModel.Status = "Qualcos'altro.";
+
+        Assert.Null(viewModel.Notice);
+    });
+
+    private MainViewModel Open() => new(_root, live: false, recent: _recent);
 
     private static ItemViewModel Item(MainViewModel viewModel, string name) =>
         viewModel.Tiles.SelectMany(tile => tile.Items).Single(item => item.Name == name);

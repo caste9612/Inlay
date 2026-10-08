@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.IO.Enumeration;
-using System.Text;
 
 namespace Quiver.Core;
 
@@ -35,7 +33,7 @@ public sealed class SearchIndex
                 // The folder holding the archive does not count, as on the inbox tiles.
                 if (item.IsFolder && TransferRules.IsSameOrInside(Path.GetFullPath(root), item.FullPath))
                     continue;
-                entries.Add(new Entry(item, source.Title, Normalize(item.DisplayName), Normalize(source.Title)));
+                entries.Add(new Entry(item, source.Title, SearchText.Normalize(item.DisplayName), SearchText.Normalize(source.Title)));
             }
         }
         return new SearchIndex([.. entries]);
@@ -67,7 +65,7 @@ public sealed class SearchIndex
             var relativeDirectory = Path.GetRelativePath(root, Path.GetDirectoryName(item.FullPath) ?? root);
             if (relativeDirectory == ".")
                 relativeDirectory = "";
-            entries.Add(new Entry(item, relativeDirectory, Normalize(item.DisplayName), Normalize(relativeDirectory)));
+            entries.Add(new Entry(item, relativeDirectory, SearchText.Normalize(item.DisplayName), SearchText.Normalize(relativeDirectory)));
         }
         return entries;
     }
@@ -102,14 +100,14 @@ public sealed class SearchIndex
     /// </summary>
     public IReadOnlyList<SearchHit> Search(string query, int maxResults = 50)
     {
-        var words = Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var words = SearchText.Words(query);
         if (words.Length == 0)
             return [];
 
         var hits = new List<SearchHit>();
         foreach (var entry in _entries)
         {
-            var score = Score(entry, words);
+            var score = SearchText.Score(entry.NameKey, entry.PathKey, words);
             if (score > 0)
                 hits.Add(new SearchHit(entry.Item, entry.RelativeDirectory, score));
         }
@@ -117,36 +115,6 @@ public sealed class SearchIndex
             ? b.Score.CompareTo(a.Score)
             : NaturalStringComparer.Instance.Compare(a.Item.DisplayName, b.Item.DisplayName));
         return hits.Count > maxResults ? hits.GetRange(0, maxResults) : hits;
-    }
-
-    private static int Score(Entry entry, string[] words)
-    {
-        var score = 0;
-        foreach (var word in words)
-        {
-            var index = entry.NameKey.IndexOf(word, StringComparison.Ordinal);
-            if (index == 0) score += 100;
-            else if (index > 0) score += IsWordStart(entry.NameKey, index) ? 70 : 40;
-            else if (entry.PathKey.Contains(word, StringComparison.Ordinal)) score += 10;
-            else return 0;
-        }
-        return Math.Max(1, score - entry.NameKey.Length / 4);
-    }
-
-    private static bool IsWordStart(string text, int index) =>
-        !char.IsLetterOrDigit(text[index - 1]) || char.IsDigit(text[index]) != char.IsDigit(text[index - 1]);
-
-    /// <summary>Lower case without accents, so "perche" finds "Perché".</summary>
-    private static string Normalize(string text)
-    {
-        var decomposed = text.Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder(decomposed.Length);
-        foreach (var c in decomposed)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                builder.Append(char.ToLowerInvariant(c));
-        }
-        return builder.ToString();
     }
 
     /// <summary>

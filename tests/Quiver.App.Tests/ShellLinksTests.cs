@@ -80,6 +80,19 @@ public sealed class ShellLinksTests : IDisposable
         Assert.Equal(program, ShellLinks.TargetOf(copy), StringComparer.OrdinalIgnoreCase);
     });
 
+    [Fact]
+    public void AShortcut_CanCarryArguments_AndADescription() => StaThread.Run(() =>
+    {
+        var plain = Path.Combine(_root, "Semplice.lnk");
+        var withArguments = Path.Combine(_root, "Manda.lnk");
+        ShellLinks.Create(plain, Environment.ProcessPath!);
+        ShellLinks.Create(withArguments, Environment.ProcessPath!, "--sort", "Manda i file a Quiver");
+
+        Assert.Equal("", ShellLinks.ArgumentsOf(plain));
+        Assert.Equal("--sort", ShellLinks.ArgumentsOf(withArguments));
+        Assert.Equal(Environment.ProcessPath, ShellLinks.TargetOf(withArguments), StringComparer.OrdinalIgnoreCase);
+    });
+
     private string AddFile(string relativePath)
     {
         var path = Path.GetFullPath(Path.Combine(_root, relativePath));

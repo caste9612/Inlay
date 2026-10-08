@@ -20,6 +20,7 @@ internal sealed class TrayIcon : IDisposable
         menu.Items.Add(CreateItem("Archivi…", showArchives));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateAutostartItem());
+        menu.Items.Add(CreateSendToItem());
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateItem("Esci", exit));
 
@@ -59,6 +60,25 @@ internal sealed class TrayIcon : IDisposable
         {
             if (!Autostart.TrySet(item.IsChecked))
                 item.IsChecked = Autostart.IsEnabled;
+        };
+        return item;
+    }
+
+    /// <summary>«Quiver» in the «Invia a» menu of Explorer, to send files into the archive from there.</summary>
+    private static MenuItem CreateSendToItem()
+    {
+        var item = new MenuItem
+        {
+            Header = "«Invia a Quiver» in Explorer",
+            ToolTip = "Nel menu «Invia a» del tasto destro di Explorer: i file scelti vengono mandati nell'archivio.",
+            IsCheckable = true,
+            IsChecked = SendToShortcut.IsInstalled(),
+        };
+        item.Click += (_, _) =>
+        {
+            var done = item.IsChecked ? SendToShortcut.TryInstall() : SendToShortcut.TryRemove();
+            if (!done)
+                item.IsChecked = SendToShortcut.IsInstalled();
         };
         return item;
     }

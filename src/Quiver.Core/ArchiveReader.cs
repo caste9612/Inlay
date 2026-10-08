@@ -7,6 +7,13 @@ namespace Quiver.Core;
 /// </param>
 public sealed record InboxSource(string Title, IReadOnlyList<string> Folders);
 
+/// <summary>A place where files can be sent: a tile, or a topic for the files it keeps loose.</summary>
+/// <param name="RelativeKey">The metadata key of its folder.</param>
+/// <param name="Location">
+/// Where it sits, like "Lavoro › Clienti"; for a tile, its topic is the last part. Empty for a topic in the root.
+/// </param>
+public sealed record Destination(string Title, string FullPath, string RelativeKey, bool IsTopic, string Location);
+
 /// <summary>
 /// Reads the archive following Quiver's rules: folders in the root are topics; deeper folders are topics
 /// only when marked in the metadata, otherwise they are tiles on their parent topic's board.
@@ -18,6 +25,9 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
 
     /// <summary>Title of the inbox tile with the archive's own files to sort.</summary>
     public const string ArchiveInboxTitle = "Nell'archivio";
+
+    /// <summary>Between the names of a path shown to the user, as in "Lavoro › Clienti".</summary>
+    public const string PathSeparator = " › ";
 
     public string Root { get; } = Path.GetFullPath(root);
 
@@ -50,14 +60,22 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
         if (looseFiles.Count > 0)
             tiles.Add(new Tile(GeneralTileTitle, folder.FullName, IsGeneral: true, looseFiles));
 
-        // Tiles moved by the user keep their place; the others follow in name order (the sort is stable).
-        var subfolders = Directories(folder)
-            .Where(sub => !IsMarkedTopic(sub))
-            .OrderBy(sub => metadata.OrderOf(ArchiveLayout.ToRelativeKey(Root, sub.FullName)) ?? int.MaxValue);
-        foreach (var subfolder in subfolders)
+        foreach (var subfolder in TileFolders(folder))
             tiles.Add(new Tile(subfolder.Name, subfolder.FullName, IsGeneral: false, ReadItems(subfolder)));
 
         return new Board(topic, tiles);
+    }
+
+    /// <summary>
+    /// Where files can be sent, in the order of the sidebar: each topic, for its loose files, then its tiles, then
+    /// the topics inside it.
+    /// </summary>
+    public IReadOnlyList<Destination> ReadDestinations()
+    {
+        var destinations = new List<Destination>();
+        foreach (var topic in ReadTopics())
+            AddDestinations(topic, "", destinations);
+        return destinations;
     }
 
     /// <summary>
@@ -102,6 +120,22 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
         var children = Directories(folder).Where(IsMarkedTopic).Select(ReadTopic).ToList();
         return new Topic(folder.FullName, ArchiveLayout.ToRelativeKey(Root, folder.FullName), children);
     }
+
+    private void AddDestinations(Topic topic, string location, List<Destination> destinations)
+    {
+        destinations.Add(new Destination(topic.Name, topic.FullPath, topic.RelativePath, IsTopic: true, location));
+        var inside = location.Length == 0 ? topic.Name : location + PathSeparator + topic.Name;
+        foreach (var folder in TileFolders(new DirectoryInfo(topic.FullPath)))
+            destinations.Add(new Destination(folder.Name, folder.FullName, ArchiveLayout.ToRelativeKey(Root, folder.FullName), IsTopic: false, inside));
+        foreach (var child in topic.Children)
+            AddDestinations(child, inside, destinations);
+    }
+
+    /// <summary>The subfolders of a topic that are its tiles: those moved by the user keep their place, the others follow in name order (the sort is stable).</summary>
+    private IEnumerable<DirectoryInfo> TileFolders(DirectoryInfo topicFolder) =>
+        Directories(topicFolder)
+            .Where(sub => !IsMarkedTopic(sub))
+            .OrderBy(sub => metadata.OrderOf(ArchiveLayout.ToRelativeKey(Root, sub.FullName)) ?? int.MaxValue);
 
     private bool IsMarkedTopic(DirectoryInfo folder) =>
         metadata.IsTopic(ArchiveLayout.ToRelativeKey(Root, folder.FullName));

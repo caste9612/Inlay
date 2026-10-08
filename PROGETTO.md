@@ -175,7 +175,10 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - Un clic seleziona; con `Ctrl` e `Maiusc` se ne selezionano altri, con `Ctrl` anche da riquadri diversi. Un clic sul vuoto deseleziona.
 - Doppio clic per aprire.
 - Un secondo clic lento su un elemento già selezionato lo rinomina. Mentre si scrive il nome, un clic altrove lo conferma.
-- Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre Apri, Apri con…, Mostra in Explorer, Taglia, Copia, Copia percorso, Rinomina, Proprietà e Sposta nel Cestino. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
+- Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Proprietà e Sposta nel Cestino. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
+- **Sposta in…** apre, sopra la bacheca, l'elenco dei riquadri e degli argomenti con i recenti in cima: si scrive una parte del nome e si conferma con un clic o con Invio. È lo stesso elenco che compare con **Invia a Quiver** dal menu «Invia a» di Explorer.
+- Dopo un'operazione, accanto al messaggio nella barra di stato ci sono **Annulla** e **Mostra**: la via per tornare indietro e quella per andare a vedere, senza tastiera.
+- Mentre si trascina, un'etichetta accanto al puntatore dice cosa si ha in mano; un riquadro trascinato mostra con una riga dove andrà.
 - Drag & drop:
   - in entrata, da Explorer, dalla posta (allegati e messaggi di Outlook) o dal browser (link e immagini);
   - tra riquadri e argomenti: tenendo fermo l'elemento sopra un argomento, l'argomento si apre e lo si lascia nel riquadro giusto;
@@ -204,7 +207,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 - Inbox: `_Da smistare`, il Desktop e, se si vuole, Download. Ci finiscono anche i collegamenti che gli installer mettono sul desktop, così un programma appena installato si aggiunge con un gesto.
   - **Fatto**: «Da smistare» mostra un riquadro per ogni provenienza, il Desktop comprende quello comune a tutti gli utenti, Download si attiva dalle impostazioni e la ricerca trova anche questi file.
-  - **Manca**: un tasto che manda un file nel riquadro giusto, con le destinazioni recenti in cima.
+  - **Fatto**: «Sposta in…» dal tasto destro manda la selezione nel riquadro o nell'argomento scelto per nome, con le destinazioni recenti in cima (tenute per PC in `%APPDATA%\Quiver\recenti.json`); «Invia a Quiver» nel menu «Invia a» di Explorer fa lo stesso con i file scelti lì, passandoli all'istanza aperta con `--sort`.
 - **Fatto**: annulla (`Ctrl+Z`) per spostamenti, copie, collegamenti, rinomine, nuove cartelle, ordine dei riquadri, promozioni ed eliminazioni. Quello che è andato nel Cestino torna al suo posto.
 - Menu contestuale completo di Windows (7-Zip e simili).
 - Riquadri con dimensione e colore personalizzati.
@@ -264,7 +267,8 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - `Quiver.Tests`: i test di `Quiver.Core`.
   - `Quiver.App.Tests`: i test delle operazioni sui file fatte dalla shell e dei view model del pannello e degli archivi, su archivi temporanei.
 - **Librerie**: CommunityToolkit.Mvvm (MVVM), H.NotifyIcon (icona nella tray), Velopack (installer), System.Text.Json. L'aspetto viene da Brace (vedi "Aspetto"). Le poche chiamate alle API di Windows per ora sono scritte a mano; CsWin32 resta candidata per quando l'integrazione crescerà.
-- **Istanza unica**: se l'app viene lanciata una seconda volta (`Quiver.exe --toggle`), passa il comando all'istanza già aperta tramite una named pipe e si chiude.
+- **Istanza unica**: se l'app viene lanciata una seconda volta (`Quiver.exe --toggle`, o `--sort` con i file di «Invia a Quiver»), passa il comando e i percorsi all'istanza già aperta tramite una named pipe, una riga per ciascuno, e si chiude.
+- **Movimento**: il contenuto del pannello e le domande sopra la bacheca entrano con una dissolvenza e uno scorrimento di pochi pixel, con le durate e le curve di Brace (`Views/Motion.cs`); niente si muove se Windows ha le animazioni disattivate. Durante un trascinamento due adorner disegnano l'etichetta che segue il puntatore e la riga dove andrà un riquadro.
 - **Operazioni sui file**: passano tutte dalla shell di Windows, con le sue finestre di avanzamento e di conflitto, e usano il Cestino. Ognuna lascia un passo nel registro per annullarla, con quello che serve a rifarla al contrario, metadati compresi: dove sono finiti gli elementi, come si chiamavano, quando sono andati nel Cestino.
 - **Ripristino dal Cestino**: il Cestino di ogni disco tiene ogni elemento come due file, `$R…` con il contenuto e `$I…` con il percorso originale e la data.
   - Subito dopo un'eliminazione, Quiver annota quali `$I…` sono i suoi.
@@ -299,8 +303,9 @@ Fatto:
 - la prova dal vivo dei gesti del pannello, su un archivio di prova: ha trovato e fatto correggere il pannello che si nascondeva durante un trascinamento;
 - le icone di Brace per i tipi di file, gli archivi come i vault di Obsidian, l'installer e la release 0.2.0 su GitHub;
 - con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`, e che la finestra Archivi resta libera perché non si ridimensiona;
-- dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli.
+- dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli;
+- l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo.
 
-1. Installare la 0.2.0 dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta.
+1. Installare dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta, con «Sposta in…» e «Invia a Quiver».
 2. Provare dal vivo la finestra Archivi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
-3. Il resto della v0.2, nell'ordine deciso il 7 ottobre 2026: smista rapido e «Invia a Quiver» da Explorer; le impostazioni nell'app; il colore dei riquadri e la selezione a rettangolo. GlazeWM e gli aggiornamenti automatici restano per dopo.
+3. Il resto della v0.2, nell'ordine deciso il 7 ottobre 2026: le impostazioni nell'app; il colore dei riquadri e la selezione a rettangolo. GlazeWM e gli aggiornamenti automatici restano per dopo.

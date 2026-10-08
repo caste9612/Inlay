@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -38,6 +39,8 @@ public partial class PanelView : UserControl
     private ItemViewModel? _renameCandidate;
     private TileViewModel? _pressedTile;
     private IInputElement? _focusBeforePrompt;
+    private DragLabelAdorner? _dragLabel;
+    private InsertionAdorner? _insertionLine;
 
     // Where the keyboard focus was, to put it back when a reload replaces the element that had it.
     private bool _focusWasInTree;
@@ -62,6 +65,9 @@ public partial class PanelView : UserControl
 
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
+    /// <summary>A question is open over the board: a confirmation, or where to send the files.</summary>
+    private bool IsAsking => ViewModel.Prompt is not null || ViewModel.Picker is not null;
+
     public void FocusSearch()
     {
         SearchBox.Focus();
@@ -74,6 +80,9 @@ public partial class PanelView : UserControl
             SearchBox.IsUndoEnabled = true;
         }
     }
+
+    /// <summary>The panel just appeared: its content fades in and settles, the way Brace moves things.</summary>
+    public void AnimateIn() => Motion.Enter(this, slide: 8);
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
@@ -98,6 +107,34 @@ public partial class PanelView : UserControl
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         _renameTimer.Stop();
+        if (ViewModel.Picker is { } picker)
+        {
+            switch (e.Key)
+            {
+                case Key.Escape:
+                    picker.CancelCommand.Execute(null);
+                    break;
+                // Enter confirms, unless the user moved to one of the buttons with Tab.
+                case Key.Enter when Keyboard.FocusedElement is Button { Command: { } command } button:
+                    command.Execute(button.CommandParameter);
+                    break;
+                case Key.Enter:
+                    picker.ConfirmCommand.Execute(null);
+                    break;
+                case Key.Down:
+                    picker.MoveSelection(+1);
+                    ScrollPickerToSelection();
+                    break;
+                case Key.Up:
+                    picker.MoveSelection(-1);
+                    ScrollPickerToSelection();
+                    break;
+                default:
+                    return;
+            }
+            e.Handled = true;
+            return;
+        }
         if (ViewModel.Prompt is { } prompt)
         {
             if (e.Key == Key.Escape)
@@ -197,7 +234,7 @@ public partial class PanelView : UserControl
 
     private void OnPreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        if (ViewModel.Prompt is not null || Keyboard.FocusedElement is TextBox ||
+        if (IsAsking || Keyboard.FocusedElement is TextBox ||
             string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0]))
             return;
         e.Handled = true;
@@ -240,6 +277,12 @@ public partial class PanelView : UserControl
             return;
         ResultsList.SelectedIndex = Math.Clamp(ResultsList.SelectedIndex + delta, 0, ResultsList.Items.Count - 1);
         ResultsList.ScrollIntoView(ResultsList.SelectedItem);
+    }
+
+    private void ScrollPickerToSelection()
+    {
+        if (PickerList.SelectedItem is { } selected)
+            PickerList.ScrollIntoView(selected);
     }
 
     /// <summary>Keeps the first result selected, so Invio in the search box opens it.</summary>
@@ -404,8 +447,8 @@ public partial class PanelView : UserControl
         _renameTimer.Stop();
         var candidate = _renameCandidate;
         _renameCandidate = null;
-        // Still the only selected item, and still on the board: a reload in the meantime makes new items.
-        if (candidate is not null && ViewModel.Prompt is null &&
+        // Still the only selected item, and still on the board.
+        if (candidate is not null && !IsAsking &&
             ViewModel.SelectedItems() is [var only] && ReferenceEquals(only, candidate))
             ViewModel.BeginRename(candidate);
     }
@@ -436,7 +479,7 @@ public partial class PanelView : UserControl
         _pressedItem = null;
         _pendingClick = null;
         _renameTimer.Stop();
-        // The board may have been read again since the press (a name confirmed by that click): its items are new.
+        // The board may have been read again since the press (a name confirmed by that click): its items may be new.
         if (!list.Items.Contains(item))
             return;
         if (!item.IsSelected)
@@ -447,7 +490,15 @@ public partial class PanelView : UserControl
         var paths = ViewModel.SelectedItems().Select(selected => selected.Item.FullPath).ToArray();
         // A plain list of files: Explorer, mail and other programs understand it too.
         var data = new DataObject(DataFormats.FileDrop, paths.Length > 0 ? paths : [item.Item.FullPath]);
-        DragDrop.DoDragDrop(list, data, DragDropEffects.Move | DragDropEffects.Copy | DragDropEffects.Link);
+        ShowDragLabel(paths.Length > 1 ? $"{paths.Length} elementi" : item.Name);
+        try
+        {
+            DragDrop.DoDragDrop(list, data, DragDropEffects.Move | DragDropEffects.Copy | DragDropEffects.Link);
+        }
+        finally
+        {
+            HideDragLabel();
+        }
     }
 
     private void ItemList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -529,20 +580,20 @@ public partial class PanelView : UserControl
 
     private void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
-        // The confirmation's own buttons do not count: when it closes, the focus goes back to where it was before.
-        if (ViewModel.Prompt is not null || e.NewFocus is not DependencyObject focused)
+        // The controls of a question do not count: when it closes, the focus goes back to where it was before.
+        if (IsAsking || e.NewFocus is not DependencyObject focused)
             return;
         _focusWasInTree = FindAncestor<TreeView>(focused) is not null;
         _focusedTile = FindAncestor<GroupBox>(focused)?.DataContext is TileViewModel tile ? tile.FolderPath : null;
     }
 
-    /// <summary>After a reload the elements are new: the one with the focus may be gone.</summary>
+    /// <summary>After a reload the element with the focus may be gone.</summary>
     private void OnReloaded(object? sender, EventArgs e) => Dispatcher.BeginInvoke(RestoreFocusIfLost, DispatcherPriority.Background);
 
     /// <summary>What was renamed, moved or pasted is selected: the focus goes to it, unless a name is being typed.</summary>
     private void OnSelectionRestored(object? sender, EventArgs e) => Dispatcher.BeginInvoke(() =>
     {
-        if (IsVisible && ViewModel.Prompt is null && EditingBox() is null && FirstSelectedRow() is { } row)
+        if (IsVisible && !IsAsking && EditingBox() is null && FirstSelectedRow() is { } row)
             FocusRow(row);
     }, DispatcherPriority.Background);
 
@@ -551,7 +602,7 @@ public partial class PanelView : UserControl
 
     private void RestoreFocusIfLost()
     {
-        if (!IsVisible || ViewModel.Prompt is not null || !HasLostFocus())
+        if (!IsVisible || IsAsking || !HasLostFocus())
             return;
         if (_focusWasInTree)
             FocusSelectedTopic();
@@ -599,7 +650,16 @@ public partial class PanelView : UserControl
         data.SetData(TileFormat, tile.FolderPath);
         // As a folder too: dropped on a topic it moves there, dropped on Explorer it moves out of the archive.
         data.SetFileDropList([tile.FolderPath]);
-        DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Move | DragDropEffects.Copy);
+        ShowDragLabel(tile.Title);
+        try
+        {
+            DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Move | DragDropEffects.Copy);
+        }
+        finally
+        {
+            HideDragLabel();
+            HideInsertionLine();
+        }
     }
 
     private void TileActions_Click(object sender, RoutedEventArgs e)
@@ -629,8 +689,12 @@ public partial class PanelView : UserControl
         public static readonly DropPlan Nothing = new(DropAction.None, [], "", TransferKind.None, null, null);
     }
 
-    /// <summary>Outside the drop targets nothing can be dropped.</summary>
-    private void OnPreviewDragOver(object sender, DragEventArgs e) => e.Effects = DragDropEffects.None;
+    /// <summary>Outside the drop targets nothing can be dropped; a target that wants the line shows it again right after.</summary>
+    private void OnPreviewDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = DragDropEffects.None;
+        HideInsertionLine();
+    }
 
     private void OnDragLeave(object sender, DragEventArgs e)
     {
@@ -644,6 +708,7 @@ public partial class PanelView : UserControl
             Log.Write($"Drag over another window, still on the panel: {WindowInfo.UnderCursor()}");
             return;
         }
+        HideInsertionLine();
         DisarmSpring();
         DragLeftPanel?.Invoke(this, EventArgs.Empty);
     }
@@ -661,7 +726,10 @@ public partial class PanelView : UserControl
             DropAction.Transfer => DragDropEffects.Move,
             _ => DragDropEffects.None,
         };
-        SetDropHighlight(sender, plan.Action != DropAction.None);
+        // Files light up the border of their target; a tile on its way shows where it will land with a line.
+        SetDropHighlight(sender, plan.Action is DropAction.Transfer or DropAction.SaveDropped);
+        if (plan.Action == DropAction.MoveTile)
+            ShowInsertionLine(plan.Before);
         e.Handled = true;
     }
 
@@ -675,6 +743,7 @@ public partial class PanelView : UserControl
     private void DropTarget_Drop(object sender, DragEventArgs e)
     {
         DisarmSpring();
+        HideInsertionLine();
         var plan = PlanDrop(sender, e);
         SetDropHighlight(sender, false);
         // Quiver does the move or copy itself, so the program the files come from must not delete anything.
@@ -820,6 +889,50 @@ public partial class PanelView : UserControl
         }
     }
 
+    // ---- What a drag shows: the line where a tile will land, the label of what is in hand ----
+
+    /// <summary>The line where the dragged tile will land: before <paramref name="before"/>, or after the last tile.</summary>
+    private void ShowInsertionLine(TileViewModel? before)
+    {
+        if (_insertionLine is null)
+        {
+            if (AdornerLayer.GetAdornerLayer(TilesControl) is not { } layer)
+                return;
+            _insertionLine = new InsertionAdorner(TilesControl, (Brush)FindResource("Brace.Accent"));
+            layer.Add(_insertionLine);
+        }
+        var target = before is null ? null : TilesControl.ItemContainerGenerator.ContainerFromItem(before) as FrameworkElement;
+        var last = ViewModel.Tiles.Count == 0 ? null : TilesControl.ItemContainerGenerator.ContainerFromItem(ViewModel.Tiles[^1]) as FrameworkElement;
+        var spacing = FindDescendants<TileGridPanel>(TilesControl).FirstOrDefault()?.Spacing ?? 16;
+        _insertionLine.ShowBefore(target, last, spacing);
+    }
+
+    private void HideInsertionLine() => _insertionLine?.Hide();
+
+    private void ShowDragLabel(string text)
+    {
+        if (AdornerLayer.GetAdornerLayer(this) is not { } layer)
+            return;
+        HideDragLabel();
+        _dragLabel = new DragLabelAdorner(this, text);
+        layer.Add(_dragLabel);
+    }
+
+    private void HideDragLabel()
+    {
+        if (_dragLabel is null)
+            return;
+        AdornerLayer.GetAdornerLayer(this)?.Remove(_dragLabel);
+        _dragLabel = null;
+    }
+
+    /// <summary>Keeps the label next to the pointer while the drag lasts; Windows chooses the cursor as usual.</summary>
+    private void OnGiveFeedback(object sender, GiveFeedbackEventArgs e)
+    {
+        if (_dragLabel is not null && NativeMethods.GetCursorPos(out var cursor))
+            _dragLabel.MoveTo(PointFromScreen(new Point(cursor.X, cursor.Y)));
+    }
+
     // ---- Renaming in place ----
 
     /// <summary>The field of the name being edited, when it has the focus.</summary>
@@ -909,19 +1022,30 @@ public partial class PanelView : UserControl
     /// <summary>The field closed: the focus goes back to the item, the tile or the topic.</summary>
     private void FocusAfterEdit() => Dispatcher.BeginInvoke(RestoreFocusIfLost, DispatcherPriority.Background);
 
-    // ---- Confirmations ----
+    // ---- Questions over the board: confirmations and «Sposta in…» ----
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(MainViewModel.Prompt))
+        if (e.PropertyName is not (nameof(MainViewModel.Prompt) or nameof(MainViewModel.Picker)))
             return;
-        if (ViewModel.Prompt is not null)
+        if (IsAsking)
             _focusBeforePrompt ??= Keyboard.FocusedElement;
+        // A question that just opened settles into place, the way Brace shows things.
+        if (e.PropertyName == nameof(MainViewModel.Prompt) && ViewModel.Prompt is not null)
+            Motion.Enter(PromptBox, slide: 6, scaleFrom: 0.97);
+        if (e.PropertyName == nameof(MainViewModel.Picker) && ViewModel.Picker is not null)
+            Motion.Enter(PickerBox, slide: 6, scaleFrom: 0.97);
         Dispatcher.BeginInvoke(FocusAfterPromptChange, DispatcherPriority.Input);
     }
 
     private void FocusAfterPromptChange()
     {
+        if (ViewModel.Picker is not null)
+        {
+            PickerFilter.Focus();
+            PickerFilter.SelectAll();
+            return;
+        }
         if (ViewModel.Prompt is { } prompt)
         {
             if (prompt.HasInput)
@@ -948,6 +1072,13 @@ public partial class PanelView : UserControl
             RestoreFocusIfLost();
     }
 
+    private void PickerList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Left && e.OriginalSource is DependencyObject source &&
+            ItemsControl.ContainerFromElement(PickerList, source) is ListBoxItem)
+            ViewModel.Picker?.ConfirmCommand.Execute(null);
+    }
+
     // ---- Menus and buttons ----
 
     private void Close_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);
@@ -959,6 +1090,10 @@ public partial class PanelView : UserControl
     private void NewTile_Click(object sender, RoutedEventArgs e) => ViewModel.NewTile();
 
     private void Undo_Click(object sender, RoutedEventArgs e) => ViewModel.Undo();
+
+    private void NoticeUndo_Click(object sender, RoutedEventArgs e) => ViewModel.Undo();
+
+    private void NoticeShow_Click(object sender, RoutedEventArgs e) => ViewModel.ShowNotice();
 
     private void BoardPaste_Click(object sender, RoutedEventArgs e)
     {
@@ -1017,6 +1152,12 @@ public partial class PanelView : UserControl
     {
         if (DataContextOf<ItemViewModel>(sender) is { } item)
             ViewModel.Reveal(item);
+    }
+
+    private void ItemMoveTo_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<ItemViewModel>(sender) is { } item)
+            ViewModel.AskDestination(TargetsOf(item).Select(target => target.Item.FullPath).ToList());
     }
 
     private void ItemCut_Click(object sender, RoutedEventArgs e)
