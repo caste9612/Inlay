@@ -619,6 +619,28 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
+    public void AColor_StaysOnTheTile_InTheMetadata_AndCtrlZTakesItBack() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var tile = viewModel.Tiles.Single(candidate => candidate.Title == "Documenti");
+
+        viewModel.SetTileColor(tile, "#FFA133");
+
+        Assert.Same(tile, viewModel.Tiles.Single(candidate => candidate.Title == "Documenti"));
+        Assert.Equal("#FFA133", tile.Color);
+        Assert.True(tile.HasColor);
+        Assert.Equal("#FFA133", MetadataStore.Load(_root).ColorOf("Lavoro/Documenti"));
+        Assert.Equal("Annulla il colore", viewModel.UndoLabel);
+
+        viewModel.Undo();
+
+        Assert.Null(tile.Color);
+        Assert.False(tile.HasColor);
+        Assert.Empty(MetadataStore.Load(_root).Folders);
+        Assert.Contains("senza colore", viewModel.Status);
+    });
+
+    [Fact]
     public void AMessageTypedLater_TakesTheButtonsAway() => StaThread.Run(() =>
     {
         using var viewModel = Open();

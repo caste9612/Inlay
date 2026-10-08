@@ -172,7 +172,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 ### Mouse: come sul desktop
 
-- Un clic seleziona; con `Ctrl` e `Maiusc` se ne selezionano altri, con `Ctrl` anche da riquadri diversi. Un clic sul vuoto deseleziona.
+- Un clic seleziona; con `Ctrl` e `Maiusc` se ne selezionano altri, con `Ctrl` anche da riquadri diversi. Un clic sul vuoto deseleziona; trascinando sul vuoto si disegna un rettangolo che seleziona quello che tocca, anche in più riquadri.
 - Doppio clic per aprire.
 - Un secondo clic lento su un elemento già selezionato lo rinomina. Mentre si scrive il nome, un clic altrove lo conferma.
 - Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Proprietà e Sposta nel Cestino. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
@@ -210,8 +210,9 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - **Fatto**: «Sposta in…» dal tasto destro manda la selezione nel riquadro o nell'argomento scelto per nome, con le destinazioni recenti in cima (tenute per PC in `%APPDATA%\Quiver\recenti.json`); «Invia a Quiver» nel menu «Invia a» di Explorer fa lo stesso con i file scelti lì, passandoli all'istanza aperta con `--sort`.
 - **Fatto**: annulla (`Ctrl+Z`) per spostamenti, copie, collegamenti, rinomine, nuove cartelle, ordine dei riquadri, promozioni ed eliminazioni. Quello che è andato nel Cestino torna al suo posto.
 - Menu contestuale completo di Windows (7-Zip e simili).
-- Riquadri con dimensione e colore personalizzati.
-- Selezione con il rettangolo, trascinando sul vuoto.
+- Riquadri con dimensione personalizzata.
+  - **Fatto**: il colore, scelto tra gli otto di Brace dal menu del riquadro, come striscia accanto al titolo; sta nei metadati e si annulla.
+- **Fatto**: selezione con il rettangolo, trascinando sul vuoto della bacheca, anche attraverso più riquadri; con `Ctrl` si aggiunge.
 - **Fatto**: aggiunta di collegamenti a programmi, cartelle esterne e siti:
   - trascinando: i programmi e quello che è in rete diventano collegamenti da soli, con `Alt` qualunque cosa;
   - con «Incolla collegamento» e con «Nuovo collegamento…», scrivendo un sito o un percorso;
@@ -305,8 +306,8 @@ Fatto:
 - con GlazeWM: verificato che il pannello non ha bisogno della regola `ignore`, e che la finestra Archivi resta libera perché non si ridimensiona;
 - dopo una lettura completa del codice (7 ottobre 2026): le icone di Windows su un thread dedicato, la ricarica a ogni apertura del pannello, il salvataggio atomico delle impostazioni e la ricarica che riconcilia i view model invece di sostituirli;
 - l'8 ottobre 2026, con il mouse al primo posto: «Sposta in…» dal tasto destro, «Invia a Quiver» in Explorer, i pulsanti Annulla e Mostra nella barra di stato, la comparsa animata del pannello e delle domande, la riga e l'etichetta durante i trascinamenti. Tutto verificato con i test e con le anteprime, non ancora dal vivo;
-- sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer.
+- sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo.
 
 1. Installare dall'installer, creare l'archivio e cominciare a svuotare il Desktop, pochi file alla volta, con «Sposta in…» e «Invia a Quiver».
-2. Provare dal vivo le impostazioni e l'installer, poi Quiver con GlazeWM: focus, più monitor.
-3. Il resto della v0.2, nell'ordine deciso il 7 ottobre 2026: il colore dei riquadri, con la tavolozza di Brace dal menu del riquadro, e la selezione a rettangolo. GlazeWM e gli aggiornamenti automatici restano per dopo.
+2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
+3. Della v0.2 restano il menu completo di Windows e la dimensione dei riquadri; poi la v0.3 con GlazeWM. Gli aggiornamenti automatici restano per dopo.

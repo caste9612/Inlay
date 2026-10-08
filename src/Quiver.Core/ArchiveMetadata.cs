@@ -43,6 +43,27 @@ public sealed class ArchiveMetadata
     /// <summary>Position of a tile on its board; null for tiles never moved, which follow in name order.</summary>
     public int? OrderOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Order : null;
 
+    /// <summary>The color of a tile, as "#RRGGBB"; null when it has none.</summary>
+    public string? ColorOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Color : null;
+
+    /// <summary>Gives a tile a color, or none.</summary>
+    /// <returns>Whether anything changed.</returns>
+    public bool SetColor(string relativeKey, string? color)
+    {
+        if (!Folders.TryGetValue(relativeKey, out var folder))
+        {
+            if (color is null)
+                return false;
+            Folders[relativeKey] = folder = new FolderMetadata();
+        }
+        if (string.Equals(folder.Color, color, StringComparison.OrdinalIgnoreCase))
+            return false;
+        folder.Color = color;
+        if (folder.IsEmpty)
+            Folders.Remove(relativeKey);
+        return true;
+    }
+
     /// <summary>Remembers the order of a board's tiles after one of them was moved.</summary>
     /// <returns>Whether anything changed.</returns>
     public bool SetTileOrder(IReadOnlyList<string> tileKeys)

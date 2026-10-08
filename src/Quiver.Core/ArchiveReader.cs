@@ -61,7 +61,10 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata, IReadOn
             tiles.Add(new Tile(GeneralTileTitle, folder.FullName, IsGeneral: true, looseFiles));
 
         foreach (var subfolder in TileFolders(folder))
-            tiles.Add(new Tile(subfolder.Name, subfolder.FullName, IsGeneral: false, ReadItems(subfolder)));
+        {
+            var color = metadata.ColorOf(ArchiveLayout.ToRelativeKey(Root, subfolder.FullName));
+            tiles.Add(new Tile(subfolder.Name, subfolder.FullName, IsGeneral: false, ReadItems(subfolder), color));
+        }
 
         return new Board(topic, tiles);
     }

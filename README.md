@@ -40,7 +40,7 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 
 `Alt+E` apre e chiude il pannello (la scorciatoia si cambia in **Impostazioni**). Dentro, si usa come il desktop.
 
-- **Selezionare**: un clic seleziona, `Ctrl`+clic e `Maiusc`+clic aggiungono altri elementi. Con `Ctrl` si sceglie anche da riquadri diversi. Un clic su uno spazio vuoto deseleziona.
+- **Selezionare**: un clic seleziona, `Ctrl`+clic e `Maiusc`+clic aggiungono altri elementi. Con `Ctrl` si sceglie anche da riquadri diversi. Un clic su uno spazio vuoto deseleziona. Trascinando sul vuoto della bacheca si disegna un rettangolo che seleziona quello che tocca, anche in più riquadri; con `Ctrl` si aggiunge alla selezione.
 - **Aprire**: doppio clic o `Invio`. `Ctrl+Invio` mostra l'elemento in Explorer.
 - **Rinominare**: `F2`, oppure un secondo clic, lento, su un elemento già selezionato. Il nome si modifica sul posto e, come in Explorer, i collegamenti non mostrano `.lnk` o `.url`. `Invio` conferma, `Esc` annulla e un clic altrove conferma.
 - **Eliminare**: `Canc` sposta nel Cestino. Per le cartelle Quiver chiede prima conferma.
@@ -72,6 +72,7 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 
   Come «Nuova cartella» sul desktop, il nuovo elemento nasce con il nome pronto da scrivere.
 - **Riquadri e argomenti**: dal menu di un riquadro puoi scegliere **Promuovi ad argomento**; da quello di un argomento annidato, **Riporta a riquadro**.
+- **Colore**: dal menu … di un riquadro, uno degli otto colori di Brace, o nessuno. Compare come una striscia accanto al titolo, resta nei metadati dell'archivio e `Ctrl+Z` lo toglie.
 - **Archivi**, come i vault di Obsidian: si aprono dal nome dell'archivio in alto nel pannello, o da **Archivi…** nel menu della tray.
   - Ogni archivio è una cartella normale; la cartella nascosta `.quiver` lo segna come archivio e ne tiene la disposizione.
   - Puoi crearne uno nuovo, usare come archivio una cartella che hai già, passare dall'uno all'altro, rinominarli e toglierli dall'elenco. Togliere dall'elenco non tocca i file.

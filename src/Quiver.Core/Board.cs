@@ -7,7 +7,8 @@ public sealed record Topic(string FullPath, string RelativePath, IReadOnlyList<T
 }
 
 /// <summary>A box on a topic's board: one subfolder, or the topic's loose files ("Generale").</summary>
-public sealed record Tile(string Title, string FolderPath, bool IsGeneral, IReadOnlyList<ArchiveItem> Items);
+/// <param name="Color">The color given to the tile, as "#RRGGBB"; null when it has none.</param>
+public sealed record Tile(string Title, string FolderPath, bool IsGeneral, IReadOnlyList<ArchiveItem> Items, string? Color = null);
 
 /// <summary>What the board shows for a topic.</summary>
 public sealed record Board(Topic Topic, IReadOnlyList<Tile> Tiles);

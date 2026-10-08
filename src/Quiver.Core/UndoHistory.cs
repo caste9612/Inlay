@@ -66,3 +66,6 @@ public sealed record TileOrderStep(IReadOnlyDictionary<string, int?> PreviousOrd
 
 /// <summary>A tile promoted to topic, or a topic made a tile again: undoing turns it back.</summary>
 public sealed record TopicStep(string Key, string Name, bool WasTopic) : UndoStep;
+
+/// <summary>A tile given a color, or none: undoing gives it back the color it had.</summary>
+public sealed record ColorStep(string Key, string Name, string? Previous) : UndoStep;

@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media;
+using Quiver.App.Views;
 using Quiver.Core;
 
 namespace Quiver.App.ViewModels;
@@ -13,6 +15,7 @@ public sealed partial class TileViewModel : RenameableViewModel
     {
         IsGeneral = tile.IsGeneral;
         RelativePath = tile.IsGeneral ? null : ArchiveLayout.ToRelativeKey(root, tile.FolderPath);
+        Color = tile.Color;
     }
 
     /// <summary>A tile that is not a subfolder of a topic, like the inbox.</summary>
@@ -36,11 +39,19 @@ public sealed partial class TileViewModel : RenameableViewModel
 
     public ObservableCollection<ItemViewModel> Items { get; }
 
+    /// <summary>The color given to the tile, as "#RRGGBB"; null when it has none.</summary>
+    public string? Color { get; private set; }
+
+    /// <summary>The stripe on the title, in the tile's color; null when it has none.</summary>
+    public Brush? ColorBrush => TileColors.BrushFor(Color);
+
+    public bool HasColor => ColorBrush is not null;
+
     public int Count => Items.Count;
 
     public bool IsEmpty => Items.Count == 0;
 
-    /// <summary>Only tiles that are a folder of their own can be moved, renamed, deleted or promoted.</summary>
+    /// <summary>Only tiles that are a folder of their own can be moved, renamed, deleted, colored or promoted.</summary>
     public bool IsOwnFolder => RelativePath is not null;
 
     /// <summary>What tells a tile from the others on its board: its folder, and whether it is the topic's own.</summary>
@@ -52,7 +63,16 @@ public sealed partial class TileViewModel : RenameableViewModel
 
     protected override bool RenamesFolder => true;
 
-    public void Update(Tile tile) => Update(tile.Title, tile.Items);
+    public void Update(Tile tile)
+    {
+        Update(tile.Title, tile.Items);
+        if (string.Equals(Color, tile.Color, StringComparison.OrdinalIgnoreCase))
+            return;
+        Color = tile.Color;
+        OnPropertyChanged(nameof(Color));
+        OnPropertyChanged(nameof(ColorBrush));
+        OnPropertyChanged(nameof(HasColor));
+    }
 
     /// <summary>The tile read again: the items still there keep their view models, selected or being renamed as they were.</summary>
     public void Update(string title, IReadOnlyList<ArchiveItem> items)

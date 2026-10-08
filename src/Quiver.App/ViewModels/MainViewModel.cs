@@ -157,6 +157,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         TileOrderStep => "Annulla lo spostamento del riquadro",
         TopicStep { WasTopic: false } => "Annulla «Promuovi ad argomento»",
         TopicStep => "Annulla «Riporta a riquadro»",
+        ColorStep => "Annulla il colore",
         _ => "Annulla",
     };
 
@@ -796,6 +797,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             new TopicStep(topic.Topic.RelativePath, topic.Name, WasTopic: true));
     }
 
+    /// <summary>Gives a tile a color of the palette, or none: a stripe on its title, kept in the metadata of the archive.</summary>
+    public void SetTileColor(TileViewModel tile, string? color)
+    {
+        if (tile.RelativePath is not { } key)
+            return;
+        var previous = LoadMetadata().ColorOf(key);
+        ChangeMetadata(metadata => metadata.SetColor(key, color), new ColorStep(key, tile.Title, previous));
+    }
+
     // ---- Undo ----
 
     /// <summary>Takes back the last thing done in Quiver, as Ctrl+Z does in Explorer.</summary>
@@ -818,9 +828,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             RecycleStep recycle => UndoRecycle(recycle),
             TileOrderStep order => UndoTileOrder(order),
             TopicStep topic => UndoTopic(topic),
+            ColorStep color => UndoColor(color),
             _ => throw new InvalidOperationException($"Unknown undo step {step.GetType().Name}"),
         };
         Reload();
+    }
+
+    private string UndoColor(ColorStep step)
+    {
+        if (!Directory.Exists(Path.Combine(_root, step.Key)))
+            return $"«{step.Name}» non c'è più.";
+        if (!UpdateMetadata(metadata => metadata.SetColor(step.Key, step.Previous)))
+            return Status;
+        return step.Previous is null ? $"«{step.Name}» è di nuovo senza colore." : $"«{step.Name}» ha di nuovo il colore di prima.";
     }
 
     /// <summary>The undo did not happen, most likely because a file is open in another program: Ctrl+Z can try again.</summary>

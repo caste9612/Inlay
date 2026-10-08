@@ -42,6 +42,12 @@ public partial class PanelView : UserControl
     private DragLabelAdorner? _dragLabel;
     private InsertionAdorner? _insertionLine;
 
+    // Selecting with a rectangle: where the press was, the rectangle on screen, and what Ctrl keeps selected.
+    private Point? _bandStart;
+    private SelectionBandAdorner? _band;
+    private HashSet<ItemViewModel>? _bandKept;
+    private bool _banding;
+
     // Where the keyboard focus was, to put it back when a reload replaces the element that had it.
     private bool _focusWasInTree;
     private string? _focusedTile;
@@ -376,6 +382,9 @@ public partial class PanelView : UserControl
     /// </summary>
     private void ItemList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // A rectangle selects in several tiles at once: its selections are not clicks.
+        if (_banding)
+            return;
         if (e.AddedItems.Count > 0 && sender is ListBox { IsKeyboardFocusWithin: true } source &&
             !Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
             UnselectAll(except: source);
@@ -535,6 +544,7 @@ public partial class PanelView : UserControl
 
     private void BoardArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        var additive = Keyboard.Modifiers == ModifierKeys.Control;
         if (Keyboard.Modifiers == ModifierKeys.None)
             UnselectAll();
         // Ctrl+V then pastes where the click was: in that tile, or on the board.
@@ -543,6 +553,89 @@ public partial class PanelView : UserControl
             list.Focus();
         else
             BoardArea.Focus();
+        // Dragged from here, the press draws a rectangle that selects what it touches, as on the desktop. Not from the
+        // title of a tile, which drags the tile, nor from a button or a scrollbar.
+        if (_pressedTile is null && e.OriginalSource is DependencyObject pressed &&
+            !IsInside<ButtonBase>(pressed) && !IsInside<ScrollBar>(pressed) && !IsInside<TextBox>(pressed))
+        {
+            _bandStart = e.GetPosition(BoardArea);
+            _bandKept = additive ? ViewModel.SelectedItems().ToHashSet() : null;
+        }
+    }
+
+    // ---- Selecting with a rectangle ----
+
+    private void BoardArea_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_bandStart is not { } start)
+            return;
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            EndBand();
+            return;
+        }
+        var current = e.GetPosition(BoardArea);
+        if (_band is null)
+        {
+            var moved = current - start;
+            if (Math.Abs(moved.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(moved.Y) < SystemParameters.MinimumVerticalDragDistance)
+                return;
+            if (AdornerLayer.GetAdornerLayer(BoardArea) is not { } layer)
+            {
+                _bandStart = null;
+                return;
+            }
+            _band = new SelectionBandAdorner(BoardArea, (Brush)FindResource("Brace.AccentSubtle"), (Brush)FindResource("Brace.Accent"));
+            layer.Add(_band);
+            BoardArea.CaptureMouse();
+        }
+        var band = new Rect(start, current);
+        _band.Show(band);
+        SelectInBand(band);
+    }
+
+    private void BoardArea_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => EndBand();
+
+    private void BoardArea_LostMouseCapture(object sender, MouseEventArgs e) => EndBand();
+
+    private void EndBand()
+    {
+        _bandStart = null;
+        _bandKept = null;
+        if (_band is null)
+            return;
+        var band = _band;
+        _band = null;
+        AdornerLayer.GetAdornerLayer(BoardArea)?.Remove(band);
+        if (BoardArea.IsMouseCaptured)
+            BoardArea.ReleaseMouseCapture();
+    }
+
+    /// <summary>Selects the rows the rectangle touches, in every tile; with Ctrl, those selected before stay.</summary>
+    private void SelectInBand(Rect band)
+    {
+        _banding = true;
+        try
+        {
+            foreach (var list in FindDescendants<ListBox>(BoardScroller))
+            {
+                // A tile scrolls its own rows: those out of its view are not on screen, and the rectangle cannot touch them.
+                var visible = new Rect(list.TranslatePoint(new Point(0, 0), BoardArea), new Size(list.ActualWidth, list.ActualHeight));
+                foreach (var item in list.Items.OfType<ItemViewModel>())
+                {
+                    if (list.ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement row)
+                        continue;
+                    var bounds = new Rect(row.TranslatePoint(new Point(0, 0), BoardArea), new Size(row.ActualWidth, row.ActualHeight));
+                    bounds.Intersect(visible);
+                    var touched = !bounds.IsEmpty && band.IntersectsWith(bounds);
+                    item.IsSelected = touched || (_bandKept?.Contains(item) ?? false);
+                }
+            }
+        }
+        finally
+        {
+            _banding = false;
+        }
     }
 
     private static ItemViewModel? ItemUnder(object list, object source) =>
@@ -1236,6 +1329,13 @@ public partial class PanelView : UserControl
     {
         if (DataContextOf<TileViewModel>(sender) is { } tile)
             ViewModel.PromoteTile(tile);
+    }
+
+    /// <summary>A color of the palette from the tile's menu; the entry without one takes the color away.</summary>
+    private void TileColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string tag } && DataContextOf<TileViewModel>(sender) is { IsOwnFolder: true } tile)
+            ViewModel.SetTileColor(tile, tag.Length > 0 ? tag : null);
     }
 
     private void TileRecycle_Click(object sender, RoutedEventArgs e)

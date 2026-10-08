@@ -25,6 +25,7 @@
         <views:NullToVisibilityConverter x:Key="NullToVisibility" />
         <views:BoolToVisibilityConverter x:Key="Visible" />
         <views:BoolToVisibilityConverter x:Key="Hidden" Invert="True" />
+        <views:SameColorConverter x:Key="SameColor" />
 
         <!-- Icon of a kind of thing (folder, topic): text-secondary, like br-tree-kind. -->
         <Style x:Key="Kind" TargetType="Path" BasedOn="{StaticResource Brace.Icon}">
@@ -130,6 +131,35 @@
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Promuovi ad argomento" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
+            <!-- The palette of Brace: a stripe on the title, kept with the archive. -->
+            <MenuItem Header="Colore" IsEnabled="{Binding IsOwnFolder}">
+                <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}}" />
+                <Separator />
+                <MenuItem Header="Ambra" Tag="#FFA133" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Viola" Tag="#B48CFF" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Verde" Tag="#36CFB0" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosso" Tag="#FF7272" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TileColor_Click" IsChecked="{Binding Color, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
             <Separator />
             <MenuItem Header="Sposta il riquadro nel Cestino" Style="{StaticResource Brace.MenuItem.Danger}" Click="TileRecycle_Click" IsEnabled="{Binding IsOwnFolder}">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
@@ -389,7 +419,8 @@
                             <Grid x:Name="BoardArea" Background="Transparent" ContextMenu="{StaticResource BoardMenu}"
                                   Focusable="True" FocusVisualStyle="{x:Null}" KeyboardNavigation.IsTabStop="False"
                                   AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop"
-                                  MouseLeftButtonDown="BoardArea_MouseLeftButtonDown">
+                                  MouseLeftButtonDown="BoardArea_MouseLeftButtonDown" MouseMove="BoardArea_MouseMove"
+                                  MouseLeftButtonUp="BoardArea_MouseLeftButtonUp" LostMouseCapture="BoardArea_LostMouseCapture">
                                 <TextBlock Margin="20,4,20,0" VerticalAlignment="Top" TextWrapping="Wrap"
                                            Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding EmptyMessage}" />
                                 <ScrollViewer x:Name="BoardScroller" Padding="20,0,20,20" Focusable="False"
@@ -408,6 +439,9 @@
                                                         <DockPanel Background="Transparent" ToolTip="Trascina il titolo per spostare il riquadro"
                                                                    PreviewMouseLeftButtonDown="TileHeader_PreviewMouseLeftButtonDown"
                                                                    PreviewMouseMove="TileHeader_PreviewMouseMove">
+                                                            <!-- The color of the tile, as a stripe before its title. -->
+                                                            <Border DockPanel.Dock="Left" Width="4" Margin="0,3,8,3" CornerRadius="2" Background="{Binding ColorBrush}"
+                                                                    Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
                                                             <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}"
                                                                     ToolTip="Azioni sul riquadro" AutomationProperties.Name="Azioni sul riquadro" Click="TileActions_Click">
                                                                 <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
