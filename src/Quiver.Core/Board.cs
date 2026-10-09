@@ -12,7 +12,7 @@ public sealed record Topic(string FullPath, string RelativePath, IReadOnlyList<T
     public string Name => Path.GetFileName(FullPath);
 }
 
-/// <summary>A box on a topic's board: one subfolder, or the topic's loose files ("Generale").</summary>
+/// <summary>A box on a topic's board: one subfolder, or the topic's loose files and the folders shown as rows ("Generale").</summary>
 /// <param name="Items">In the order the tile shows them: sorted, or as given by hand.</param>
 /// <param name="Color">The color given to the tile, as "#RRGGBB"; null when it has none.</param>
 /// <param name="Size">The size given to the tile; null for the usual one.</param>

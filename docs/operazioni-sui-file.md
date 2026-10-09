@@ -15,7 +15,7 @@ I principi da rispettare sono quelli di [PROGETTO.md §3](../PROGETTO.md#3-princ
 | `F2`, secondo clic lento | `BeginRename`, poi `CommitRename` o `CancelRename` |
 | nuovo riquadro, argomento, cartella, collegamento | `NewTile`, `NewTopic`, `NewFolder`, `AskNewLink` |
 | trascinare un riquadro, un argomento, delle righe | `MoveTile`, `MoveTopic`, `MoveItems` |
-| angolo del riquadro, «Ordina per», colore, promuovi | `ResizeTile`, `SortTile`, `SetSortDirection`, `SetTileColor`, `SetTopicColor`, `PromoteTile`, `DemoteTopic` |
+| angolo del riquadro, «Ordina per», colore, promuovi | `ResizeTile`, `SortTile`, `SetSortDirection`, `SetTileColor`, `SetTopicColor`, `PromoteTile`, `DemoteTopic`, `PromoteItem`, `DemoteTile` |
 | `Ctrl+Z`, «Annulla» su un avviso | `Undo`, `UndoFrom` |
 
 ## Il turno e il thread a parte
@@ -32,17 +32,18 @@ Spostamenti, copie, eliminazioni e annullamenti passano da `BeginFileWork(activi
 
 ## Spostare e copiare (`Transfer`)
 
-`Transfer(paths, destinationFolder, kind)` aspetta il turno, poi `TransferNow`:
+`Transfer(paths, destinationFolder, kind, foldersAsRows)` aspetta il turno, poi `TransferNow`:
 
 1. **La cartella di arrivo** viene creata se manca (`EnsureFolder`), per esempio se nel frattempo è stata tolta da Explorer.
 2. **I collegamenti** (`TransferKind.Link`) vanno a `CreateLinks` ([più sotto](#collegamenti)).
 3. **Lo spazio**: per le copie, e per gli spostamenti da un altro disco (Windows copia e poi cancella), `NotEnoughRoom` conta quanto occupano i file (`FolderSize`, lontano dal thread dell'interfaccia) e lo confronta con lo spazio libero (`DiskOf`). Se non ci stanno, un avviso lo dice e non si comincia.
-4. **Dove arriverà ogni elemento** (`landings`, per gli spostamenti): solo quelli il cui nome è libero nella destinazione. Se il nome è preso, l'utente sceglie nella finestra della shell cosa fare, quindi non si sa dove finirà l'elemento, e `Ctrl+Z` lo lascerà stare. Per le copie conta invece quello che compare di nuovo nella cartella (punto 8).
+4. **Dove arriverà ogni elemento** (`landings`, per gli spostamenti): solo quelli il cui nome è libero nella destinazione. Se il nome è preso, l'utente sceglie nella finestra della shell cosa fare, quindi non si sa dove finirà l'elemento, e `Ctrl+Z` lo lascerà stare. Per le copie conta invece quello che compare di nuovo nella cartella (punto 9).
 5. **I metadati delle cartelle che escono dall'archivio** vengono copiati prima (`SnapshotOf`), per ridarglieli se tornano con `Ctrl+Z`.
 6. **La shell** copia (con i nomi «- Copia» se la copia è nella stessa cartella dell'originale) o sposta.
 7. **I metadati seguono le cartelle spostate**: `FollowFolder` se sono ancora nell'archivio, `ForgetFolder` se ne sono uscite.
-8. **Il passo per annullare**: `MoveStep` con gli elementi che si sono davvero spostati; `CopyStep` con i nomi nuovi comparsi nella cartella che cominciano come un originale, compresa una copia tenuta con un nome come «Nome (2)». Se i nomi della cartella, prima o dopo, non si sono potuti leggere (`EntryNames` restituisce null), la copia non si annulla: le copie non si distinguerebbero da quello che c'era già.
-9. **L'avviso** (`Report`) dice cosa è successo, con **Annulla** e **Mostra**. Quello che è arrivato viene selezionato dopo la ricarica (`SelectAfterReload`), come in Explorer.
+8. **Le cartelle arrivate in un argomento diventano righe del suo «Generale»** (`MakeRows`, che le segna `"kind": "item"`): una cartella lasciata su un argomento si vede come una riga, non come un riquadro con tutto il suo contenuto. Restano come sono quelle che arrivano già argomenti o righe, e tutte quando `foldersAsRows` è falso: un riquadro preso per il titolo resta un riquadro, e un argomento spostato sotto un altro (`MoveTopic`) resta un argomento. Nella cartella di un riquadro, o fuori da un argomento, nessun segno.
+9. **Il passo per annullare**: `MoveStep` con gli elementi che si sono davvero spostati, ognuno con `BecameRow` se è diventato una riga; `CopyStep` con i nomi nuovi comparsi nella cartella che cominciano come un originale, compresa una copia tenuta con un nome come «Nome (2)». Se i nomi della cartella, prima o dopo, non si sono potuti leggere (`EntryNames` restituisce null), la copia non si annulla: le copie non si distinguerebbero da quello che c'era già.
+10. **L'avviso** (`Report`) dice cosa è successo, con **Annulla** e **Mostra**. Quello che è arrivato viene selezionato dopo la ricarica (`SelectAfterReload`), come in Explorer.
 
 Il tipo di operazione (spostare, copiare o collegare) lo decide chi chiama: per i trascinamenti `TransferRules.Choose`, per gli appunti il taglia o copia, per «Sposta in…» sempre spostare o collegare.
 
@@ -79,7 +80,7 @@ Allegati e messaggi di Outlook, link e immagini del browser non sono ancora file
 `NewTile`, `NewTopic` e `NewFolder` creano una cartella con un nome libero («Nuovo riquadro», «Nuovo argomento», «Nuova cartella»), registrano un `CreateStep` e cominciano subito la rinomina, come «Nuova cartella» sul desktop.
 
 - Un argomento dentro un altro va segnato nei metadati (`SetTopic`); nella radice no, perché lo è già.
-- Una cartella chiesta in «Generale» diventa un riquadro nuovo del suo argomento, perché «Generale» contiene i file sciolti dell'argomento. Sulla tela è l'argomento della zona, non per forza quello scelto nella barra laterale.
+- Una cartella chiesta in «Generale» nasce nella cartella del suo argomento come una delle sue righe (`SetItem`), non come un riquadro. Sulla tela è l'argomento della zona, non per forza quello scelto nella barra laterale.
 
 ## Rinominare
 
@@ -92,7 +93,7 @@ Allegati e messaggi di Outlook, link e immagini del browser non sono ancora file
 ## I metadati che seguono
 
 - **`UpdateMetadata(change)`** legge `archive.json` dal disco, applica il cambiamento e salva solo se è cambiato qualcosa. Non c'è una copia in memoria da tenere allineata: ogni cambiamento parte dal file. Se il file non si può scrivere, un avviso lo dice.
-- **`ChangeMetadata(change, step)`** serve alle operazioni che toccano solo i metadati (ordine, misura, ordinamento, colore, promozione): registra il passo solo se è cambiato qualcosa, poi ricarica.
+- **`ChangeMetadata(change, step)`** serve alle operazioni che toccano solo i metadati (ordine, misura, ordinamento, colore, promozione, righe di «Generale»): registra il passo solo se è cambiato qualcosa, poi ricarica.
 - **Le regole**: una cartella rinominata o spostata dentro l'archivio porta con sé le sue voci (`FollowFolder` → `MoveFolder`); una cartella eliminata o uscita dall'archivio le perde (`ForgetFolder` → `RemoveFolder`), ma il passo per annullare ne tiene una copia. Anche l'argomento scelto segue la sua cartella (`FollowSelection`), o passa al genitore (`ForgetSelection`).
 - **I colori degli argomenti nuovi** si danno a ogni ricarica (`TopicColors.AssignMissing`) e si scrivono nell'archivio, tranne nelle anteprime e nelle misure (`readOnly`), che li mostrano soltanto.
 
@@ -104,14 +105,14 @@ Allegati e messaggi di Outlook, link e immagini del browser non sono ancora file
 
 | Passo | Come si annulla |
 |---|---|
-| `MoveStep` | rimette con `MoveEach` solo gli elementi che sono ancora dove erano arrivati e il cui posto di prima è libero; i metadati tornano indietro (`FollowBack`) |
+| `MoveStep` | rimette con `MoveEach` solo gli elementi che sono ancora dove erano arrivati e il cui posto di prima è libero; i metadati tornano indietro (`FollowBack`), e una cartella diventata riga arrivando torna quello che era |
 | `TopicMoveStep` | come lo spostamento, poi ridà all'argomento il posto che aveva tra gli altri |
 | `CopyStep`, `LinkStep` | manda nel Cestino le copie o i collegamenti che ci sono ancora; si rifiuta se un disco non ha il Cestino, perché lì eliminare sarebbe per sempre |
 | `RenameStep` | rinomina di nuovo, se il nome di prima è libero |
 | `CreateStep` | toglie la cartella, solo se è ancora vuota |
 | `RecycleStep` | rimette gli elementi dal Cestino (`RecycleBin.TryRestore`), prima le cartelle e poi il loro contenuto, avvisa Explorer e ridà i metadati |
 | `TileOrderStep`, `TopicOrderStep` | ridà a ogni riquadro o argomento che c'è ancora il posto di prima |
-| `TopicStep`, `ColorStep`, `ArrangeStep`, `SizeStep` | rimette nei metadati quello che c'era, se la cartella c'è ancora |
+| `TopicStep`, `ItemStep`, `ColorStep`, `ArrangeStep`, `SizeStep` | rimette nei metadati quello che c'era, se la cartella c'è ancora |
 
 Le garanzie:
 
@@ -140,9 +141,9 @@ Le destinazioni sono i riquadri, lo sfondo della bacheca (la cartella dell'argom
 
 1. **Un argomento** (`PlanTopicDrop`): sul 30 % alto di una riga va prima di quell'argomento, sul 30 % basso dopo (e dopo tutto quello che c'è aperto sotto), nel 40 % centrale ci entra dentro. Sulla parte vuota della barra va in fondo agli argomenti della radice. Non può andare dentro se stesso né dentro un suo sotto-argomento (`MainViewModel.CanGoUnder`). Poi `MoveTopic`: tra gli stessi argomenti cambia solo l'ordine; sotto un altro argomento la cartella si sposta, resta un argomento, e un nome già preso lì viene rifiutato invece di unire le due cartelle.
 2. **La parte vuota della barra laterale** accetta solo argomenti.
-3. **Un riquadro preso per il titolo**, lasciato sullo sfondo o su un riquadro accanto, cambia posto (`MoveTile`): sullo sfondo va in fondo, su un altro riquadro va prima di lui. Su un riquadro di un'altra zona della tela non fa niente: smistare tra argomenti diversi sulla tela è la fase 2. Lasciato su un argomento della barra, invece, conta come cartella e ci viene spostato dentro (punto 5).
+3. **Un riquadro preso per il titolo**, lasciato sullo sfondo o su un riquadro accanto, cambia posto (`MoveTile`): sullo sfondo va in fondo, su un altro riquadro va prima di lui. Su un riquadro di un'altra zona della tela non fa niente: smistare tra argomenti diversi sulla tela è la fase 2. Lasciato su un argomento della barra, invece, conta come cartella e ci viene spostato dentro (punto 5), e lì resta un riquadro.
 4. **Righe lasciate nel loro stesso riquadro**, senza `Ctrl` né `Alt`, cambiano posto (`MoveItems`, ordine a mano): vanno prima della riga sotto il puntatore, o dopo l'ultima in vista.
-5. **File** (`FileDrop`): la destinazione è la cartella del riquadro, dell'argomento o della bacheca. Il tipo di operazione lo decide `TransferRules.Choose` con i tasti tenuti premuti; senza tasti, quello che ha un suo posto diventa un collegamento (`preferLink`). Se il programma da cui arrivano i file non permette quell'effetto, si ripiega sulla copia, o su niente.
+5. **File** (`FileDrop`): la destinazione è la cartella del riquadro, dell'argomento o della bacheca. Il tipo di operazione lo decide `TransferRules.Choose` con i tasti tenuti premuti; senza tasti, quello che ha un suo posto diventa un collegamento (`preferLink`). Le cartelle che arrivano in un argomento diventano righe di «Generale», tranne un riquadro preso per il titolo (`FoldersAsRows`). Se il programma da cui arrivano i file non permette quell'effetto, si ripiega sulla copia, o su niente.
 6. **File che non sono ancora file** (allegati, link del browser, senza `FileDrop` ma con `FileGroupDescriptorW`): `SaveDropped`, come una copia.
 
 ### Durante e alla fine

@@ -1,6 +1,6 @@
 # Quiver — documento di progetto
 
-*Stato: versione 0.3.2, release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano»; con la 0.2.2 il Desktop vero è stato svuotato nell'archivio. Dalla 0.2.3 le operazioni sui file in un thread a parte, la misura e l'ordine dei riquadri, gli argomenti trascinabili. Dalla 0.3.0 la tela (fasi 0 e 1), i colori degli argomenti, la barra di stato come in Explorer, gli avvisi e il controllo dello spazio su disco; dalla 0.3.1 la barra degli argomenti richiudibile. Dopo la 0.3.2 «Da smistare» è stato tolto. Il codice è descritto in `docs/`. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 10 ottobre 2026.*
+*Stato: versione 0.3.2, release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano»; con la 0.2.2 il Desktop vero è stato svuotato nell'archivio. Dalla 0.2.3 le operazioni sui file in un thread a parte, la misura e l'ordine dei riquadri, gli argomenti trascinabili. Dalla 0.3.0 la tela (fasi 0 e 1), i colori degli argomenti, la barra di stato come in Explorer, gli avvisi e il controllo dello spazio su disco; dalla 0.3.1 la barra degli argomenti richiudibile. Dopo la 0.3.2 «Da smistare» è stato tolto, e una cartella lasciata su un argomento è una riga di «Generale». Il codice è descritto in `docs/`. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 10 ottobre 2026.*
 
 ## 1. Il problema
 
@@ -59,6 +59,7 @@ D:\Archivio\
 │  │  │  │  └─ Commessa 2026\   ← elemento cartella
 │  │  │  ├─ Programmi\          ← riquadro
 │  │  │  │  └─ SolidWorks.lnk   ← programma (collegamento)
+│  │  │  ├─ Foto\               ← cartella lasciata sull'argomento: riga di "Generale"
 │  │  │  └─ Note.md             ← file sciolto: riquadro "Generale"
 │  │  └─ Bianchi\
 │  └─ Interni\
@@ -71,8 +72,8 @@ D:\Archivio\
 ### Regole (albero libero)
 
 - **Argomento**: una cartella che compare nel menu laterale. Le cartelle direttamente nella radice sono argomenti. Più in basso una cartella diventa argomento solo se la si "promuove". Gli argomenti si annidano su quanti livelli si vuole (Lavoro → Clienti → Rossi).
-- **Riquadro**: ogni altra sottocartella di un argomento. Compare come riquadro sulla bacheca dell'argomento. Una cartella creata da Explorer è un riquadro finché non la si promuove ad argomento.
-- **Generale**: riquadro automatico con i file sciolti che stanno direttamente nella cartella dell'argomento.
+- **Riquadro**: ogni altra sottocartella di un argomento, tranne quelle che stanno in «Generale». Compare come riquadro sulla bacheca dell'argomento. Una cartella creata da Explorer è un riquadro finché non la si promuove ad argomento.
+- **Generale**: riquadro automatico con i file sciolti che stanno direttamente nella cartella dell'argomento, e con le cartelle che ci stanno come righe: quelle lasciate, incollate o mandate con «Sposta in…» sull'argomento, quelle create in «Generale» e i riquadri messi lì con «Metti in Generale». «Promuovi a riquadro» ne fa di nuovo un riquadro; le cartelle non si spostano, cambia solo come Quiver le mostra.
 - **Elemento**: tutto ciò che sta dentro un riquadro: file, cartelle (si aprono in Explorer, in seguito anche dentro l'app) e collegamenti.
 - Un argomento che contiene solo sotto-argomenti mostra sulla bacheca le loro schede, per navigarci dentro.
 - I file lasciati direttamente nella radice non sono in nessun argomento: la barra di stato dice quanti sono, e la ricerca li trova.
@@ -105,12 +106,14 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
     "Lavoro/Clienti/Bianchi":         { "kind": "topic" },
     "Lavoro/Interni":                 { "kind": "topic", "order": 1 },
     "Lavoro/Clienti/Rossi/Documenti": { "size": { "columns": 2, "rows": 12 }, "sort": { "key": "modified", "descending": true } },
-    "Lavoro/Clienti/Rossi/Programmi": { "order": 0, "color": "#5DA9FF", "items": ["SolidWorks.lnk", "TeamViewer.lnk"] }
+    "Lavoro/Clienti/Rossi/Programmi": { "order": 0, "color": "#5DA9FF", "items": ["SolidWorks.lnk", "TeamViewer.lnk"] },
+    "Lavoro/Clienti/Rossi/Foto":      { "kind": "item" }
   }
 }
 ```
 
 - `"kind": "topic"` serve solo sotto il primo livello, perché le cartelle nella radice sono già argomenti.
+- `"kind": "item"`: una cartella di un argomento che sta in «Generale» come riga, invece di essere un riquadro. Una cartella è argomento, riga o riquadro, mai due cose insieme.
 - `"order"`: il posto di un riquadro nella sua bacheca, o di un argomento tra quelli accanto, dato trascinandolo. Chi non ce l'ha segue in ordine di nome.
 - `"size"`: le colonne della bacheca che il riquadro occupa (da 1 a 3) e le righe che mostra prima di scorrere (da 2 a 40; senza, segue i suoi elementi fino a circa dieci).
 - `"sort"`: come sono ordinati gli elementi del riquadro: per nome (`name`, quello di sempre, che non ha bisogno di voce), data di modifica (`modified`), tipo (`type`) o dimensione (`size`), ognuno nei due versi. Le cartelle vengono prima, come in Explorer.
@@ -201,6 +204,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - Drag & drop:
   - in entrata, da Explorer, dalla posta (allegati e messaggi di Outlook) o dal browser (link e immagini);
   - tra riquadri e argomenti: tenendo fermo l'elemento sopra un argomento, l'argomento si apre e lo si lascia nel riquadro giusto;
+  - una cartella lasciata su un argomento diventa una riga del suo «Generale», non un riquadro con tutto il suo contenuto; un riquadro preso per il titolo e lasciato su un altro argomento resta un riquadro;
   - in uscita, per esempio per allegare un file a una mail;
   - i riquadri si riordinano trascinandoli per il titolo; al passaggio del mouse una maniglia a puntini mostra dove prenderli;
   - gli elementi si mettono nell'ordine voluto trascinandoli dentro il loro riquadro;
@@ -354,7 +358,8 @@ Fatto:
 - subito dopo, su richiesta: i colori degli argomenti, dati una volta da Quiver e tenuti nell'archivio, nella barra laterale e sulla tela; la barra di stato come in Explorer, con la selezione, lo spazio libero e i tasti da sapere sotto **?**; esiti e problemi in avvisi in basso a destra; quanto occupa ogni archivio in Impostazioni, e il controllo dello spazio prima di copiare. Verificato con i test e con le anteprime, non ancora dal vivo;
 - l'8 ottobre, dopo la 0.3.0: il tasto destro sugli argomenti di nuovo funzionante e la barra degli argomenti richiudibile con `Ctrl+B` (0.3.1); sulla tela, i nomi degli elementi nei riquadri visti a metà strada (0.3.2);
 - il 9 e il 10 ottobre: la documentazione del codice in `docs/`, scritta leggendo tutto il codice e poi controllata contro di esso, e le correzioni trovate così. Il **?** dice la scorciatoia in uso, non sempre `Alt+E`; un `settings.json` rovinato viene messo da parte invece di andare perso; la copia di un archivio su un altro disco non blocca più Quiver; una copia fatta in una cartella di cui non si leggono i nomi non si annulla più, perché `Ctrl+Z` avrebbe mandato nel Cestino anche quello che c'era già; sulla tela, una cartella nuova nel «Generale» di una zona va nel suo argomento. Verificato con i test, non ancora dal vivo;
-- il 10 ottobre, su richiesta: tolto «Da smistare», con il Desktop e Download (anche dalla ricerca) e la pagina delle impostazioni. I file sciolti nella radice li segnala la barra di stato, con un clic per aprirla in Explorer; una cartella `_Da smistare` è un argomento come gli altri. Verificato con i test e con le anteprime, non ancora dal vivo.
+- il 10 ottobre, su richiesta: tolto «Da smistare», con il Desktop e Download (anche dalla ricerca) e la pagina delle impostazioni. I file sciolti nella radice li segnala la barra di stato, con un clic per aprirla in Explorer; una cartella `_Da smistare` è un argomento come gli altri. Verificato con i test e con le anteprime, non ancora dal vivo;
+- sempre il 10 ottobre, su richiesta: una cartella lasciata su un argomento (o incollata, o mandata con «Sposta in…») diventa una riga del suo «Generale», invece di un riquadro che ne mostra tutto il contenuto. «Promuovi a riquadro» e «Metti in Generale» passano dall'una all'altro, e «Nuova cartella» in «Generale» fa una riga. Le cartelle restano dove sono: lo dice `"kind": "item"` nei metadati. Verificato con i test e con le anteprime, non ancora dal vivo.
 
 1. Provare dal vivo la 0.2.3: le copie lunghe, gli argomenti trascinati, l'angolo dei riquadri, «Ordina per» e l'ordine a mano.
 2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor. E la copia di un archivio su un altro disco, che ora lascia Quiver usabile.

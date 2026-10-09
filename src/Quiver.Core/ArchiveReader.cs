@@ -9,7 +9,8 @@ public sealed record Destination(string Title, string FullPath, string RelativeK
 
 /// <summary>
 /// Reads the archive following Quiver's rules: folders in the root are topics; deeper folders are topics
-/// only when marked in the metadata, otherwise they are tiles on their parent topic's board.
+/// only when marked in the metadata, otherwise they are tiles on their parent topic's board, or rows of its
+/// «Generale» when marked so.
 /// </summary>
 public sealed class ArchiveReader(string root, ArchiveMetadata metadata)
 {
@@ -32,14 +33,16 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata)
     public Board ReadBoard(Topic topic)
     {
         var folder = new DirectoryInfo(topic.FullPath);
+        var subfolders = Directories(folder);
         var tiles = new List<Tile>();
 
-        // "Generale" goes by the topic's own key: it holds the files of the topic's folder.
-        var looseFiles = Files(folder).Select(ArchiveItem.From).ToList();
-        if (looseFiles.Count > 0)
-            tiles.Add(ReadTile(GeneralTileTitle, folder.FullName, isGeneral: true, looseFiles, color: null));
+        // "Generale" goes by the topic's own key: it holds the files of the topic's folder, and the folders shown as its
+        // rows, like one dropped on the topic. Folders first, as in every tile.
+        List<ArchiveItem> general = [.. subfolders.Where(IsMarkedItem).Select(ArchiveItem.From), .. Files(folder).Select(ArchiveItem.From)];
+        if (general.Count > 0)
+            tiles.Add(ReadTile(GeneralTileTitle, folder.FullName, isGeneral: true, general, color: null));
 
-        foreach (var subfolder in TileFolders(folder))
+        foreach (var subfolder in TilesAmong(subfolders))
         {
             var color = metadata.ChosenColorOf(ArchiveLayout.ToRelativeKey(Root, subfolder.FullName));
             tiles.Add(ReadTile(subfolder.Name, subfolder.FullName, isGeneral: false, ReadItems(subfolder), color));
@@ -92,11 +95,17 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata)
     }
 
     /// <summary>The subfolders of a topic that are its tiles, in the order of its board.</summary>
-    private IEnumerable<DirectoryInfo> TileFolders(DirectoryInfo topicFolder) =>
-        InOrder(Directories(topicFolder).Where(sub => !IsMarkedTopic(sub)));
+    private IEnumerable<DirectoryInfo> TileFolders(DirectoryInfo topicFolder) => TilesAmong(Directories(topicFolder));
+
+    /// <summary>The subfolders of a topic that are neither topics nor rows of «Generale», in the order of its board.</summary>
+    private IEnumerable<DirectoryInfo> TilesAmong(IEnumerable<DirectoryInfo> subfolders) =>
+        InOrder(subfolders.Where(sub => !IsMarkedTopic(sub) && !IsMarkedItem(sub)));
 
     private bool IsMarkedTopic(DirectoryInfo folder) =>
         metadata.IsTopic(ArchiveLayout.ToRelativeKey(Root, folder.FullName));
+
+    private bool IsMarkedItem(DirectoryInfo folder) =>
+        metadata.IsItem(ArchiveLayout.ToRelativeKey(Root, folder.FullName));
 
     /// <summary>Folders first, then files, like Explorer.</summary>
     private static List<ArchiveItem> ReadItems(DirectoryInfo folder) =>

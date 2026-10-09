@@ -103,8 +103,8 @@ Sono risorse di `PanelView.xaml` con `x:Shared="False"`. `ItemMenu`, `TileMenu` 
 
 | Menu | Voci |
 |---|---|
-| `ItemMenu`, elemento | Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Proprietà, Sposta nel Cestino |
-| `TileMenu`, riquadro | Incolla, Incolla collegamento, Nuova cartella, Nuovo collegamento…, Apri in Explorer, Rinomina riquadro, Promuovi ad argomento, Colore, Ordina per, Misura automatica, Sposta il riquadro nel Cestino |
+| `ItemMenu`, elemento | Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Promuovi a riquadro (solo per le cartelle di «Generale», `CanBecomeTile`), Proprietà, Sposta nel Cestino |
+| `TileMenu`, riquadro | Incolla, Incolla collegamento, Nuova cartella, Nuovo collegamento…, Apri in Explorer, Rinomina riquadro, Promuovi ad argomento, Metti in Generale, Colore, Ordina per, Misura automatica, Sposta il riquadro nel Cestino |
 | `TopicMenu`, argomento | Apri in Explorer, Incolla qui, Incolla collegamento qui, Nuovo riquadro, Nuovo argomento qui dentro, Rinomina, Riporta a riquadro, Colore (con Automatico e Nessuno), Sposta nel Cestino |
 | `BoardMenu`, bacheca | Annulla (con l'etichetta di `UndoLabel`), Nuovo riquadro, Nuovo collegamento…, Incolla, Incolla collegamento, Apri in Explorer |
 

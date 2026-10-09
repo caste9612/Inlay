@@ -69,6 +69,38 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
+    public void AFolderIsATopicOrARowOfGenerale_NeverBoth_AndEachMarkGoesOnlyByItsOwnName()
+    {
+        var metadata = new ArchiveMetadata();
+
+        Assert.True(metadata.SetItem("A/B", true));
+        Assert.False(metadata.SetItem("a/b", true));
+        // Taking away the mark of a topic leaves a row as it is.
+        Assert.False(metadata.SetTopic("A/B", false));
+        Assert.True(metadata.IsItem("A/B"));
+
+        Assert.True(metadata.SetTopic("A/B", true));
+        Assert.False(metadata.IsItem("A/B"));
+        Assert.False(metadata.SetItem("A/B", false));
+        Assert.True(metadata.IsTopic("A/B"));
+
+        Assert.True(metadata.SetTopic("A/B", false));
+        Assert.Empty(metadata.Folders);
+    }
+
+    [Fact]
+    public void ARowOfGenerale_IsSavedAsAnItem()
+    {
+        var metadata = new ArchiveMetadata();
+        metadata.SetItem("Lavoro/Foto", true);
+
+        MetadataStore.Save(_archive.Root, metadata);
+
+        Assert.Contains("\"kind\": \"item\"", File.ReadAllText(MetadataStore.GetPath(_archive.Root)));
+        Assert.True(MetadataStore.Load(_archive.Root).IsItem("lavoro/foto"));
+    }
+
+    [Fact]
     public void MovingAFolder_CarriesItsEntriesAndThoseBelowIt()
     {
         var metadata = new ArchiveMetadata();

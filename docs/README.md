@@ -44,7 +44,8 @@ L'interfaccia e i documenti parlano italiano, il codice inglese. Le parole sono 
 | argomento | `Topic`, `TopicViewModel` | una cartella nella barra laterale: quelle della radice, e quelle segnate `"kind": "topic"` |
 | sotto-argomento | `Topic.Children` | un argomento dentro un altro |
 | riquadro | `Tile`, `TileViewModel` | una sottocartella di un argomento, sulla sua bacheca |
-| «Generale» | `Tile.IsGeneral` | il riquadro con i file sciolti dell'argomento |
+| «Generale» | `Tile.IsGeneral` | il riquadro con i file sciolti dell'argomento e le cartelle che ci stanno come righe |
+| riga di «Generale» | `"kind": "item"`, `IsItem`, `CanBecomeTile` | una cartella di un argomento mostrata in «Generale» invece che come riquadro, come una lasciata sull'argomento |
 | elemento | `ArchiveItem`, `ItemViewModel` | un file, una cartella o un collegamento dentro un riquadro |
 | bacheca | `Board`, `MainViewModel.Tiles` | i riquadri di un argomento |
 | tela | canvas, `CanvasViewModel`, `CanvasSurface` | tutto l'archivio su una superficie da zoomare |

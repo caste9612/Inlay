@@ -155,19 +155,23 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
-    public void ANewFolderInGenerale_IsANewTile() => StaThread.Run(() =>
+    public void ANewFolderInGenerale_IsOneOfItsRows_WithItsNameReadyToType() => StaThread.Run(() =>
     {
         AddFile("Lavoro/Promemoria.txt");
         using var viewModel = Open();
 
         viewModel.NewFolder(viewModel.Tiles.Single(tile => tile.IsGeneral));
 
-        var tile = Assert.Single(viewModel.Tiles, tile => tile.IsEditing);
-        Assert.Equal("Nuovo riquadro", tile.Title);
+        var folder = Assert.Single(viewModel.SelectedItems());
+        Assert.Equal("Nuova cartella", folder.Name);
+        Assert.True(folder.IsEditing);
+        Assert.True(folder.CanBecomeTile);
+        Assert.Equal(["Nuova cartella", "Promemoria.txt"], viewModel.Tiles.Single(tile => tile.IsGeneral).Items.Select(item => item.Name));
+        Assert.Equal(["Generale", "Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
     });
 
     [Fact]
-    public void OnTheCanvas_ANewFolderInGenerale_IsANewTileOfItsZone_NotOfTheTopicInTheSidebar() => StaThread.Run(() =>
+    public void OnTheCanvas_ANewFolderInGenerale_IsARowOfItsZone_NotOfTheTopicInTheSidebar() => StaThread.Run(() =>
     {
         AddFile("Personale/Promemoria.txt");
         using var viewModel = Open();
@@ -177,10 +181,118 @@ public sealed class MainViewModelTests : IDisposable
 
         viewModel.NewFolder(general);
 
-        var created = Path.Combine(_root, "Personale", "Nuovo riquadro");
+        var created = Path.Combine(_root, "Personale", "Nuova cartella");
         Assert.True(Directory.Exists(created));
-        Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuovo riquadro")));
-        Assert.Equal(created, Assert.Single(viewModel.ShownTiles, tile => tile.IsEditing).FolderPath);
+        Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuova cartella")));
+        var row = Assert.Single(viewModel.SelectedItems());
+        Assert.Equal(created, row.Item.FullPath);
+        Assert.True(row.IsEditing);
+        Assert.Contains(row, viewModel.Canvas.Zones.Single(zone => zone.Key == "Personale").Tiles.Single(tile => tile.IsGeneral).Items);
+    });
+
+    // ---- Folders arriving in a topic: rows of «Generale» ----
+
+    [Fact]
+    public void AFolderDroppedOnATopic_IsARowOfItsGenerale_AndCtrlZPutsItBackATile() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var documents = Path.Combine(_root, "Lavoro", "Documenti");
+
+        viewModel.Transfer([documents], Path.Combine(_root, "Personale"), TransferKind.Move);
+
+        viewModel.SelectTopicByPath("Personale");
+        Assert.Equal(["Generale", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
+        var row = Assert.Single(viewModel.Tiles[0].Items);
+        Assert.Equal("Documenti", row.Name);
+        Assert.True(row.CanBecomeTile);
+
+        viewModel.Undo();
+
+        Assert.True(Directory.Exists(documents));
+        var metadata = MetadataStore.Load(_root);
+        Assert.False(metadata.IsItem("Lavoro/Documenti"));
+        Assert.DoesNotContain("Personale/Documenti", metadata.Folders.Keys);
+        viewModel.SelectTopicByPath("Lavoro");
+        Assert.Equal(["Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
+    });
+
+    [Fact]
+    public void AFolderCopiedFromOutside_IsARowOfTheTopicItLandsIn() => StaThread.Run(() =>
+    {
+        var outside = Directory.CreateDirectory(_root + "-fuori").FullName;
+        try
+        {
+            var photos = Directory.CreateDirectory(Path.Combine(outside, "Foto")).FullName;
+            File.WriteAllText(Path.Combine(photos, "mare.jpg"), "");
+            using var viewModel = Open();
+
+            viewModel.Transfer([photos], Path.Combine(_root, "Lavoro"), TransferKind.Copy);
+
+            Assert.Equal(["Foto"], viewModel.Tiles.Single(tile => tile.IsGeneral).Items.Select(item => item.Name));
+            Assert.Equal(["Generale", "Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
+            Assert.True(MetadataStore.Load(_root).IsItem("Lavoro/Foto"));
+        }
+        finally
+        {
+            Directory.Delete(outside, recursive: true);
+        }
+    });
+
+    [Fact]
+    public void ATileDraggedByItsTitle_StaysATile_AndAFolderDroppedOnATile_IsOneOfItsItems() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+
+        viewModel.Transfer([Path.Combine(_root, "Lavoro", "Documenti")], Path.Combine(_root, "Personale"), TransferKind.Move, foldersAsRows: false);
+        viewModel.Transfer([Path.Combine(_root, "Lavoro", "Archivio")], Path.Combine(_root, "Personale", "Casa"), TransferKind.Move);
+
+        viewModel.SelectTopicByPath("Personale");
+        Assert.Equal(["Casa", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["Archivio", "bollette.csv"], viewModel.Tiles[0].Items.Select(item => item.Name));
+        Assert.DoesNotContain(MetadataStore.Load(_root).Folders.Values, folder => folder.Kind == ArchiveMetadata.ItemKind);
+    });
+
+    [Fact]
+    public void ARowPromotedToTile_AndATilePutInGenerale_TurnBackWithCtrlZ() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        viewModel.Transfer([Path.Combine(_root, "Lavoro", "Archivio")], Path.Combine(_root, "Personale"), TransferKind.Move);
+        viewModel.SelectTopicByPath("Personale");
+
+        viewModel.PromoteItem(Assert.Single(viewModel.Tiles.Single(tile => tile.IsGeneral).Items));
+
+        Assert.Equal(["Archivio", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal("Annulla «Promuovi a riquadro»", viewModel.UndoLabel);
+
+        viewModel.DemoteTile(viewModel.Tiles.Single(tile => tile.Title == "Casa"));
+
+        Assert.Equal(["Generale", "Archivio"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["Casa"], viewModel.SelectedItems().Select(item => item.Name));
+        Assert.Equal("Annulla «Metti in Generale»", viewModel.UndoLabel);
+
+        viewModel.Undo();
+        Assert.Equal(["Archivio", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
+
+        viewModel.Undo();
+        Assert.Equal(["Generale", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["Archivio"], viewModel.Tiles[0].Items.Select(item => item.Name));
+    });
+
+    [Fact]
+    public void ARowMovedToAnotherTopic_StaysARow_AlsoWhenCtrlZBringsItBack() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var archive = Path.Combine(_root, "Lavoro", "Archivio");
+        viewModel.DemoteTile(viewModel.Tiles.Single(tile => tile.Title == "Archivio"));
+
+        viewModel.Transfer([archive], Path.Combine(_root, "Personale"), TransferKind.Move);
+        Assert.True(MetadataStore.Load(_root).IsItem("Personale/Archivio"));
+
+        viewModel.Undo();
+
+        Assert.True(Directory.Exists(archive));
+        Assert.True(MetadataStore.Load(_root).IsItem("Lavoro/Archivio"));
+        Assert.Equal(["Generale", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
     });
 
     [Fact]

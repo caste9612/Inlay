@@ -24,6 +24,9 @@ public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
 
     public ArchiveItem Item { get; private set; } = item;
 
+    /// <summary>A folder shown as a row of «Generale», like one dropped on its topic: «Promuovi a riquadro» gives it a tile.</summary>
+    public bool CanBecomeTile { get; init; }
+
     public string Name => Item.DisplayName;
 
     public string DateText => DateLabel.For(Item.Modified);

@@ -57,10 +57,11 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo
 - **Tasto destro**: Apri con…, Sposta in…, Copia percorso, Proprietà (anche con `Alt+Invio`) e le altre azioni.
 - **Trascinare**:
   - un file su un riquadro o su un argomento lo sposta lì. Come in Explorer, tra dischi diversi viene copiato; con `Ctrl` copi, con `Maiusc` sposti, con `Alt` (o `Ctrl+Maiusc`) crei un collegamento;
+  - una cartella lasciata su un argomento diventa una riga del suo **Generale**, invece di un riquadro con tutto il suo contenuto; vale anche incollandola o con **Sposta in…**. Lasciata su un riquadro, è un elemento di quel riquadro, come sempre;
   - se tieni fermo quello che trascini sopra un argomento, dopo un attimo la bacheca passa lì e lo lasci nel riquadro giusto, come con le cartelle di Explorer;
   - quello che ha già un suo posto entra come collegamento, come chiede il progetto: i programmi (`.exe`, come fa Explorer) e le cartelle e i file in rete;
   - gli allegati e i messaggi di Outlook, e i link e le immagini dal browser, diventano file nel riquadro;
-  - un riquadro, preso per il titolo (al passaggio del mouse compare la maniglia a puntini), cambia posto nella bacheca, e l'ordine resta: una riga mostra dove andrà. Lasciato su un argomento, ci entra dentro;
+  - un riquadro, preso per il titolo (al passaggio del mouse compare la maniglia a puntini), cambia posto nella bacheca, e l'ordine resta: una riga mostra dove andrà. Lasciato su un argomento, ci entra dentro e resta un riquadro;
   - le righe di un riquadro, trascinate dentro il riquadro stesso, prendono l'ordine che vuoi; i file che arrivano dopo si mettono in fondo;
   - un argomento, nella barra a sinistra, si sposta sopra o sotto un altro; lasciato al centro di un altro argomento ci entra dentro, con la sua cartella;
   - mentre trascini, un'etichetta accanto al puntatore dice cosa hai in mano: il nome, o quanti elementi;
@@ -77,11 +78,12 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo
 - **Creare**:
   - un argomento: il pulsante + accanto ad **Argomenti**; dentro un altro argomento, tasto destro su quello;
   - un riquadro: **Nuovo riquadro**, `Ctrl+Maiusc+N` o tasto destro sulla bacheca;
-  - una cartella in un riquadro: tasto destro sul riquadro, o il pulsante … accanto al titolo;
+  - una cartella in un riquadro: tasto destro sul riquadro, o il pulsante … accanto al titolo; in **Generale** è una delle sue righe;
   - un collegamento: **Nuovo collegamento…** dal tasto destro sul riquadro o sulla bacheca. Si scrive l'indirizzo di un sito, anche solo `rossi.it`, oppure il percorso di un programma, di un file o di una cartella.
 
   Come «Nuova cartella» sul desktop, il nuovo elemento nasce con il nome pronto da scrivere.
 - **Riquadri e argomenti**: dal menu di un riquadro puoi scegliere **Promuovi ad argomento**; da quello di un argomento annidato, **Riporta a riquadro**.
+  Una cartella tra le righe di **Generale** diventa un riquadro con **Promuovi a riquadro**, dal tasto destro; un riquadro torna una riga con **Metti in Generale**, dal suo menu. Le cartelle restano dove sono: cambia solo come le mostra Quiver, e `Ctrl+Z` torna indietro.
 - **Colore**: dal menu … di un riquadro, uno degli otto colori di Brace, o nessuno. Compare come una striscia accanto al titolo, resta nei metadati dell'archivio e `Ctrl+Z` lo toglie.
 - **Colore degli argomenti**: ogni argomento della radice, la prima volta che Quiver lo vede, prende il colore di Brace meno usato dagli altri e lo tiene nell'archivio: spostarlo o rinominarlo non lo cambia. I sotto-argomenti usano quello del loro argomento. Il colore si vede nell'icona della barra laterale e, sulla tela, nel bordo e nel nome della zona, che da lontano è anche leggermente tinta. Dal tasto destro su un argomento, **Colore** › **Automatico**, **Nessuno** o uno degli otto; `Ctrl+Z` torna a quello di prima.
 - **Misura dei riquadri**: trascina l'angolo in basso a destra di un riquadro. In larghezza scatta a una, due o tre colonne, in altezza decide quante righe si vedono prima di scorrere. Il doppio clic sull'angolo, o **Misura automatica** nel menu …, torna alla misura che segue gli elementi.

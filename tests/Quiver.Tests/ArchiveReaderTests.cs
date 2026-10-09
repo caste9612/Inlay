@@ -88,6 +88,37 @@ public sealed class ArchiveReaderTests : IDisposable
     }
 
     [Fact]
+    public void FoldersMarkedAsItems_AreRowsOfGenerale_BeforeItsFiles_NotTiles()
+    {
+        _archive.AddFile("Rossi/Note.md");
+        _archive.AddFile("Rossi/Foto/mare.jpg");
+        _archive.AddFile("Rossi/Documenti/Offerta.docx");
+        var metadata = new ArchiveMetadata();
+        metadata.SetItem("Rossi/Foto", true);
+
+        var reader = _archive.Reader(metadata);
+        var board = reader.ReadBoard(Assert.Single(reader.ReadTopics()));
+
+        Assert.Equal(["Generale", "Documenti"], board.Tiles.Select(t => t.Title));
+        Assert.Equal(["Foto", "Note.md"], board.Tiles[0].Items.Select(i => i.Name));
+        Assert.True(board.Tiles[0].Items[0].IsFolder);
+    }
+
+    [Fact]
+    public void ARowOfGenerale_IsEnoughForGenerale()
+    {
+        _archive.AddFile("Rossi/Foto/mare.jpg");
+        var metadata = new ArchiveMetadata();
+        metadata.SetItem("Rossi/Foto", true);
+
+        var reader = _archive.Reader(metadata);
+        var tile = Assert.Single(reader.ReadBoard(Assert.Single(reader.ReadTopics())).Tiles);
+
+        Assert.True(tile.IsGeneral);
+        Assert.Equal(["Foto"], tile.Items.Select(i => i.Name));
+    }
+
+    [Fact]
     public void TileItems_ListFoldersFirst_InNaturalOrder_WithoutHiddenOnes()
     {
         _archive.AddFile("Rossi/Documenti/Verbale 10.txt");

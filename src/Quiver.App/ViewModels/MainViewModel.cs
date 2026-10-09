@@ -220,6 +220,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         TopicOrderStep or TopicMoveStep => "Annulla lo spostamento dell'argomento",
         TopicStep { WasTopic: false } => "Annulla «Promuovi ad argomento»",
         TopicStep => "Annulla «Riporta a riquadro»",
+        ItemStep { WasItem: true } => "Annulla «Promuovi a riquadro»",
+        ItemStep => "Annulla «Metti in Generale»",
         ColorStep => "Annulla il colore",
         ArrangeStep => "Annulla l'ordinamento",
         SizeStep => "Annulla il ridimensionamento",
@@ -508,16 +510,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public void NewFolder(TileViewModel tile)
     {
-        // "Generale" holds the topic's own files: a folder there is a new tile of the topic. Its own topic: on the canvas it
-        // need not be the one chosen in the sidebar.
-        if (tile.IsGeneral)
-        {
-            NewTile(FindTopic(tile.MetadataKey));
-            return;
-        }
         if (CreateFolder(tile.FolderPath, ArchiveNames.Unique(tile.FolderPath, "Nuova cartella")) is not { } path)
             return;
         Remember(new CreateStep(path));
+        // The folder of «Generale» is that of its topic: a folder made there is one of its rows, not a tile of its own.
+        if (tile.IsGeneral)
+            UpdateMetadata(metadata => metadata.SetItem(KeyOf(path), true));
         ClearSelection();
         Reload();
         if (FindItem(path) is { } item)
@@ -716,18 +714,24 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// Moves or copies files dropped or pasted onto a folder of the archive, or makes shortcuts to them there. Waits for
     /// the operations already under way, then works out where things will land from the files as they are by then.
     /// </summary>
-    public async Task Transfer(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind)
+    /// <param name="foldersAsRows">
+    /// Folders that land in a topic become rows of its «Generale» (see <see cref="MakeRows"/>); false for a tile dragged
+    /// by its title, which stays a tile.
+    /// </param>
+    public async Task Transfer(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind, bool foldersAsRows = true)
     {
         if (kind == TransferKind.None || paths.Count == 0)
             return;
         using var turn = await BeginFileWork(Doing(paths, kind, destinationFolder));
-        await TransferNow(paths, destinationFolder, kind);
+        await TransferNow(paths, destinationFolder, kind, foldersAsRows: foldersAsRows);
     }
 
     /// <summary>The transfer itself, by whoever holds the turn of the file operations.</summary>
     /// <param name="reload">False when the caller changes something more first, and reads the board again itself.</param>
+    /// <param name="foldersAsRows">As in <see cref="Transfer"/>.</param>
     /// <returns>Whether the shell did all it was asked.</returns>
-    private async Task<bool> TransferNow(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind, bool reload = true)
+    private async Task<bool> TransferNow(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind, bool reload = true,
+        bool foldersAsRows = true)
     {
         if (!EnsureFolder(destinationFolder))
             return false;
@@ -781,7 +785,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             var moved = landings.Where(item => !Path.Exists(item.From) && Path.Exists(item.To)).ToList();
             if (moved.Count > 0)
-                Remember(step = new MoveStep(moved, forgotten));
+            {
+                var rows = foldersAsRows ? MakeRows(moved.Select(item => item.To), destinationFolder) : [];
+                Remember(step = new MoveStep(moved.Select(item => item with { BecameRow = rows.Contains(item.To) }).ToList(), forgotten));
+            }
         }
         // The copies are the new names, each starting like an original: "a.txt", or "a - Copia.txt" next to it.
         // Without the names from before, the copies cannot be told from what was already there: no undo then.
@@ -793,7 +800,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 .Select(name => Path.Combine(destinationFolder, name))
                 .ToList();
             if (arrived.Count > 0)
+            {
+                // Ctrl+Z takes the copies to the Recycle Bin, and what they became with them.
+                if (foldersAsRows)
+                    MakeRows(arrived, destinationFolder);
                 Remember(step = new CopyStep(arrived));
+            }
         }
 
         var present = arrived.Where(Path.Exists).ToList();
@@ -811,6 +823,32 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (reload)
             ReloadUnlessEditing();
         return done;
+    }
+
+    /// <summary>
+    /// Folders that arrive in a topic are rows of its «Generale», like files, not tiles of their own: a folder of photos
+    /// dropped on a topic shows as one row, not as all its photos. One that comes as a topic, or as a row, stays so.
+    /// </summary>
+    /// <returns>The folders that became rows, which Ctrl+Z turns back.</returns>
+    private HashSet<string> MakeRows(IEnumerable<string> arrived, string destinationFolder)
+    {
+        var rows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!IsInsideArchive(destinationFolder) || FindTopic(KeyOf(destinationFolder)) is null)
+            return rows;
+        var folders = arrived.Where(Directory.Exists).ToList();
+        if (folders.Count == 0)
+            return rows;
+        UpdateMetadata(metadata =>
+        {
+            foreach (var folder in folders)
+            {
+                var key = KeyOf(folder);
+                if (!metadata.IsTopic(key) && metadata.SetItem(key, true))
+                    rows.Add(folder);
+            }
+            return rows.Count > 0;
+        });
+        return rows;
     }
 
     /// <summary>"Sposto «a.txt» in «Casa»…", while the shell works.</summary>
@@ -965,7 +1003,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Tell(ToastKind.Warning, $"In «{parent?.Name ?? ArchiveName}» c'è già «{topic.Name}»: rinominane uno, poi riprova.");
             return;
         }
-        if (!await TransferNow([topic.Topic.FullPath], destination, TransferKind.Move, reload: false) || !Directory.Exists(newPath))
+        if (!await TransferNow([topic.Topic.FullPath], destination, TransferKind.Move, reload: false, foldersAsRows: false) ||
+            !Directory.Exists(newPath))
         {
             Reload();
             return;
@@ -1088,6 +1127,26 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             new TopicStep(topic.Topic.RelativePath, topic.Name, WasTopic: true));
     }
 
+    // ---- Rows of «Generale» ----
+
+    /// <summary>«Promuovi a riquadro»: a folder shown as a row of «Generale» gets a tile of its own, its folder where it is.</summary>
+    public void PromoteItem(ItemViewModel item)
+    {
+        if (!item.CanBecomeTile)
+            return;
+        var key = KeyOf(item.Item.FullPath);
+        ChangeMetadata(metadata => metadata.SetItem(key, false), new ItemStep(key, item.Name, WasItem: true));
+    }
+
+    /// <summary>«Metti in Generale»: a tile becomes a row of «Generale», its folder where it is; the row is selected, to be seen.</summary>
+    public void DemoteTile(TileViewModel tile)
+    {
+        if (tile.RelativePath is not { } key)
+            return;
+        SelectAfterReload([tile.FolderPath]);
+        ChangeMetadata(metadata => metadata.SetItem(key, true), new ItemStep(key, tile.Title, WasItem: false));
+    }
+
     /// <summary>Gives a tile a color of the palette, or none: a stripe on its title, kept in the metadata of the archive.</summary>
     public void SetTileColor(TileViewModel tile, string? color)
     {
@@ -1150,6 +1209,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             TileOrderStep order => UndoOrder(order.PreviousOrder, "I riquadri sono tornati nell'ordine di prima."),
             TopicOrderStep order => UndoOrder(order.PreviousOrder, "Gli argomenti sono tornati nell'ordine di prima."),
             TopicStep topic => UndoTopic(topic),
+            ItemStep item => UndoItem(item),
             ColorStep color => UndoColor(color),
             ArrangeStep arrange => UndoArrange(arrange),
             SizeStep size => UndoSize(size),
@@ -1231,7 +1291,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 var wasInside = IsInsideArchive(item.From);
                 var wentInside = IsInsideArchive(item.To);
                 if (wasInside && wentInside)
+                {
                     changed |= metadata.MoveFolder(KeyOf(item.To), KeyOf(item.From));
+                    // A row of «Generale» only since it arrived: back where it was, it is what it was there.
+                    if (item.BecameRow)
+                        changed |= metadata.SetItem(KeyOf(item.From), false);
+                }
                 else if (wentInside)
                     changed |= metadata.RemoveFolder(KeyOf(item.To));
                 else if (wasInside)
@@ -1405,6 +1470,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (!UpdateMetadata(metadata => metadata.SetTopic(step.Key, step.WasTopic)))
             return null;
         return Outcome.Done(step.WasTopic ? $"«{step.Name}» è di nuovo un argomento." : $"«{step.Name}» è di nuovo un riquadro.");
+    }
+
+    private Outcome? UndoItem(ItemStep step)
+    {
+        if (!Directory.Exists(Path.Combine(_root, step.Key)))
+            return Outcome.Refused($"«{step.Name}» non c'è più.");
+        if (!UpdateMetadata(metadata => metadata.SetItem(step.Key, step.WasItem)))
+            return null;
+        return Outcome.Done(step.WasItem ? $"«{step.Name}» è di nuovo in «Generale»." : $"«{step.Name}» è di nuovo un riquadro.");
     }
 
     /// <summary>For the items an undo could not put back: something else took their place, or they are gone.</summary>

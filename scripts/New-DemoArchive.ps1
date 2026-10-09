@@ -1,6 +1,7 @@
 ﻿<#
 .SYNOPSIS
-    Crea un archivio di prova per Quiver: argomenti annidati, riquadri, programmi, siti e un file sciolto nella radice.
+    Crea un archivio di prova per Quiver: argomenti annidati, riquadri, una cartella tra le righe di «Generale»,
+    programmi, siti e un file sciolto nella radice.
 
 .EXAMPLE
     .\scripts\New-DemoArchive.ps1 -Path D:\ArchivioDemo
@@ -51,6 +52,8 @@ New-DemoFile 'Lavoro\Interni\Procedure\Ferie e permessi.txt'
 New-DemoFile 'Lavoro\Interni\Modelli\Lettera standard.txt'
 New-DemoFile 'Personale\Casa\Bollette 2026.csv' 'mese;importo'
 New-DemoFile 'Personale\Viaggi\Perché andare a Lisbona.md' '# Lisbona'
+New-DemoFile 'Personale\Foto delle vacanze\Lisbona 1.txt'
+New-DemoFile 'Personale\Foto delle vacanze\Lisbona 2.txt'
 New-DemoShortcut 'Strumenti\Programmi\Blocco note.lnk' "$env:WINDIR\System32\notepad.exe"
 New-DemoShortcut 'Strumenti\Programmi\Prompt dei comandi.lnk' "$env:WINDIR\System32\cmd.exe"
 New-DemoShortcut 'Strumenti\Cartelle\Download.lnk' (Join-Path $env:USERPROFILE 'Downloads')
@@ -58,6 +61,7 @@ New-DemoWebLink 'Strumenti\Siti\GlazeWM.url' 'https://github.com/glzr-io/glazewm
 New-DemoFile 'documento scaricato.txt'
 
 # Clienti, Rossi, Bianchi e Interni sono sotto-argomenti: compaiono nel menu laterale invece che come riquadri.
+# «Foto delle vacanze» è una riga di «Generale» in Personale, come una cartella trascinata sull'argomento.
 $metadata = New-Item -ItemType Directory -Force -Path (Join-Path $Path '.quiver')
 $metadata.Attributes = $metadata.Attributes -bor [IO.FileAttributes]::Hidden
 @'
@@ -67,7 +71,8 @@ $metadata.Attributes = $metadata.Attributes -bor [IO.FileAttributes]::Hidden
     "Lavoro/Clienti": { "kind": "topic" },
     "Lavoro/Clienti/Rossi": { "kind": "topic" },
     "Lavoro/Clienti/Bianchi": { "kind": "topic" },
-    "Lavoro/Interni": { "kind": "topic" }
+    "Lavoro/Interni": { "kind": "topic" },
+    "Personale/Foto delle vacanze": { "kind": "item" }
   }
 }
 '@ | Set-Content -LiteralPath (Join-Path $metadata.FullName 'archive.json') -Encoding utf8

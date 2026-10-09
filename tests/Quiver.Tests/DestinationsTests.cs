@@ -32,6 +32,17 @@ public sealed class DestinationsTests : IDisposable
     }
 
     [Fact]
+    public void ARowOfGenerale_IsNoPlaceToSendThingsTo()
+    {
+        _archive.AddFolder("Lavoro/Foto");
+        _archive.AddFolder("Lavoro/Interni");
+        var metadata = new ArchiveMetadata();
+        metadata.SetItem("Lavoro/Foto", true);
+
+        Assert.Equal(["Lavoro", "Interni"], _archive.Reader(metadata).ReadDestinations().Select(d => d.Title));
+    }
+
+    [Fact]
     public void AnEmptyArchive_HasNowhereToSendThingsTo()
     {
         Assert.Empty(_archive.Reader().ReadDestinations());

@@ -11,34 +11,36 @@ public sealed class ArchiveMetadata
 {
     public const string TopicKind = "topic";
 
+    /// <summary>A folder of a topic shown as a row of its «Generale», not as a tile of its own.</summary>
+    public const string ItemKind = "item";
+
     public int Version { get; set; } = 1;
 
     public Dictionary<string, FolderMetadata> Folders { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public bool IsTopic(string relativeKey) =>
-        Folders.TryGetValue(relativeKey, out var folder) &&
-        string.Equals(folder.Kind, TopicKind, StringComparison.OrdinalIgnoreCase);
+    public bool IsTopic(string relativeKey) => HasKind(relativeKey, TopicKind);
+
+    /// <summary>Whether a folder of a topic is a row of its «Generale», like a folder dropped on the topic, rather than a tile.</summary>
+    public bool IsItem(string relativeKey) => HasKind(relativeKey, ItemKind);
 
     /// <returns>Whether anything changed.</returns>
-    public bool SetTopic(string relativeKey, bool isTopic)
-    {
-        if (isTopic)
-        {
-            if (IsTopic(relativeKey))
-                return false;
-            if (!Folders.TryGetValue(relativeKey, out var folder))
-                Folders[relativeKey] = folder = new FolderMetadata();
-            folder.Kind = TopicKind;
-            return true;
-        }
+    public bool SetTopic(string relativeKey, bool isTopic) => SetKind(relativeKey, TopicKind, isTopic);
 
-        if (!Folders.TryGetValue(relativeKey, out var existing) || existing.Kind is null)
-            return false;
-        existing.Kind = null;
-        if (existing.IsEmpty)
-            Folders.Remove(relativeKey);
-        return true;
-    }
+    /// <returns>Whether anything changed.</returns>
+    public bool SetItem(string relativeKey, bool isItem) => SetKind(relativeKey, ItemKind, isItem);
+
+    private bool HasKind(string relativeKey, string kind) =>
+        Folders.TryGetValue(relativeKey, out var folder) && string.Equals(folder.Kind, kind, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Gives a folder a kind, in the place of the one it had; taken away, it goes only if it is that one.</summary>
+    private bool SetKind(string relativeKey, string kind, bool on) =>
+        Change(relativeKey, folder =>
+        {
+            if (string.Equals(folder.Kind, kind, StringComparison.OrdinalIgnoreCase) == on)
+                return false;
+            folder.Kind = on ? kind : null;
+            return true;
+        });
 
     /// <summary>Position of a tile on its board; null for tiles never moved, which follow in name order.</summary>
     public int? OrderOf(string relativeKey) => Folders.TryGetValue(relativeKey, out var folder) ? folder.Order : null;
@@ -262,6 +264,10 @@ public sealed record MetadataSnapshot(IReadOnlyList<string> Roots, IReadOnlyDict
 
 public sealed class FolderMetadata
 {
+    /// <summary>
+    /// <see cref="ArchiveMetadata.TopicKind"/> for a topic below the root, <see cref="ArchiveMetadata.ItemKind"/> for a row of
+    /// «Generale»; null for a tile.
+    /// </summary>
     public string? Kind { get; set; }
 
     /// <summary>GlazeWM workspace bound to the topic.</summary>

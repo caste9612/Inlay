@@ -19,8 +19,8 @@ public sealed partial class TileViewModel : RenameableViewModel
         _cutPaths = cutPaths;
         Title = tile.Title;
         FolderPath = tile.FolderPath;
-        Items = new ObservableCollection<ItemViewModel>(tile.Items.Select(NewItem));
         IsGeneral = tile.IsGeneral;
+        Items = new ObservableCollection<ItemViewModel>(tile.Items.Select(NewItem));
         RelativePath = tile.IsGeneral ? null : ArchiveLayout.ToRelativeKey(root, tile.FolderPath);
         // "Generale" keeps its size and order under its topic's key: it holds the files of the topic's folder.
         MetadataKey = ArchiveLayout.ToRelativeKey(root, tile.FolderPath);
@@ -158,7 +158,9 @@ public sealed partial class TileViewModel : RenameableViewModel
         OnPropertyChanged(nameof(Preview));
     }
 
-    private ItemViewModel NewItem(ArchiveItem item) => new(item) { IsCut = _cutPaths.Contains(item.FullPath) };
+    // The folders of «Generale» are those shown as its rows: the others of the topic's folder are tiles or topics.
+    private ItemViewModel NewItem(ArchiveItem item) =>
+        new(item) { IsCut = _cutPaths.Contains(item.FullPath), CanBecomeTile = IsGeneral && item.IsFolder };
 
     /// <summary>A file and a folder with the same name are two different things.</summary>
     private static string KeyOf(ArchiveItem item) => (item.IsFolder ? "folder:" : "file:") + item.FullPath;

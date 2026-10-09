@@ -31,12 +31,12 @@ Sono tutti `record` immutabili, letti dal disco a ogni ricarica. L'app li avvolg
 `new ArchiveReader(root, metadata)`. Ogni metodo rilegge il disco: non c'è cache.
 
 - `ReadTopics()`: le cartelle della radice sono argomenti, anche una `_Da smistare` lasciata dalle versioni che l'avevano; più in basso lo sono solo quelle con `"kind": "topic"`. Vengono prima quelle con un `"order"`, poi le altre per nome (l'ordinamento è stabile).
-- `ReadBoard(topic)`: prima «Generale», se l'argomento ha file sciolti, poi un riquadro per ogni sottocartella che non è un argomento, nello stesso ordine.
+- `ReadBoard(topic)`: prima «Generale», se l'argomento ha file sciolti o cartelle segnate `"kind": "item"`, che ci stanno come righe prima dei file, come le cartelle in ogni riquadro; poi un riquadro per ogni sottocartella che non è né un argomento né una riga, nello stesso ordine.
   - «Generale» usa la chiave del suo argomento per misura, ordinamento e ordine a mano, ma non ne mostra il colore.
   - Il colore di un riquadro è `ChosenColorOf`: quello dato da Quiver quando la cartella era un argomento della radice non conta.
   - Gli elementi passano da `ItemArrangement.Arrange` ([più sotto](#ordine-degli-elementi-itemarrangement-naturalstringcomparer)).
 - `ReadRootFiles()`: i file lasciati sciolti nella radice, che nessun argomento mostra: la barra di stato dice quanti sono.
-- `ReadDestinations()`: per «Sposta in…», nell'ordine della barra laterale: ogni argomento (per i suoi file sciolti), i suoi riquadri, poi i sotto-argomenti. `Location` è il percorso da mostrare, come «Lavoro › Clienti».
+- `ReadDestinations()`: per «Sposta in…», nell'ordine della barra laterale: ogni argomento (per i suoi file sciolti), i suoi riquadri, poi i sotto-argomenti. `Location` è il percorso da mostrare, come «Lavoro › Clienti». Le righe di «Generale» non ci sono: sono elementi, come le cartelle dentro un riquadro.
 - Gli elementi di una cartella: prima le cartelle, poi i file, in ordine naturale («Verbale 2» prima di «Verbale 10»). Una cartella che non si può leggere si mostra vuota.
 
 Le costanti che l'utente vede: `GeneralTileTitle` («Generale») e `PathSeparator` (« › »).
@@ -47,7 +47,8 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 
 - `ArchiveMetadata.Folders` è un dizionario da chiave a `FolderMetadata`, senza distinzione di maiuscole.
 - `FolderMetadata` ha `Kind`, `Workspace`, `Color`, `AutoColor`, `Size`, `Order`, `Sort` e `Items`. Una voce che resta vuota (`IsEmpty`) viene tolta: il file tiene solo quello che serve.
-- Ogni metodo che cambia qualcosa (`SetTopic`, `SetColor`, `SetOrder`, `SetSize`, `SetSort`, `SetItemOrder`, `SetArrangement`, `RenameItem`, `MoveFolder`, `RemoveFolder`, `Restore`) restituisce `true` solo se è cambiato davvero: chi lo chiama salva solo allora.
+- `Kind` è `"topic"` per un argomento sotto la radice (`IsTopic`, `SetTopic`) e `"item"` per una cartella di un argomento che sta in «Generale» come riga (`IsItem`, `SetItem`). Darne uno toglie l'altro; toglierne uno lascia stare l'altro. Una riga che diventa riquadro, o argomento, tiene il resto della sua voce: colore, misura, ordine.
+- Ogni metodo che cambia qualcosa (`SetTopic`, `SetItem`, `SetColor`, `SetOrder`, `SetSize`, `SetSort`, `SetItemOrder`, `SetArrangement`, `RenameItem`, `MoveFolder`, `RemoveFolder`, `Restore`) restituisce `true` solo se è cambiato davvero: chi lo chiama salva solo allora.
 - `MoveFolder(oldKey, newKey)` sposta la voce e tutte quelle sotto: così i metadati seguono una cartella rinominata o spostata da Quiver. Se succede da Explorer nessuno lo sa, e le voci restano sotto il nome vecchio.
 - `Snapshot(keys)` e `Restore(snapshot)` copiano e rimettono le voci di alcune cartelle e di tutto quello che c'è sotto. È così che una cartella mandata nel Cestino, o portata fuori dall'archivio, ritrova colore, misura e ordine quando torna con `Ctrl+Z`. `MetadataSnapshot.Restrict` ne tiene solo una parte.
 - `TileSize`: da 1 a 3 colonne e da 2 a 40 righe, o righe automatiche (null). La misura di sempre (una colonna, righe automatiche) non si scrive.
@@ -104,7 +105,7 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 
 | Passo | Cosa ricorda |
 |---|---|
-| `MoveStep` | per ogni elemento da dove è partito e dove è arrivato (`MovedItem`), e i metadati delle cartelle uscite dall'archivio (`Forgotten`) |
+| `MoveStep` | per ogni elemento da dove è partito e dove è arrivato (`MovedItem`), e se arrivando in un argomento è diventato una riga di «Generale» (`BecameRow`); i metadati delle cartelle uscite dall'archivio (`Forgotten`) |
 | `CopyStep` | le copie fatte, anche di quello che arriva da altri programmi: annullare le manda nel Cestino |
 | `LinkStep` | i collegamenti fatti: annullare li manda nel Cestino, e quello a cui puntano resta dov'è |
 | `RenameStep` | il nome di prima e quello di dopo |
@@ -115,6 +116,7 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 | `ArrangeStep` | l'ordinamento e l'ordine a mano di prima |
 | `SizeStep` | la misura di prima |
 | `TopicStep` | se la cartella era un argomento («Promuovi ad argomento», «Riporta a riquadro») |
+| `ItemStep` | se la cartella era una riga di «Generale» («Promuovi a riquadro», «Metti in Generale») |
 | `ColorStep` | il colore di prima, e se era automatico |
 
 Come i passi vengono registrati ed eseguiti al contrario è in [operazioni-sui-file.md](operazioni-sui-file.md#annullare).

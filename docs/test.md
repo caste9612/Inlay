@@ -17,7 +17,7 @@ dotnet test tests/Quiver.Tests
 dotnet test tests/Quiver.App.Tests --filter "FullyQualifiedName~MainViewModelTests"
 ```
 
-Il 10 ottobre 2026 passano tutti: 152 in `Quiver.Tests` (meno di un decimo di secondo) e 135 in `Quiver.App.Tests` (3-4 secondi), 287 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, e togliendo «Da smistare» se ne sono andati quelli che lo provavano. Ogni nota di versione riporta quanti sono i test e che passano tutti.
+Il 10 ottobre 2026 passano tutti: 157 in `Quiver.Tests` (meno di un decimo di secondo) e 140 in `Quiver.App.Tests` (4-5 secondi), 297 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, se ne sono andati quelli di «Da smistare», tolto, e ne sono arrivati 10 con le righe di «Generale». Ogni nota di versione riporta quanti sono i test e che passano tutti.
 
 I test sono scritti con xUnit. I nomi dicono, come frasi, cosa deve succedere: `Undo_LeavesAloneWhatChangedSince`, `ATopicDroppedInsideAnother_TakesItsFolderThere_StillATopic_AndCtrlZBringsItBack`.
 
@@ -27,7 +27,7 @@ Lavora su archivi veri in cartelle temporanee: `TempArchive` crea una cartella i
 
 | File | Cosa controlla |
 |---|---|
-| `ArchiveReaderTests`, `DestinationsTests` | argomenti, riquadri, «Generale», ordini, file sciolti nella radice, destinazioni di «Sposta in…» |
+| `ArchiveReaderTests`, `DestinationsTests` | argomenti, riquadri, «Generale» e le sue righe, ordini, file sciolti nella radice, destinazioni di «Sposta in…» |
 | `MetadataStoreTests`, `MetadataSnapshotTests` | lettura e scrittura di `archive.json`, chiavi senza maiuscole, voci che seguono le cartelle, copie per annullare, file rovinato messo da parte |
 | `TransferRulesTests` | spostare, copiare o collegare, con i tasti e senza |
 | `RecycleBinTests` | il ripristino dal Cestino, su un Cestino finto costruito dal test con i suoi `$I…` e `$R…` |
@@ -44,7 +44,7 @@ Vede le parti interne dell'app (`InternalsVisibleTo`). Gli archivi stanno in `%T
 
 | File | Cosa controlla |
 |---|---|
-| `MainViewModelTests` (57 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Sposta in…», avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
+| `MainViewModelTests` (62 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, cartelle che diventano righe di «Generale» e tornano riquadri, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Sposta in…», avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
 | `BackgroundOperationsTests` | le operazioni sul thread a parte, con un dispatcher come quello della finestra: la finestra resta libera, e un `Ctrl+Z` dato nel frattempo aspetta e annulla |
 | `FileOperationQueueTests` | la coda: un'operazione dopo l'altra, su un thread STA |
 | `ShellFileOperationsTests` | spostare, copiare e rinominare con la shell vera, senza finestre (`interactive: false`); eliminare no, perché riempirebbe il Cestino |

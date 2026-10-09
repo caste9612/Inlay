@@ -173,6 +173,8 @@
             <MenuItem Header="Rinomina" InputGestureText="F2" Click="ItemRename_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
             </MenuItem>
+            <!-- A folder among the rows of «Generale», like one dropped on the topic, can have a tile of its own. -->
+            <MenuItem Header="Promuovi a riquadro" Click="ItemPromote_Click" Visibility="{Binding CanBecomeTile, Converter={StaticResource Visible}}" />
             <MenuItem Header="Proprietà" InputGestureText="Alt+Invio" Click="ItemProperties_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Info16}" /></MenuItem.Icon>
             </MenuItem>
@@ -199,6 +201,7 @@
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="Promuovi ad argomento" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
+            <MenuItem Header="Metti in Generale" Click="TileDemote_Click" IsEnabled="{Binding IsOwnFolder}" />
             <!-- The palette of Brace: a stripe on the title, kept with the archive. -->
             <MenuItem Header="Colore" IsEnabled="{Binding IsOwnFolder}">
                 <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}}">

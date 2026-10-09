@@ -1123,6 +1123,9 @@ public partial class PanelView : UserControl
 
         public TransferKind Kind { get; init; }
 
+        /// <summary>Folders that land in a topic become rows of its «Generale»; not a tile dragged by its title, which stays a tile.</summary>
+        public bool FoldersAsRows { get; init; } = true;
+
         /// <summary>The tile dragged by its title, or the one whose rows change place.</summary>
         public TileViewModel? Tile { get; init; }
 
@@ -1228,7 +1231,7 @@ public partial class PanelView : UserControl
                 Dispatcher.BeginInvoke(() => ViewModel.MoveItems(plan.Tile!, plan.Items, plan.ItemBefore));
                 break;
             case DropAction.Transfer:
-                Dispatcher.BeginInvoke(() => Observe(ViewModel.Transfer(plan.Paths, plan.Destination, plan.Kind)));
+                Dispatcher.BeginInvoke(() => Observe(ViewModel.Transfer(plan.Paths, plan.Destination, plan.Kind, plan.FoldersAsRows)));
                 break;
             case DropAction.SaveDropped:
                 // Now or never: the content is only there while the drop lasts.
@@ -1338,7 +1341,7 @@ public partial class PanelView : UserControl
             kind = TransferKind.None;
         return kind == TransferKind.None
             ? DropPlan.Nothing
-            : new DropPlan(DropAction.Transfer) { Paths = paths, Destination = destination, Kind = kind };
+            : new DropPlan(DropAction.Transfer) { Paths = paths, Destination = destination, Kind = kind, FoldersAsRows = !e.Data.GetDataPresent(TileFormat) };
     }
 
     /// <summary>
@@ -1831,6 +1834,12 @@ public partial class PanelView : UserControl
             ViewModel.BeginRename(item);
     }
 
+    private void ItemPromote_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<ItemViewModel>(sender) is { } item)
+            ViewModel.PromoteItem(item);
+    }
+
     private void ItemProperties_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<ItemViewModel>(sender) is { } item)
@@ -1883,6 +1892,12 @@ public partial class PanelView : UserControl
     {
         if (DataContextOf<TileViewModel>(sender) is { } tile)
             ViewModel.PromoteTile(tile);
+    }
+
+    private void TileDemote_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<TileViewModel>(sender) is { } tile)
+            ViewModel.DemoteTile(tile);
     }
 
     /// <summary>A color of the palette from the tile's menu; the entry without one takes the color away.</summary>
