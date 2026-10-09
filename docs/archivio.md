@@ -98,6 +98,14 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 - `HasItsOwnPlace(path, root)`: fuori dall'archivio, ed è un `.exe` o sta in rete (percorso `\\…` o disco di rete). È il principio 5 di PROGETTO.md: entra come collegamento.
 - `IsSameOrInside(path, folder)` è il confronto di percorsi usato un po' dappertutto, anche dall'app.
 
+## Operazioni insieme (`FileTouches`)
+
+Cosa cambia un'operazione sui file, per sapere quali possono andare avanti insieme ([operazioni-sui-file.md](operazioni-sui-file.md#il-turno-e-i-thread)):
+
+- `Items`: gli elementi spostati, copiati o eliminati, e dove arriva ognuno con il suo nome, ciascuno con tutto quello che contiene.
+- `Folders`: le cartelle dove arrivano cose, di cui cambia l'elenco dei nomi. `FileTouches.Transfer(paths, destinationFolder)` dà tutti e due per uno spostamento, una copia o un collegamento.
+- `Overlaps(other)`: due operazioni si intralciano se un elemento dell'una è, contiene o sta dentro un elemento dell'altra; se mettono cose nella stessa cartella, perché i nomi nuovi di una copia non si distinguerebbero più; o se una sposta o elimina la cartella dove l'altra mette cose. Togliere un elemento da una cartella dove l'altra mette cose non conta: i nomi che arrivano si riconoscono lo stesso.
+
 ## Annullare (`UndoHistory`)
 
 - Una pila di al massimo 50 passi (`Capacity`), solo in memoria: chiudendo Quiver si perde.

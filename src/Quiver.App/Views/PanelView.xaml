@@ -761,12 +761,13 @@
                             </Button>
                         </StackPanel>
                     </StatusBarItem>
-                    <!-- A move, copy or deletion under way, in the background: the LEDs of br-activity, next to what is being done. -->
+                    <!-- Moves, copies or deletions under way, in the background: the LEDs of br-activity, next to the last one
+                         started and how many more run or wait; the tooltip lists them all. -->
                     <StatusBarItem Visibility="{Binding IsBusy, Converter={StaticResource Visible}}">
                         <StackPanel Orientation="Horizontal">
                             <Control Style="{StaticResource Brace.Activity}" Margin="0,0,8,0" />
                             <TextBlock MaxWidth="600" VerticalAlignment="Center" Text="{Binding Activity}" TextTrimming="CharacterEllipsis"
-                                       ToolTip="{Binding Activity}" />
+                                       ToolTip="{Binding ActivityDetails}" />
                         </StackPanel>
                     </StatusBarItem>
                     <!-- From the right edge inwards. -->

@@ -406,10 +406,9 @@ public sealed partial class ArchivesViewModel : ObservableObject
         var owner = OwnerWindow;
         _copying = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         IsCopying = true;
-        using var shell = new FileOperationQueue();
         try
         {
-            return await shell.Run(() => ShellFileOperations.Copy([folder], destinationParent, owner));
+            return await ShellThread.Run(() => ShellFileOperations.Copy([folder], destinationParent, owner));
         }
         finally
         {

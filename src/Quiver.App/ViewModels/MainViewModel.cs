@@ -27,10 +27,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private readonly UndoHistory _history = new();
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private readonly HashSet<string> _cutPaths = new(StringComparer.OrdinalIgnoreCase);
-    // The shell's operations: on a thread of their own in the app, one at a time; null in previews and tests, which run them at once.
-    private readonly FileOperationQueue? _shell;
-    private readonly SemaphoreSlim _fileWork = new(1, 1);
-    private int _fileWorkCount;
+    // The file operations running or waiting for their turn, in the order they asked for it.
+    private readonly List<FileWork> _fileWork = [];
     private TaskCompletionSource? _idle;
     private bool _renaming;
     private bool _indexPending;
@@ -83,9 +81,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _status = "";
 
-    /// <summary>The operation under way, next to the LEDs of the status bar.</summary>
+    /// <summary>
+    /// The operations under way, next to the LEDs of the status bar: the last one started, and how many more run or wait,
+    /// as in "Copio «Foto» in «Lavoro»… · un'altra in corso · 1 in attesa".
+    /// </summary>
     [ObservableProperty]
     private string _activity = "";
+
+    /// <summary>Each operation under way or waiting, one a line: the tooltip of <see cref="Activity"/>.</summary>
+    [ObservableProperty]
+    private string _activityDetails = "";
 
     /// <summary>"55.781 elementi · 2,3 GB", in the status bar once the archive has been read whole; empty before.</summary>
     [ObservableProperty]
@@ -117,7 +122,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private DestinationPickerViewModel? _picker;
 
     /// <param name="live">
-    /// Indexes the archive in the background, follows its changes, and moves and copies files on a thread of their own.
+    /// Indexes the archive in the background, follows its changes, and moves and copies files on threads of their own.
     /// Without it (previews, tests) the board is read only when asked, the search needs <see cref="BuildIndexNow"/>, and
     /// file operations are done before their method returns.
     /// </param>
@@ -132,7 +137,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         _live = live;
         _readOnly = readOnly;
-        _shell = live ? new FileOperationQueue() : null;
+        ShellRunner = live ? ShellThread.Run : operation => Task.FromResult(operation());
         _recycleBin = recycleBin ?? new RecycleBin(WindowsFolders.RecycleBinOf);
         _recent = recent ?? RecentDestinations.Load();
         LoadArchive(root);
@@ -175,6 +180,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>For the tests: how much room the disk of a folder has; that of Windows in the app.</summary>
     internal Func<string, DiskSpace?> DiskOf { get; set; } = DiskSpace.Of;
+
+    /// <summary>
+    /// Where an operation of the shell runs: on a thread of its own in the app, here and now in previews and tests. The
+    /// tests can hold the operations there, to see which ones run together.
+    /// </summary>
+    internal Func<Func<bool>, Task<bool>> ShellRunner { get; set; }
 
     public string Root => _root;
 
@@ -235,7 +246,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// True while a move, copy, deletion or undo runs or waits for its turn: the status bar shows it, and the board is
     /// read again when it is over.
     /// </summary>
-    public bool IsBusy => _fileWorkCount > 0;
+    public bool IsBusy => _fileWork.Count > 0;
 
     /// <summary>Done when no file operation runs or waits: «Esci» waits for it, so that a copy is not cut halfway.</summary>
     public Task WhenIdle() => IsBusy ? (_idle ??= new TaskCompletionSource()).Task : Task.CompletedTask;
@@ -611,7 +622,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public async Task<bool> Recycle(IReadOnlyList<string> paths)
     {
         using var turn = await BeginFileWork(
-            paths.Count == 1 ? $"Sposto «{DisplayNameOf(paths[0])}» nel Cestino…" : $"Sposto {paths.Count} elementi nel Cestino…");
+            paths.Count == 1 ? $"Sposto «{DisplayNameOf(paths[0])}» nel Cestino…" : $"Sposto {paths.Count} elementi nel Cestino…",
+            new FileTouches(paths));
         var folders = paths.Where(Directory.Exists).Where(IsInsideArchive).ToList();
         var forgotten = SnapshotOf(paths);
         // The Recycle Bin dates what it receives: right after the deletion, it tells where each item went.
@@ -712,7 +724,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Moves or copies files dropped or pasted onto a folder of the archive, or makes shortcuts to them there. Waits for
-    /// the operations already under way, then works out where things will land from the files as they are by then.
+    /// the operations before it on the same files, then works out where things will land from the files as they are by
+    /// then; meanwhile the operations on other files go on.
     /// </summary>
     /// <param name="foldersAsRows">
     /// Folders that land in a topic become rows of its «Generale» (see <see cref="MakeRows"/>); false for a tile dragged
@@ -722,16 +735,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         if (kind == TransferKind.None || paths.Count == 0)
             return;
-        using var turn = await BeginFileWork(Doing(paths, kind, destinationFolder));
-        await TransferNow(paths, destinationFolder, kind, foldersAsRows: foldersAsRows);
+        using var turn = await BeginFileWork(Doing(paths, kind, destinationFolder), FileTouches.Transfer(paths, destinationFolder));
+        await TransferNow(turn, paths, destinationFolder, kind, foldersAsRows: foldersAsRows);
     }
 
-    /// <summary>The transfer itself, by whoever holds the turn of the file operations.</summary>
+    /// <summary>The transfer itself, by whoever holds its turn among the file operations.</summary>
     /// <param name="reload">False when the caller changes something more first, and reads the board again itself.</param>
     /// <param name="foldersAsRows">As in <see cref="Transfer"/>.</param>
     /// <returns>Whether the shell did all it was asked.</returns>
-    private async Task<bool> TransferNow(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind, bool reload = true,
-        bool foldersAsRows = true)
+    private async Task<bool> TransferNow(FileWork turn, IReadOnlyList<string> paths, string destinationFolder, TransferKind kind,
+        bool reload = true, bool foldersAsRows = true)
     {
         if (!EnsureFolder(destinationFolder))
             return false;
@@ -741,7 +754,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return true;
         }
         // Files copied, or moved from another disk, need room where they go: better said now than a copy stopped halfway.
-        if (await NotEnoughRoom(paths, destinationFolder, kind) is { } shortage)
+        if (await NotEnoughRoom(turn, paths, destinationFolder, kind) is { } shortage)
         {
             Tell(ToastKind.Warning, shortage.Title, shortage.Body);
             UpdateDisk();
@@ -763,7 +776,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var namesBefore = kind == TransferKind.Copy ? EntryNames(destinationFolder) : null;
         // A copy next to the original gets a "- Copia" name, as in Explorer.
         var nextToOriginal = paths.Any(path => SamePath(Path.GetDirectoryName(path) ?? "", destinationFolder));
-        ShowActivity(Doing(paths, kind, destinationFolder));
         var owner = OwnerWindow;
         var done = await RunShell(() => kind == TransferKind.Copy
             ? ShellFileOperations.Copy(paths, destinationFolder, owner, renameOnCollision: nextToOriginal)
@@ -867,20 +879,31 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Why the files would not fit on the disk they go to: those copied, and those moved there from another disk, which
-    /// Windows copies before deleting them. Null when they fit, or when Windows cannot say how much room there is.
+    /// Windows copies before deleting them. What the copies under way take there counts as used, all of it: two copies
+    /// that fit one at a time do not start together when together they would not. Null when they fit, and then
+    /// <paramref name="turn"/> keeps that room until it ends; null also when Windows cannot say how much room there is.
     /// </summary>
-    private async Task<(string Title, string Body)?> NotEnoughRoom(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind)
+    private async Task<(string Title, string Body)?> NotEnoughRoom(FileWork turn, IReadOnlyList<string> paths, string destinationFolder,
+        TransferKind kind)
     {
         var copied = kind == TransferKind.Copy ? paths : paths.Where(path => !ArchiveFolders.IsSameDrive(path, destinationFolder)).ToList();
         if (copied.Count == 0 || DiskOf(destinationFolder) is not { } disk)
             return null;
         // Counted away from the window: a big folder takes a while.
         var needed = _live ? await Task.Run(() => FolderSize.Of(copied)) : FolderSize.Of(copied);
-        if (needed <= disk.Free)
+        // Once the size is known: the copies that started meanwhile count too.
+        var taken = _fileWork.Where(other => other != turn && other.Room?.Disk == disk.Name).Sum(other => other.Room!.Value.Bytes);
+        var left = Math.Max(0, disk.Free - taken);
+        if (needed <= left)
+        {
+            turn.Room = (disk.Name, needed);
             return null;
-        Log.Write($"Not enough room on {disk.Name} for {paths.Count} items: {needed} bytes needed, {disk.Free} free");
-        return ($"Su {disk.Name} non c'è abbastanza spazio",
-            $"Servono {ByteSize.Format(needed)} e ne restano {ByteSize.Format(disk.Free)}. Libera un po' di spazio, poi riprova.");
+        }
+        Log.Write($"Not enough room on {disk.Name} for {paths.Count} items: {needed} bytes needed, {disk.Free} free, {taken} for the copies under way");
+        return ($"Su {disk.Name} non c'è abbastanza spazio", taken == 0
+            ? $"Servono {ByteSize.Format(needed)} e ne restano {ByteSize.Format(disk.Free)}. Libera un po' di spazio, poi riprova."
+            : $"Servono {ByteSize.Format(needed)} e, tolto quello che serve alle copie in corso, ne restano {ByteSize.Format(left)}. " +
+              "Riprova quando sono finite, o libera un po' di spazio.");
     }
 
     /// <summary>
@@ -993,9 +1016,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        using var turn = await BeginFileWork($"Sposto «{topic.Name}» in «{parent?.Name ?? ArchiveName}»…");
-        var previousOrder = LoadMetadata().OrderOf(topic.Topic.RelativePath);
         var destination = parent?.Topic.FullPath ?? _root;
+        using var turn = await BeginFileWork($"Sposto «{topic.Name}» in «{parent?.Name ?? ArchiveName}»…",
+            FileTouches.Transfer([topic.Topic.FullPath], destination));
+        var previousOrder = LoadMetadata().OrderOf(topic.Topic.RelativePath);
         var newPath = Path.Combine(destination, topic.Name);
         // Two topics with the same name would be merged into one: not something a drag should do.
         if (Path.Exists(newPath))
@@ -1003,7 +1027,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Tell(ToastKind.Warning, $"In «{parent?.Name ?? ArchiveName}» c'è già «{topic.Name}»: rinominane uno, poi riprova.");
             return;
         }
-        if (!await TransferNow([topic.Topic.FullPath], destination, TransferKind.Move, reload: false, foldersAsRows: false) ||
+        if (!await TransferNow(turn, [topic.Topic.FullPath], destination, TransferKind.Move, reload: false, foldersAsRows: false) ||
             !Directory.Exists(newPath))
         {
             Reload();
@@ -1181,13 +1205,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     // ---- Undo ----
 
     /// <summary>
-    /// Takes back the last thing done in Quiver, as Ctrl+Z does in Explorer. During a move or a copy it waits for it to
-    /// end, and then takes that back.
+    /// Takes back the last thing done in Quiver, as Ctrl+Z does in Explorer. During moves or copies it waits for all of
+    /// them to end, and then takes back the last one done; the operations asked meanwhile wait for it.
     /// </summary>
     public async Task Undo()
     {
         CommitAllEdits();
-        using var turn = await BeginFileWork("Annullo l'ultima operazione…");
+        using var turn = await BeginFileWork("Annullo l'ultima operazione…", touches: null);
         if (_history.Pop() is not { } step)
         {
             Tell(ToastKind.Info, "Non c'è niente da annullare.");
@@ -1199,8 +1223,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         NotifyHistoryChanged();
         var outcome = step switch
         {
-            MoveStep move => await UndoMove(move),
-            TopicMoveStep topicMove => await UndoTopicMove(topicMove),
+            MoveStep move => await UndoMove(turn, move),
+            TopicMoveStep topicMove => await UndoTopicMove(turn, topicMove),
             CopyStep copy => await RecycleCreated(copy, copy.Copies, "Copia annullata", "le copie", "copie"),
             LinkStep link => await RecycleCreated(link, link.Links, "Collegamento annullato", "i collegamenti", "collegamenti"),
             RenameStep rename => UndoRename(rename),
@@ -1242,13 +1266,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>The undo did not happen, most likely because a file is open in another program: Ctrl+Z can try again.</summary>
     private void KeepForRetry(UndoStep step) => Remember(step);
 
-    private async Task<Outcome?> UndoMove(MoveStep step)
+    private async Task<Outcome?> UndoMove(FileWork turn, MoveStep step)
     {
         // Only what is still where it went goes back, and only to a place that is still free.
         var items = step.Items.Where(item => Path.Exists(item.To) && !Path.Exists(item.From)).ToList();
         if (items.Count == 0)
             return Outcome.Refused("Lo spostamento non si può annullare: nel frattempo gli elementi sono stati spostati o rinominati.");
-        ShowActivity(items.Count == 1
+        turn.Say(items.Count == 1
             ? $"Rimetto «{DisplayNameOf(items[0].To)}» dov'era…"
             : $"Rimetto {items.Count} elementi dov'erano…");
         var owner = OwnerWindow;
@@ -1268,9 +1292,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         return Outcome.Done(done + LeftAlone(step.Items.Count - back.Count));
     }
 
-    private async Task<Outcome?> UndoTopicMove(TopicMoveStep step)
+    private async Task<Outcome?> UndoTopicMove(FileWork turn, TopicMoveStep step)
     {
-        var outcome = await UndoMove(step.Move);
+        var outcome = await UndoMove(turn, step.Move);
         // The folder came back with the place it had taken over there: it gets its own back.
         if (step.Move.Items is [var item] && Directory.Exists(item.From) && !Directory.Exists(item.To))
             UpdateMetadata(metadata => metadata.SetOrder(KeyOf(item.From), step.PreviousOrder));
@@ -1499,7 +1523,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         _indexing?.Cancel();
         _watcher?.Dispose();
-        _shell?.Dispose();
     }
 
     [RelayCommand]
@@ -1859,25 +1882,49 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Waits for the file operations already under way, then holds the turn until disposed: each operation starts from
-    /// the files as the previous one left them, and Ctrl+Z takes back the operation it waited for.
+    /// Waits for the file operations before it that touch the same files, running or waiting, then holds its turn until
+    /// disposed: it starts from the files as they left them, while the operations on other files go on alongside.
     /// </summary>
     /// <param name="activity">What the status bar says once the turn comes, next to its LEDs.</param>
-    private async Task<IDisposable> BeginFileWork(string activity)
+    /// <param name="touches">
+    /// What it changes (see <see cref="FileTouches"/>); null for everything, as Ctrl+Z: it waits for every operation
+    /// before it, and those after it wait for it, so that it takes back the last thing done.
+    /// </param>
+    private async Task<FileWork> BeginFileWork(string activity, FileTouches? touches)
     {
-        if (++_fileWorkCount == 1)
+        var work = new FileWork(this, activity, touches);
+        _fileWork.Add(work);
+        if (_fileWork.Count == 1)
             OnPropertyChanged(nameof(IsBusy));
-        await _fileWork.WaitAsync();
-        ShowActivity(activity);
-        return new FileWorkTurn(this);
+        StartWhatCan();
+        await work.Turn;
+        return work;
     }
 
-    private void EndFileWork()
+    /// <summary>Starts each operation that no operation before it, running or waiting, gets in the way of.</summary>
+    private void StartWhatCan()
     {
-        _fileWork.Release();
-        FileOperationCompleted?.Invoke(this, EventArgs.Empty);
-        if (--_fileWorkCount > 0)
+        for (var i = 0; i < _fileWork.Count; i++)
+        {
+            var work = _fileWork[i];
+            if (work.IsRunning || _fileWork.Take(i).Any(before => before.Overlaps(work)))
+                continue;
+            work.Start();
+            Status = work.Activity;
+        }
+        ShowFileWork();
+    }
+
+    private void EndFileWork(FileWork work)
+    {
+        if (!_fileWork.Remove(work))
             return;
+        FileOperationCompleted?.Invoke(this, EventArgs.Empty);
+        if (_fileWork.Count > 0)
+        {
+            StartWhatCan();
+            return;
+        }
         OnPropertyChanged(nameof(IsBusy));
         _idle?.TrySetResult();
         _idle = null;
@@ -1889,21 +1936,69 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private sealed class FileWorkTurn(MainViewModel owner) : IDisposable
+    /// <summary>
+    /// The operations under way next to the LEDs of the status bar: the last one started, and how many more run or wait.
+    /// The tooltip lists them all.
+    /// </summary>
+    private void ShowFileWork()
     {
+        var running = _fileWork.Where(work => work.IsRunning).ToList();
+        if (running.Count == 0)
+            return;
+        var waiting = _fileWork.Count - running.Count;
+        var activity = running[^1].Activity + (running.Count - 1) switch
+        {
+            0 => "",
+            1 => " · un'altra in corso",
+            var others => $" · altre {others:N0} in corso",
+        };
+        Activity = waiting > 0 ? $"{activity} · {waiting:N0} in attesa" : activity;
+        ActivityDetails = string.Join(Environment.NewLine,
+            _fileWork.Select(work => work.IsRunning ? work.Activity : $"In attesa: {work.Activity}"));
+    }
+
+    /// <summary>A file operation that asked for its turn: what it touches, what the status bar says of it, the room it takes.</summary>
+    private sealed class FileWork(MainViewModel owner, string activity, FileTouches? touches) : IDisposable
+    {
+        private readonly TaskCompletionSource _turn = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _ended;
+
+        public string Activity { get; private set; } = activity;
+
+        /// <summary>Null for everything, as Ctrl+Z.</summary>
+        public FileTouches? Touches { get; } = touches;
+
+        /// <summary>The room its copy takes on a disk while it runs: a copy that starts meanwhile counts it as used.</summary>
+        public (string Disk, long Bytes)? Room { get; set; }
+
+        public Task Turn => _turn.Task;
+
+        public bool IsRunning => _turn.Task.IsCompleted;
+
+        public void Start() => _turn.SetResult();
+
+        /// <summary>Two operations get in each other's way when one of them touches everything, or when what they touch overlaps.</summary>
+        public bool Overlaps(FileWork other) => Touches is null || other.Touches is null || Touches.Overlaps(other.Touches);
+
+        /// <summary>What it is doing now, as "Rimetto 3 elementi dov'erano…".</summary>
+        public void Say(string activity)
+        {
+            Activity = activity;
+            owner.Status = activity;
+            owner.ShowFileWork();
+        }
 
         public void Dispose()
         {
             if (_ended)
                 return;
             _ended = true;
-            owner.EndFileWork();
+            owner.EndFileWork(this);
         }
     }
 
     /// <summary>An operation of the shell: on its own thread in the app, here and now in previews and tests.</summary>
-    private Task<bool> RunShell(Func<bool> operation) => _shell?.Run(operation) ?? Task.FromResult(operation());
+    private Task<bool> RunShell(Func<bool> operation) => ShellRunner(operation);
 
     /// <summary>A rename, done at once: it is quick, and the field of the name waits for its answer.</summary>
     private bool RenameNow(string path, string newPath)
@@ -1987,13 +2082,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             CanUndo = step is not null && ReferenceEquals(step, _history.Last),
         });
-
-    /// <summary>The operation under way, next to the LEDs of the status bar.</summary>
-    private void ShowActivity(string message)
-    {
-        Status = message;
-        Activity = message;
-    }
 
     /// <summary>«Mostra» on a toast.</summary>
     public void ShowFrom(ToastViewModel toast)

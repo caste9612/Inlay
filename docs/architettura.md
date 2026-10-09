@@ -80,7 +80,7 @@ I file più grandi, dove sta il grosso del comportamento: `ViewModels/MainViewMo
 | Thread | Cosa ci gira |
 |---|---|
 | interfaccia (il dispatcher di WPF) | tutto lo stato dei view model, le viste, la lettura delle cartelle a ogni ricarica, le rinomine, lo spostamento di un archivio sullo stesso disco, la scorciatoia (una finestra solo per i messaggi) |
-| «Quiver file operations», STA | spostamenti, copie, eliminazioni e annullamenti della shell, uno alla volta (`FileOperationQueue`); un'altra coda uguale, solo per il tempo della copia, copia un archivio su un altro disco |
+| «Quiver file operation», STA | uno per ogni spostamento, copia, eliminazione o annullamento della shell (`ShellThread`), anche per la copia di un archivio su un altro disco; quelli su file diversi girano insieme |
 | «Quiver icons», STA | le icone di Windows (`ShellIcons`) |
 | pool | l'indice della ricerca, i conteggi delle dimensioni, il confronto delle copie, gli eventi del watcher, l'ascolto della named pipe |
 
@@ -97,7 +97,7 @@ La regola: i view model si toccano solo dal thread dell'interfaccia; quello che 
 ## Scelte e motivi
 
 - **La finestra si crea una volta sola** e poi si mostra e si nasconde: così compare all'istante. Chiuderla la nasconde.
-- **Le operazioni sui file passano dalla shell** (`SHFileOperation`): finestre di avanzamento e di conflitto come in Explorer, e il Cestino. Su un thread a parte dalla 0.2.3, perché la finestra si bloccava durante le copie; dopo la 0.3.2 anche la copia di un archivio su un altro disco.
+- **Le operazioni sui file passano dalla shell** (`SHFileOperation`): finestre di avanzamento e di conflitto come in Explorer, e il Cestino. Su un thread a parte dalla 0.2.3, perché la finestra si bloccava durante le copie; dopo la 0.3.2 anche la copia di un archivio su un altro disco, e ogni operazione su un thread suo, perché quelle su file diversi non si aspettino.
 - **I view model si riconciliano, non si sostituiscono**: selezione, nomi in modifica, rami aperti e focus sopravvivono alle ricariche, che sono frequenti.
 - **I metadati si rileggono dal disco a ogni cambiamento**: niente copie in memoria da tenere allineate con il file.
 - **Niente virtualizzazione di WPF**: la selezione è legata ai view model e deve valere anche per le righe fuori vista. Sulla tela le righe si creano quando servono ([tela.md](tela.md#le-righe-create-quando-servono)).

@@ -18,25 +18,26 @@ I principi da rispettare sono quelli di [PROGETTO.md §3](../PROGETTO.md#3-princ
 | angolo del riquadro, «Ordina per», colore, promuovi | `ResizeTile`, `SortTile`, `SetSortDirection`, `SetTileColor`, `SetTopicColor`, `PromoteTile`, `DemoteTopic`, `PromoteItem`, `DemoteTile` |
 | `Ctrl+Z`, «Annulla» su un avviso | `Undo`, `UndoFrom` |
 
-## Il turno e il thread a parte
+## Il turno e i thread
 
-Spostamenti, copie, eliminazioni e annullamenti passano da `BeginFileWork(activity)`:
+Spostamenti, copie, eliminazioni e annullamenti passano da `BeginFileWork(activity, touches)`, che restituisce il loro turno (`FileWork`):
 
-- **Un'operazione alla volta.** Un `SemaphoreSlim` fa aspettare il turno: ogni operazione parte dai file come li ha lasciati la precedente, e un `Ctrl+Z` dato durante una copia aspetta che finisca e annulla proprio quella.
-- **`IsBusy`** è vero da quando un'operazione chiede il turno a quando l'ultima finisce. La barra di stato mostra i LED e `Activity`, cioè cosa si sta facendo («Sposto 3 elementi in «Documenti»…»). `WhenIdle()` è il compito che **Esci** aspetta.
-- **Il turno si restituisce** con il `Dispose` di quello che `BeginFileWork` restituisce (`using var turn = await BeginFileWork(…)`). `EndFileWork` avvisa la finestra (`FileOperationCompleted`, per riprendersi il focus) e, se nel frattempo l'archivio è cambiato, ricostruisce l'indice della ricerca una volta sola.
-- **`RunShell(operation)`** fa girare la chiamata alla shell sulla `FileOperationQueue`, un thread STA tutto suo, così la finestra resta usabile mentre Windows mostra le sue finestre di avanzamento e di conflitto. Nelle anteprime e nei test (`live: false`) la coda non c'è e la chiamata avviene subito.
+- **Insieme, se toccano file diversi.** `touches` dice cosa cambia l'operazione (`FileTouches`, [archivio.md](archivio.md#operazioni-insieme-filetouches)). Un'operazione parte appena nessuna di quelle chieste prima di lei, in corso o in attesa, la intralcia (`StartWhatCan`): così parte dai file come li hanno lasciati, e non passa davanti a una che aspetta gli stessi file. Quelle su file diversi vanno avanti insieme.
+- **`Ctrl+Z` le aspetta tutte**: `Undo` chiede il turno senza `touches`, cioè su tutto. Aspetta ogni operazione chiesta prima di lui e annulla l'ultima finita; quelle chieste dopo aspettano lui.
+- **`IsBusy`** è vero da quando un'operazione chiede il turno a quando l'ultima finisce. La barra di stato mostra i LED e `Activity`: l'ultima operazione partita, e quante altre sono in corso o in attesa («Copio «Foto» in «Lavoro»… · un'altra in corso · 1 in attesa»); il suo tooltip, `ActivityDetails`, le elenca tutte. `FileWork.Say` cambia quello che dice un'operazione mentre lavora, come l'annullamento di uno spostamento («Rimetto 3 elementi dov'erano…»). `WhenIdle()` è il compito che **Esci** aspetta.
+- **Il turno si restituisce** con il `Dispose` del `FileWork` (`using var turn = await BeginFileWork(…)`). `EndFileWork` avvisa la finestra (`FileOperationCompleted`, per riprendersi il focus), fa partire quelle che aspettavano e, quando non ne resta nessuna, se nel frattempo l'archivio è cambiato ricostruisce l'indice della ricerca una volta sola.
+- **`RunShell(operation)`** fa girare la chiamata alla shell su un thread STA tutto suo (`ShellThread`), uno per operazione: la finestra resta usabile mentre Windows mostra le sue finestre di avanzamento e di conflitto, una per operazione, come in Explorer. Nelle anteprime e nei test (`live: false`) la chiamata avviene subito. Passa da `ShellRunner`, che i test sostituiscono per trattenere le operazioni e vedere quali vanno insieme.
 - **Le rinomine no**: `RenameNow` chiama la shell sul thread dell'interfaccia, perché sono brevi e il campo del nome aspetta la risposta. Mentre la shell lavora, `_renaming` impedisce le ricariche.
 - **`Start(task)`**: le operazioni lanciate da una domanda o da «Sposta in…», che si chiudono senza aspettarle. Un errore imprevisto torna comunque sul thread dell'interfaccia, al gestore degli errori dell'app.
-- **La copia di un archivio su un altro disco**, in Impostazioni › Archivi, usa una `FileOperationQueue` sua, solo per il tempo della copia ([interfaccia.md](interfaccia.md#le-impostazioni-settingsviewmodel-archivesviewmodel)).
+- **La copia di un archivio su un altro disco**, in Impostazioni › Archivi, gira anche lei su un `ShellThread` ([interfaccia.md](interfaccia.md#le-impostazioni-settingsviewmodel-archivesviewmodel)).
 
 ## Spostare e copiare (`Transfer`)
 
-`Transfer(paths, destinationFolder, kind, foldersAsRows)` aspetta il turno, poi `TransferNow`:
+`Transfer(paths, destinationFolder, kind, foldersAsRows)` aspetta il turno, con `FileTouches.Transfer(paths, destinationFolder)`, poi `TransferNow`:
 
 1. **La cartella di arrivo** viene creata se manca (`EnsureFolder`), per esempio se nel frattempo è stata tolta da Explorer.
 2. **I collegamenti** (`TransferKind.Link`) vanno a `CreateLinks` ([più sotto](#collegamenti)).
-3. **Lo spazio**: per le copie, e per gli spostamenti da un altro disco (Windows copia e poi cancella), `NotEnoughRoom` conta quanto occupano i file (`FolderSize`, lontano dal thread dell'interfaccia) e lo confronta con lo spazio libero (`DiskOf`). Se non ci stanno, un avviso lo dice e non si comincia.
+3. **Lo spazio**: per le copie, e per gli spostamenti da un altro disco (Windows copia e poi cancella), `NotEnoughRoom` conta quanto occupano i file (`FolderSize`, lontano dal thread dell'interfaccia) e lo confronta con lo spazio libero (`DiskOf`), tolto quello che serve alle copie già in corso sullo stesso disco (`FileWork.Room`), tutto, anche la parte già copiata: meglio un avviso di troppo che due copie a metà. Se non ci stanno, un avviso lo dice e non si comincia; se ci stanno, l'operazione tiene il suo spazio fino alla fine.
 4. **Dove arriverà ogni elemento** (`landings`, per gli spostamenti): solo quelli il cui nome è libero nella destinazione. Se il nome è preso, l'utente sceglie nella finestra della shell cosa fare, quindi non si sa dove finirà l'elemento, e `Ctrl+Z` lo lascerà stare. Per le copie conta invece quello che compare di nuovo nella cartella (punto 9).
 5. **I metadati delle cartelle che escono dall'archivio** vengono copiati prima (`SnapshotOf`), per ridarglieli se tornano con `Ctrl+Z`.
 6. **La shell** copia (con i nomi «- Copia» se la copia è nella stessa cartella dell'originale) o sposta.
@@ -101,7 +102,7 @@ Allegati e messaggi di Outlook, link e immagini del browser non sono ancora file
 
 `Remember(step)` registra un passo in `UndoHistory` e aggiorna `CanUndo`, l'etichetta del menu (`UndoLabel`, «Annulla lo spostamento»…) e il pulsante **Annulla** degli avvisi, che resta solo su quello dell'ultima operazione: dopo un'altra, `Ctrl+Z` annullerebbe quella.
 
-`Undo()` conferma i nomi in modifica, aspetta il turno, prende l'ultimo passo, toglie gli avvisi che lo offrivano e lo esegue al contrario. L'esito è un avviso: fatto (successo), rifiutato perché nel frattempo qualcosa è cambiato (attenzione), non riuscito (errore). Se non è riuscito, di solito perché un file è aperto in un altro programma, il passo torna nel registro (`KeepForRetry`) e `Ctrl+Z` si può ripetere.
+`Undo()` conferma i nomi in modifica, aspetta il turno (dopo tutte le operazioni chieste prima), prende l'ultimo passo, toglie gli avvisi che lo offrivano e lo esegue al contrario. L'esito è un avviso: fatto (successo), rifiutato perché nel frattempo qualcosa è cambiato (attenzione), non riuscito (errore). Se non è riuscito, di solito perché un file è aperto in un altro programma, il passo torna nel registro (`KeepForRetry`) e `Ctrl+Z` si può ripetere.
 
 | Passo | Come si annulla |
 |---|---|

@@ -19,7 +19,7 @@ Come è fatto il pannello: view model, ricarica, ricerca, selezione, tastiera e 
 | vista | `IsCanvasShown`, `ViewIndex`, `IsBoardVisible`, `IsCanvasVisible`, `Canvas`, `IsSidebarOpen` |
 | bacheca in vista | `SelectedTopic`, `BoardTitle`, `BoardPath`, `EmptyMessage`, `BoardFolder` |
 | domande | `Prompt`, `Picker` |
-| avvisi e barra di stato | `Toasts`, `Status`, `Activity`, `IsBusy`, `ArchiveSummary`, `SelectionSummary`, `DiskText`, `IsDiskLow`, `RootFilesText` |
+| avvisi e barra di stato | `Toasts`, `Status`, `Activity`, `ActivityDetails`, `IsBusy`, `ArchiveSummary`, `SelectionSummary`, `DiskText`, `IsDiskLow`, `RootFilesText` |
 | annullare | `CanUndo`, `UndoLabel` |
 
 Il costruttore riceve l'archivio e alcune dipendenze sostituibili: `live` (in tempo reale, con indice in background, watcher e coda delle operazioni; falso nelle anteprime e nei test), il Cestino, le destinazioni recenti e `readOnly` (le anteprime non scrivono niente nell'archivio). `DiskOf` permette ai test di fingere lo spazio libero.
@@ -94,7 +94,7 @@ Mentre una domanda è aperta, i tasti vanno a lei: `Esc` annulla, `Invio` confer
 - **`ToastViewModel`**: tipo (`Success`, `Info`, `Warning`, `Danger`), titolo, testo, e facoltativi **Mostra** (`Notice`) e **Annulla** (`UndoStep`, finché è l'ultimo passo del registro).
 - **`Tell`**: un avviso uguale a uno già in vista lo sostituisce; al massimo tre, il più vecchio esce. Attenzioni ed errori vanno anche nel log. Gli avvisi si svuotano a ogni apertura del pannello e cambiando archivio.
 - **`ToastClock`**: successi e notizie si chiudono dopo sei secondi, con il conto fermo mentre il puntatore o il focus sono sopra. Attenzioni ed errori restano finché non si chiudono.
-- **La barra di stato**: a sinistra l'archivio (un clic lo apre in Explorer) con `ArchiveSummary` e, quando ce ne sono, i file sciolti nella radice (`RootFilesText`: un clic apre la radice), oppure, durante un'operazione, i LED di `Brace.Activity` con `Activity`; a destra `SelectionSummary` (quanti elementi sono selezionati e quanto pesano i loro file: come in Explorer, il peso delle cartelle non si conta), lo spazio libero (con l'icona di avviso quando è poco) e **?**, i tasti da sapere.
+- **La barra di stato**: a sinistra l'archivio (un clic lo apre in Explorer) con `ArchiveSummary` e, quando ce ne sono, i file sciolti nella radice (`RootFilesText`: un clic apre la radice), oppure, durante le operazioni, i LED di `Brace.Activity` con `Activity` (l'ultima partita, e quante altre sono in corso o in attesa; il tooltip le elenca); a destra `SelectionSummary` (quanti elementi sono selezionati e quanto pesano i loro file: come in Explorer, il peso delle cartelle non si conta), lo spazio libero (con l'icona di avviso quando è poco) e **?**, i tasti da sapere.
 - **I tasti da sapere** sono `MainViewModel.Shortcuts`, costruiti da `ShortcutGroup.For(Hotkey)`: tra loro c'è la scorciatoia in uso, che `App` passa al view model all'avvio e ogni volta che cambia nelle impostazioni.
 
 ## I menu
@@ -158,7 +158,7 @@ Disegnata da Quiver come `br-titlebar` di Brace, perché Brace per WPF non ne ha
   - **Crea** (nome e cartella, che di partenza è quella dell'utente, sullo stesso disco del Desktop), **Apri una cartella** (`ArchiveFolders.Adopt`), **Apri**, **Mostra in Explorer**, **Togli dall'elenco** (non quello in uso; la cartella resta);
   - **Rinomina** e **Sposta…** sullo stesso disco sono un `Directory.Move` della cartella, dopo aver lasciato libero l'archivio in uso (`IArchiveHost.Release`), che poi si riapre dal posto nuovo;
   - **Sposta…** su un altro disco (`MoveToOtherDriveAsync`): conta quanto occupa l'archivio e controlla lo spazio, lo copia con la shell, confronta byte per byte la copia con l'originale (`CopyCheck`) e passa alla copia solo se è identica; poi chiede se mandare la cartella vecchia nel Cestino. In ogni altro caso l'archivio resta dov'era.
-  - Il conto e il confronto girano in background. La copia gira su un thread STA a parte (`CopyAsync`, con una `FileOperationQueue` sua), con la finestra di avanzamento di Windows: Quiver resta usabile. Mentre la shell copia (`IsCopying`) la finestra Impostazioni non si chiude (`TryClose`) ed **Esci** aspetta (`WhenCopied`), perché una copia interrotta lascerebbe mezzo archivio sull'altro disco. Durante il confronto (`IsChecking`) compaiono l'avanzamento e «Interrompi il controllo».
+  - Il conto e il confronto girano in background. La copia gira su un thread STA a parte (`CopyAsync`, con `ShellThread`), con la finestra di avanzamento di Windows: Quiver resta usabile. Mentre la shell copia (`IsCopying`) la finestra Impostazioni non si chiude (`TryClose`) ed **Esci** aspetta (`WhenCopied`), perché una copia interrotta lascerebbe mezzo archivio sull'altro disco. Durante il confronto (`IsChecking`) compaiono l'avanzamento e «Interrompi il controllo».
   - Restano sul thread della finestra la rinomina e lo spostamento sullo stesso disco (un `Directory.Move`) e il Cestino della cartella vecchia, che di solito sono rapidi.
   - Le domande della pagina sono anche qui dei `PromptViewModel`.
 
