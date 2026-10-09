@@ -56,6 +56,7 @@ L'interfaccia e i documenti parlano italiano, il codice inglese. Le parole sono 
 | chiave | relative key | il percorso di una cartella relativo alla radice, con le `/` |
 | collegamento | shortcut, `.lnk`, `.url`, `TransferKind.Link` | quello con cui entra ciò che ha già un suo posto |
 | «Sposta in…» | `DestinationPickerViewModel`, `Destination` | l'elenco dei posti dove mandare la selezione |
+| filtri della ricerca | `SearchQuery`, `SearchKind`, `tipo:`, `in:` | il tipo degli elementi e il posto dove cercarli, come pulsanti sopra i risultati o scritti nella casella |
 | «Invia a Quiver» | `SendToShortcut`, `--sort` | la voce nel menu «Invia a» di Explorer |
 | annullare, passo | undo, `UndoStep`, `UndoHistory` | `Ctrl+Z` e quello che ricorda |
 | avviso | toast, `ToastViewModel` | il messaggio in basso a destra |

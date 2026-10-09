@@ -29,7 +29,12 @@ public sealed record ShortcutGroup(string Title, IReadOnlyList<ShortcutHint> Hin
         [
             new("annulla l'ultima operazione", "Ctrl+Z"),
             new("nuovo riquadro", "Ctrl+Maiusc+N"),
-            new("cerca in tutto l'archivio; Esc torna indietro", "Scrivi"),
+        ]),
+        new("Ricerca",
+        [
+            new("cerca in tutto l'archivio, nei nomi e nelle cartelle; Esc torna indietro", "Scrivi"),
+            new("solo un tipo: cartelle, documenti, pdf, immagini… o un'estensione", "tipo:pdf"),
+            new("solo dentro un argomento o una cartella", "in:Lavoro"),
         ]),
         new("Tela",
         [

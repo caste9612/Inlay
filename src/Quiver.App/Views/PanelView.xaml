@@ -87,6 +87,27 @@
             <Setter Property="AutomationProperties.Name" Value="Vista" />
         </Style>
 
+        <!-- The filters above the search results: small buttons of Brace, in the accent while they are in use. -->
+        <Style x:Key="SearchFilter" TargetType="Button" BasedOn="{StaticResource Brace.Button.Small}">
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+        <Style x:Key="SearchKindFilter" TargetType="Button" BasedOn="{StaticResource SearchFilter}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brace.Accent}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SearchPlaceFilter" TargetType="Button" BasedOn="{StaticResource SearchFilter}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasPlaceFilter}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brace.Accent}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- A topic of the sidebar: the row of Brace's tree (indent of 16 px for each level, the arrow to open it), at the size
              of the navigation. -->
         <Style x:Key="TopicItem" TargetType="TreeViewItem">
@@ -720,7 +741,7 @@
                                 <ColumnDefinition Width="10*" MaxWidth="280" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="SearchBox" Grid.Column="1" MinHeight="0" Height="{StaticResource Brace.ControlSm}" Padding="26,0,8,0"
+                            <TextBox x:Name="SearchBox" Grid.Column="1" MinHeight="0" Height="{StaticResource Brace.ControlSm}" Padding="26,0,24,0"
                                      VerticalAlignment="Center" Tag="Cerca in tutto l'archivio" AutomationProperties.Name="Cerca in tutto l'archivio"
                                      WindowChrome.IsHitTestVisibleInChrome="True"
                                      Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
@@ -728,6 +749,13 @@
                             <Path Grid.Column="1" Margin="8,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"
                                   Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Search16}"
                                   TextElement.Foreground="{DynamicResource Brace.TextTertiary}" />
+                            <!-- The filters in a menu, also with nothing typed yet: kinds and places, written as "tipo:…" and "in:…". -->
+                            <Button Grid.Column="1" Width="20" Height="20" Margin="0,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Style="{StaticResource Brace.IconButton.Small}" ToolTip="Filtri: per tipo e per argomento"
+                                    AutomationProperties.Name="Filtri della ricerca" WindowChrome.IsHitTestVisibleInChrome="True"
+                                    Click="SearchFilters_Click">
+                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Filter16}" />
+                            </Button>
                         </Grid>
                     </DockPanel>
                 </Border>
@@ -1018,6 +1046,31 @@
 
                         <!-- Search results -->
                         <DockPanel Margin="20,16,20,10" Visibility="{Binding IsSearching, Converter={StaticResource Visible}}">
+                            <!-- The filters: where to look, and the kinds. They write "in:…" and "tipo:…" in the search box,
+                                 which can be typed there as well. -->
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <Button DockPanel.Dock="Left" Margin="0,0,12,6" VerticalAlignment="Top" Style="{StaticResource SearchPlaceFilter}"
+                                        ToolTip="Dove cercare: in tutto l'archivio, o in un argomento (in:…)" Click="SearchPlace_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" />
+                                        <TextBlock MaxWidth="260" VerticalAlignment="Center" Text="{Binding PlaceFilterText}" TextTrimming="CharacterEllipsis" />
+                                        <Path Margin="4,0,0,0" Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.ChevronDown16}" />
+                                    </StackPanel>
+                                </Button>
+                                <ItemsControl Focusable="False" ItemsSource="{Binding KindFilters}" AutomationProperties.Name="Filtri per tipo">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:SearchKindFilter}">
+                                            <Button Style="{StaticResource SearchKindFilter}" Content="{Binding Label}" ToolTip="{Binding ToolTip}"
+                                                    Click="SearchKind_Click" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </DockPanel>
                             <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" Style="{StaticResource Brace.Text.Caption}"
                                        Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding ResultsHeader}" />
                             <ListBox x:Name="ResultsList" SelectionMode="Extended" ItemsSource="{Binding Results}" VirtualizingPanel.IsVirtualizing="False"

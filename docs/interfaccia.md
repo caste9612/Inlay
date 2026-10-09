@@ -15,7 +15,7 @@ Come è fatto il pannello: view model, ricarica, ricerca, selezione, tastiera e 
 | Cosa | Proprietà |
 |---|---|
 | argomenti, sotto-argomenti della bacheca, riquadri della bacheca | `Topics`, `SubTopics`, `Tiles` |
-| ricerca | `Query`, `IsSearching`, `Results`, `ResultsHeader` |
+| ricerca | `Query`, `IsSearching`, `Results`, `ResultsHeader`, `KindFilters`, `PlaceFilterText`, `HasPlaceFilter` |
 | vista | `IsCanvasShown`, `ViewIndex`, `IsBoardVisible`, `IsCanvasVisible`, `Canvas`, `IsSidebarOpen` |
 | bacheca in vista | `SelectedTopic`, `BoardTitle`, `BoardPath`, `EmptyMessage`, `BoardFolder` |
 | domande | `Prompt`, `Picker` |
@@ -50,7 +50,9 @@ A ogni ricarica `MainViewModel` legge i metadati, crea un nuovo `ArchiveReader`,
 ## La ricerca
 
 - L'indice (`SearchIndex`) si costruisce in background quando si apre l'archivio e quando il watcher vede un cambiamento; una costruzione nuova annulla quella in corso. Mentre un'operazione sposta file, aspetta e si fa una volta sola alla fine. Finché non c'è, la ricerca dice «Indicizzazione in corso…».
-- Scrivere in qualunque punto del pannello scrive nella ricerca (`OnPreviewTextInput`). `Query` produce al massimo 60 risultati, ognuno con il suo percorso («Lavoro › Clienti › Rossi», o «Archivio»).
+- Scrivere in qualunque punto del pannello scrive nella ricerca (`OnPreviewTextInput`). `Query` produce al massimo 60 risultati, ognuno con il suo percorso («Lavoro › Clienti › Rossi», o «Archivio»). `RunSearch` la legge con `SearchQuery.Parse` ([archivio.md](archivio.md#la-ricerca-searchindex-searchquery-searchtext)); con i soli filtri l'intestazione dice «I 60 più recenti» o quanti sono.
+- **I filtri sopra i risultati**: il pulsante del posto («Ovunque», o «In: Lavoro», `PlaceFilterText`) apre un menu con gli argomenti, rientrati come nella barra laterale; i tipi sono `KindFilters`, un `SearchKindFilter` per tipo, nel colore dell'accento quando sono scritti nella casella (`IsChecked`). Un clic scrive o toglie `tipo:…` (`ToggleKindFilter`) o `in:…` (`SetSearchPlace`) e rimette il cursore in fondo alla casella: la casella resta l'unico posto dove stanno i filtri, e quello che vi si scrive a mano accende gli stessi pulsanti.
+- **Il pulsante a imbuto** nella casella apre un menu con i tipi e i posti, anche prima di scrivere: un filtro scelto lì fa comparire i risultati.
 - Le frecce scelgono, `Invio` apre, `Ctrl+Invio` mostra in Explorer, `Esc` svuota la ricerca e una seconda volta chiude la finestra. Sulla tela un clic su un risultato ci vola sopra ([tela.md](tela.md#i-gesti-in-panelview)).
 - Con la ricerca vuota, `Ctrl+Z` e `Ctrl+V` (di file) agiscono sulla bacheca: il pannello si apre con il focus nella ricerca, e devono funzionare subito.
 

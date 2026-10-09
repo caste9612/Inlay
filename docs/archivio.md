@@ -139,12 +139,17 @@ Il Cestino di ogni disco tiene ogni elemento come due file: `$R…` è l'element
 - `ReadIndex` legge i `$I…` della versione 2 (Windows 10 e 11) e della versione 1 (da Vista a 8.1).
 - Il costruttore riceve la funzione che dà, per un percorso, la cartella del Cestino dell'utente su quel disco: nell'app è `WindowsFolders.RecycleBinOf`, nei test un Cestino finto.
 
-## La ricerca (`SearchIndex`, `SearchText`)
+## La ricerca (`SearchIndex`, `SearchQuery`, `SearchText`)
 
 - `SearchIndex.Build(root, ct)` mette in memoria tutti i file e le cartelle dell'archivio, senza quelli nascosti, di sistema o con il punto davanti, e senza seguire junction e collegamenti simbolici. I file sciolti nella radice ci sono, con «Archivio» come posto.
 - `ArchiveCount` e `ArchiveBytes` sono i numeri della barra di stato («55.781 elementi · 2,3 GB»).
-- `Search(query, max)`: ogni parola deve comparire nel nome o nel percorso. `SearchText.Score` dà 100 punti se il nome comincia con la parola, 70 se ci comincia una sua parola, 40 se la parola è in mezzo al nome e 10 se è solo nel percorso, poi toglie un quarto della lunghezza del nome: a parità vincono i nomi corti. A parità di punteggio, l'ordine naturale.
+- `Search(query, max)`: ogni parola deve comparire nel nome o nel percorso, e l'elemento deve passare i filtri (più sotto). `SearchText.Score` dà 100 punti se il nome comincia con la parola, 70 se ci comincia una sua parola, 40 se la parola è in mezzo al nome e 10 se è solo nel percorso, poi toglie un quarto della lunghezza del nome: a parità vincono i nomi corti. A parità di punteggio, l'ordine naturale.
 - `SearchText.Normalize` toglie maiuscole e accenti: «perche» trova «Perché».
+- **`SearchQuery.Parse(text)`** separa le parole dai filtri: `tipo:valore` e `in:valore`, con le virgolette se il valore ha spazi (`in:"Foto vacanze"`), chiavi e valori senza maiuscole né accenti. Un filtro ancora vuoto (`tipo:`) non filtra; altri due punti fanno parte di una parola (`ore:10`).
+- **`tipo:`** vale per i tipi di `SearchKind.All` (cartelle, documenti, pdf, fogli, presentazioni, immagini, video, audio, collegamenti, compressi, posta, codice, 3d) il cui nome, o un altro modo di dirlo (`foto`, `excel`, `zip`), comincia con il valore: mentre si scrive `tipo:p` valgono tutti quelli possibili. Un valore che non è un tipo è un'estensione: `tipo:dwg`. I tipi seguono `FileKinds`, che l'indice calcola una volta per elemento; i collegamenti sono i `.lnk` e gli `.url`.
+- **`in:`** vale per gli elementi che stanno dentro una cartella con quel nome, intero e a qualunque profondità, o dentro un percorso di nomi (`in:Lavoro/Clienti`, anche con ` › `): `in:clienti` trova «Lavoro › Clienti › Rossi», non «Clienti fedeli».
+- Più tipi, o più posti, valgono uno o l'altro; parole, tipi e posti tutti insieme (`Admits`). Con i soli filtri l'elenco è dei più recenti, poi in ordine di nome.
+- `ToggleKind` e `WithPlace` scrivono i filtri nel testo, lasciando com'è il resto: sono quello che fanno i pulsanti sopra i risultati. `SamePlace` e `Display` confrontano e mostrano un posto («Lavoro › Clienti»).
 
 ## Ordine degli elementi (`ItemArrangement`, `NaturalStringComparer`)
 

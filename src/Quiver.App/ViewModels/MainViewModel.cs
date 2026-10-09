@@ -19,6 +19,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 {
     private const int MaxResults = 60;
     private const int MaxToasts = 3;
+    private const string Everywhere = "Ovunque";
 
     private readonly bool _live;
     private readonly bool _readOnly;
@@ -73,6 +74,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _resultsHeader = "";
+
+    /// <summary>Where the search looks, as the filter above the results says it: "Ovunque", or "In: Lavoro › Clienti".</summary>
+    [ObservableProperty]
+    private string _placeFilterText = Everywhere;
+
+    /// <summary>The search looks only in some places, written "in:…".</summary>
+    [ObservableProperty]
+    private bool _hasPlaceFilter;
 
     /// <summary>
     /// The last thing Quiver said: in a toast, or next to the LEDs of the status bar while an operation runs. Kept for the
@@ -177,6 +186,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>The keys worth knowing, under the «?» of the status bar: the shortcut among them is the one in use.</summary>
     public IReadOnlyList<ShortcutGroup> Shortcuts => ShortcutGroup.For(Hotkey);
+
+    /// <summary>The kinds the search can be narrowed to, as filters above the results; checked, those written in the search box.</summary>
+    public IReadOnlyList<SearchKindFilter> KindFilters { get; } = SearchKind.All.Select(kind => new SearchKindFilter(kind)).ToList();
 
     /// <summary>For the tests: how much room the disk of a folder has; that of Windows in the app.</summary>
     internal Func<string, DiskSpace?> DiskOf { get; set; } = DiskSpace.Of;
@@ -2113,6 +2125,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void RunSearch()
     {
         Results.Clear();
+        var query = SearchQuery.Parse(Query);
+        // The filters above the results say what the search box has, written there or chosen with them.
+        foreach (var filter in KindFilters)
+            filter.IsChecked = query.Kinds.Contains(filter.Kind);
+        HasPlaceFilter = query.Places.Count > 0;
+        PlaceFilterText = HasPlaceFilter ? "In: " + string.Join(", ", query.Places.Select(SearchQuery.Display)) : Everywhere;
         if (!IsSearching)
             return;
         if (_index is null)
@@ -2120,16 +2138,36 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             ResultsHeader = "Indicizzazione in corso…";
             return;
         }
-        var hits = _index.Search(Query, MaxResults);
+        var hits = _index.Search(query, MaxResults);
         foreach (var hit in hits)
             Results.Add(new SearchResultViewModel(hit) { IsCut = _cutPaths.Contains(hit.Item.FullPath) });
-        ResultsHeader = hits.Count switch
+        ResultsHeader = (query.Words.Count, hits.Count) switch
         {
-            0 => "Nessun risultato. Prova con una parte del nome, o con il nome della cartella.",
-            1 => "1 risultato",
-            MaxResults => $"Primi {MaxResults} risultati",
-            _ => $"{hits.Count} risultati",
+            // Only filters: what passes them, the newest first.
+            (0, 0) => "Niente passa questi filtri.",
+            (0, 1) => "1 elemento",
+            (0, MaxResults) => $"I {MaxResults} più recenti",
+            (0, var count) => $"{count} elementi, i più recenti prima",
+            (_, 0) => query.HasFilters
+                ? "Nessun risultato. Prova con una parte del nome, o togli un filtro."
+                : "Nessun risultato. Prova con una parte del nome, o con il nome della cartella.",
+            (_, 1) => "1 risultato",
+            (_, MaxResults) => $"Primi {MaxResults} risultati",
+            (_, var count) => $"{count} risultati",
         };
+    }
+
+    /// <summary>A filter above the results, or in the menu of the search box: adds or takes away its "tipo:…".</summary>
+    public void ToggleKindFilter(SearchKind kind) => Query = SearchQuery.ToggleKind(Query, kind);
+
+    /// <summary>Only in this topic, or everywhere with null: "in:…" in the search box, in the place of those there.</summary>
+    public void SetSearchPlace(TopicViewModel? topic) => Query = SearchQuery.WithPlace(Query, topic?.Topic.RelativePath);
+
+    /// <summary>Whether the search looks only in this topic, or everywhere for null: the menu of the places checks it.</summary>
+    public bool IsSearchPlace(TopicViewModel? topic)
+    {
+        var places = SearchQuery.Parse(Query).Places;
+        return topic is null ? places.Count == 0 : places.Any(place => SearchQuery.SamePlace(place, topic.Topic.RelativePath));
     }
 
     private async void RebuildIndex()

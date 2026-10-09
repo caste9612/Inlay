@@ -335,6 +335,41 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Contains("ricerca", viewModel.Status);
     });
 
+    [Fact]
+    public void TheFiltersOfTheSearch_WriteInTheSearchBox_AndShowWhatIsWrittenThere() => StaThread.Run(() =>
+    {
+        AddFile("Lavoro/Documenti/offerta.pdf");
+        AddFile("Personale/Casa/offerta.pdf");
+        using var viewModel = Open();
+        viewModel.BuildIndexNow();
+        var pdf = viewModel.KindFilters.Single(filter => filter.Kind.Name == "pdf");
+        var lavoro = viewModel.Topics.Single(topic => topic.Name == "Lavoro");
+
+        viewModel.Query = "offerta";
+        viewModel.ToggleKindFilter(pdf.Kind);
+
+        Assert.Equal("offerta tipo:pdf", viewModel.Query);
+        Assert.True(pdf.IsChecked);
+        Assert.Equal(2, viewModel.Results.Count);
+
+        viewModel.SetSearchPlace(lavoro);
+
+        Assert.Equal("offerta tipo:pdf in:Lavoro", viewModel.Query);
+        Assert.Equal("In: Lavoro", viewModel.PlaceFilterText);
+        Assert.True(viewModel.IsSearchPlace(lavoro));
+        Assert.Equal(Path.Combine(_root, "Lavoro", "Documenti", "offerta.pdf"), Assert.Single(viewModel.Results).Item.FullPath);
+
+        // Filters alone list what passes them; written by hand, they show the same.
+        viewModel.Query = "tipo:pdf";
+        Assert.Equal("2 elementi, i più recenti prima", viewModel.ResultsHeader);
+        Assert.Equal("Ovunque", viewModel.PlaceFilterText);
+        Assert.False(viewModel.HasPlaceFilter);
+        viewModel.Query = "tipo:foto";
+        Assert.False(pdf.IsChecked);
+        Assert.True(viewModel.KindFilters.Single(filter => filter.Kind.Name == "immagini").IsChecked);
+        Assert.Equal("Niente passa questi filtri.", viewModel.ResultsHeader);
+    });
+
     // ---- Ctrl+Z ----
 
     [Fact]

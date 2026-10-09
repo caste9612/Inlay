@@ -117,4 +117,62 @@ public sealed class SearchIndexTests : IDisposable
 
         Assert.Equal(10, SearchIndex.Build(_archive.Root).Search("file", maxResults: 10).Count);
     }
+
+    // ---- Filters: "tipo:" and "in:" ----
+
+    [Fact]
+    public void Filters_NarrowTheWords_ByKindAndByPlace_AndOneOfEachSortIsEnough()
+    {
+        _archive.AddFile("Lavoro/Clienti/Rossi/Offerta.pdf");
+        _archive.AddFile("Lavoro/Clienti/Rossi/Offerta.docx");
+        _archive.AddFile("Lavoro/Interni/Offerta tipo.docx");
+        _archive.AddFile("Personale/Offerta.pdf");
+        _archive.AddFolder("Lavoro/Offerte");
+        var index = SearchIndex.Build(_archive.Root);
+
+        Assert.Equal(["Offerta.pdf", "Offerta.pdf"], index.Search("offerta tipo:pdf").Select(hit => hit.Item.Name));
+        Assert.Equal([Path.Combine("Lavoro", "Clienti", "Rossi")], index.Search("offerta tipo:pdf in:lavoro").Select(hit => hit.RelativeDirectory));
+        Assert.Equal(3, index.Search("offerta tipo:pdf tipo:documenti in:lavoro").Count);
+        Assert.Equal(["Offerte"], index.Search("off tipo:cartelle").Select(hit => hit.Item.Name));
+    }
+
+    [Fact]
+    public void APlace_IsAWholeFolderName_AtAnyDepth_OrAPathOfThem()
+    {
+        _archive.AddFile("Lavoro/Clienti/Rossi/Offerta.pdf");
+        _archive.AddFile("Lavoro vecchio/Offerta.pdf");
+        _archive.AddFile("Personale/Clienti fedeli/Offerta.pdf");
+        var index = SearchIndex.Build(_archive.Root);
+
+        Assert.Single(index.Search("offerta in:Lavoro"));
+        Assert.Single(index.Search("offerta in:rossi"));
+        Assert.Single(index.Search("offerta in:\"lavoro › clienti\""));
+        Assert.Empty(index.Search("offerta in:client"));
+        Assert.Equal(2, index.Search("offerta in:lavoro in:\"Lavoro vecchio\"").Count);
+    }
+
+    [Fact]
+    public void FiltersWithoutWords_ListWhatPassesThem_TheNewestFirst()
+    {
+        var older = _archive.AddFile("Lavoro/Vecchio.pdf");
+        var newer = _archive.AddFile("Personale/Nuovo.pdf");
+        _archive.AddFile("Lavoro/Nota.txt");
+        File.SetLastWriteTime(older, new DateTime(2025, 1, 1));
+        File.SetLastWriteTime(newer, new DateTime(2026, 1, 1));
+
+        Assert.Equal(["Nuovo.pdf", "Vecchio.pdf"], SearchIndex.Build(_archive.Root).Search("tipo:pdf").Select(hit => hit.Item.Name));
+    }
+
+    [Fact]
+    public void Shortcuts_AreAKindOfTheirOwn_AndAnExtensionFindsItsFiles()
+    {
+        _archive.AddFile("Strumenti/Blocco note.lnk");
+        _archive.AddFile("Strumenti/Portale.url");
+        _archive.AddFile("Lavoro/Pianta.dwg");
+        _archive.AddFile("Lavoro/Pianta.pdf");
+        var index = SearchIndex.Build(_archive.Root);
+
+        Assert.Equal(["Blocco note.lnk", "Portale.url"], index.Search("tipo:collegamenti").Select(hit => hit.Item.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(["Pianta.dwg"], index.Search("pianta tipo:dwg").Select(hit => hit.Item.Name));
+    }
 }

@@ -393,6 +393,86 @@ public partial class PanelView : UserControl
     private static ListBox? FocusedList() =>
         Keyboard.FocusedElement is DependencyObject focused ? FindAncestor<ListBox>(focused) : null;
 
+    // ---- The filters of the search ----
+
+    private void SearchKind_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<SearchKindFilter>(sender) is not { } filter)
+            return;
+        ViewModel.ToggleKindFilter(filter.Kind);
+        FocusSearchAtEnd();
+    }
+
+    /// <summary>Where to look, from the filter above the results: everywhere, or in a topic.</summary>
+    private void SearchPlace_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement button)
+            return;
+        var menu = new ContextMenu();
+        AddSearchPlaces(menu.Items);
+        OpenUnder(menu, button);
+    }
+
+    /// <summary>The filters from the search box, also before anything is typed: the kinds, and where to look.</summary>
+    private void SearchFilters_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement button)
+            return;
+        var kinds = new MenuItem { Header = "Tipo" };
+        foreach (var filter in ViewModel.KindFilters)
+        {
+            var item = new MenuItem { Header = filter.Label, IsChecked = filter.IsChecked, InputGestureText = filter.ToolTip };
+            item.Click += (_, _) =>
+            {
+                ViewModel.ToggleKindFilter(filter.Kind);
+                FocusSearchAtEnd();
+            };
+            kinds.Items.Add(item);
+        }
+        var places = new MenuItem { Header = "Dove" };
+        AddSearchPlaces(places.Items);
+        OpenUnder(new ContextMenu { Items = { kinds, places } }, button);
+    }
+
+    /// <summary>Everywhere, then every topic, those inside another one indented under it, as in the sidebar.</summary>
+    private void AddSearchPlaces(ItemCollection items)
+    {
+        items.Add(SearchPlace("Ovunque", topic: null));
+        items.Add(new Separator());
+        foreach (var topic in ViewModel.Topics.SelectMany(topic => topic.SelfAndDescendants()))
+            items.Add(SearchPlace(topic.Name, topic));
+    }
+
+    private MenuItem SearchPlace(string name, TopicViewModel? topic)
+    {
+        var item = new MenuItem
+        {
+            Header = new TextBlock { Text = name, Margin = new Thickness(16 * (topic?.Ancestors().Count() ?? 0), 0, 0, 0) },
+            IsChecked = ViewModel.IsSearchPlace(topic),
+        };
+        item.Click += (_, _) =>
+        {
+            ViewModel.SetSearchPlace(topic);
+            FocusSearchAtEnd();
+        };
+        return item;
+    }
+
+    private static void OpenUnder(ContextMenu menu, FrameworkElement target)
+    {
+        menu.PlacementTarget = target;
+        menu.Placement = PlacementMode.Bottom;
+        menu.IsOpen = true;
+    }
+
+    /// <summary>Back in the search box after a filter, at the end of what is written there, to go on typing.</summary>
+    private void FocusSearchAtEnd()
+    {
+        SearchBox.Focus();
+        Keyboard.Focus(SearchBox);
+        SearchBox.CaretIndex = SearchBox.Text.Length;
+    }
+
     // ---- Topics ----
 
     private void TopicTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
