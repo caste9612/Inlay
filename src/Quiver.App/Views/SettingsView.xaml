@@ -78,12 +78,6 @@
                             <TextBlock VerticalAlignment="Center" Text="Scorciatoia" />
                         </DockPanel>
                     </ListBoxItem>
-                    <ListBoxItem Tag="{x:Static vm:SettingsSection.Inbox}">
-                        <DockPanel>
-                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.ArrowDownload16}" />
-                            <TextBlock VerticalAlignment="Center" Text="Da smistare" />
-                        </DockPanel>
-                    </ListBoxItem>
                     <ListBoxItem Tag="{x:Static vm:SettingsSection.Windows}">
                         <DockPanel>
                             <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Desktop16}" />
@@ -114,19 +108,6 @@
                            Visibility="{Binding HasHotkeyProblem, Converter={StaticResource Visible}}" />
                 <TextBlock Margin="0,18,0,0" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}"
                            Text="Con GlazeWM puoi anche legare un tasto a Quiver.exe --toggle, che fa lo stesso con il Quiver già in esecuzione." />
-            </StackPanel>
-
-            <!-- Da smistare -->
-            <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Inbox}">
-                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Da smistare" />
-                <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
-                           Text="Oltre ai file lasciati nella radice dell'archivio e nella cartella «_Da smistare», Quiver può raccogliere quelli di altri posti." />
-                <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding InboxDesktop, Mode=TwoWay}" Content="Il Desktop" />
-                <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
-                           Text="Compreso quello comune a tutti gli utenti, dove gli installer mettono i collegamenti." />
-                <ToggleButton Style="{StaticResource Switch}" Margin="0,14,0,0" IsChecked="{Binding InboxDownloads, Mode=TwoWay}" Content="La cartella Download" />
-                <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
-                           Text="Quello che scarichi dal browser compare tra le cose da smistare." />
             </StackPanel>
 
             <!-- Avvio ed Explorer -->

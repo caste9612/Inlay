@@ -17,13 +17,12 @@ Poi `App.OnStartup`, in quest'ordine:
 3. Aggancia `DispatcherUnhandledException`: un errore imprevisto finisce nel log e in un messaggio, e l'app resta aperta.
 4. Istanza unica: se Quiver è già aperto gli passa il comando (di solito `toggle`, `sort` se ci sono file) ed esce. Se non è aperto e il comando è `--exit`, esce e basta.
 5. Carica le impostazioni. L'archivio è quello di `--archive`, che vale solo per quell'avvio, o quello delle impostazioni. Se non c'è, o non esiste più, apre la finestra Impostazioni come benvenuto; se l'utente non sceglie niente, esce.
-6. Le provenienze di «Da smistare»: quelle delle impostazioni, oppure solo la cartella di `--desktop` al posto del Desktop.
-7. Crea `MainViewModel` e `PanelWindow`, e chiama `Prepare()`: la finestra nasce e si dispone senza comparire, così la prima apertura è veloce come le altre.
-8. Crea l'icona nella tray e registra la scorciatoia; se la scorciatoia è occupata, lo dice con un avviso della tray.
-9. Comincia ad ascoltare i comandi delle altre istanze.
-10. Con `--sort` chiede subito dove mettere i file; con `--show` o `--toggle` si mostra. Altrimenti resta nell'area di notifica.
+6. Crea `MainViewModel` e `PanelWindow`, e chiama `Prepare()`: la finestra nasce e si dispone senza comparire, così la prima apertura è veloce come le altre.
+7. Crea l'icona nella tray e registra la scorciatoia; se la scorciatoia è occupata, lo dice con un avviso della tray.
+8. Comincia ad ascoltare i comandi delle altre istanze.
+9. Con `--sort` chiede subito dove mettere i file; con `--show` o `--toggle` si mostra. Altrimenti resta nell'area di notifica.
 
-`App` fa anche da `ISettingsHost` per la finestra Impostazioni: dà l'archivio in uso, lo cambia (`MainViewModel.LoadArchive`), lo lascia libero mentre viene spostato (`ReleaseArchive`), prova una scorciatoia nuova e avvisa quando cambiano le provenienze di «Da smistare».
+`App` fa anche da `ISettingsHost` per la finestra Impostazioni: dà l'archivio in uso, lo cambia (`MainViewModel.LoadArchive`), lo lascia libero mentre viene spostato (`ReleaseArchive`) e prova una scorciatoia nuova.
 
 ### L'uscita
 
@@ -57,7 +56,7 @@ La prima volta si apre come finestra di benvenuto, con il titolo «Benvenuto in 
 | voce di «Invia a» | `Quiver.lnk` nella cartella SendTo dell'utente, con l'argomento `--sort` | `SendToShortcut` |
 | programma installato | `%LOCALAPPDATA%\Quiver` | Velopack ([rilascio.md](rilascio.md)) |
 
-- **`AppSettings`**: l'archivio in uso, l'elenco degli archivi (il più recente per primo), la scorciatoia (`Alt+E`, `DefaultHotkey`), le provenienze di «Da smistare» (Desktop sì, Download no), il posto della finestra, il pin, la vista e la barra degli argomenti. Si salva scrivendo prima un `.tmp`, come i metadati dell'archivio. Un file che non è JSON valido fa partire con i valori predefiniti; com'era, viene copiato in `settings.json.corrupt`, come succede ad `archive.json`, e lo dice il log.
+- **`AppSettings`**: l'archivio in uso, l'elenco degli archivi (il più recente per primo), la scorciatoia (`Alt+E`, `DefaultHotkey`), il posto della finestra, il pin, la vista e la barra degli argomenti. Si salva scrivendo prima un `.tmp`, come i metadati dell'archivio. Un file che non è JSON valido fa partire con i valori predefiniti; com'era, viene copiato in `settings.json.corrupt`, come succede ad `archive.json`, e lo dice il log.
 - **`RecentDestinations`**: per ogni archivio, fino a 8 chiavi dei metadati, la più recente per prima. Sta fuori dall'archivio apposta: smistare un file non deve cambiare l'archivio.
 - **`Log`**: una riga per evento, con data e ora. Oltre 1 MB il file ricomincia da capo. I test lo mandano in un file loro.
 - **`Autostart`** e **`SendToShortcut`** dicono di essere attivi solo quando puntano proprio a questo `Quiver.exe`, non a una copia altrove. `WindowsIntegration` li offre alla finestra Impostazioni attraverso `IWindowsIntegration`, che nelle anteprime e nei test è finta.
@@ -79,7 +78,6 @@ Con H.NotifyIcon. Un clic apre Quiver; il menu ha **Apri Quiver** (con la scorci
 
 ## Cartelle di Windows (`WindowsFolders`)
 
-- `InboxSources(settings)`: il Desktop è quello dell'utente più quello comune a tutti gli utenti, dove gli installer mettono i collegamenti; Download è la cartella nota di Windows (`SHGetKnownFolderPath`), solo se attivata. Le cartelle che non esistono si saltano.
 - `ReservedForArchives()`: le cartelle che non possono fare da archivio, ognuna con il suo motivo in italiano: la cartella dell'utente (dentro la quale invece si può), il Desktop, Windows, i programmi (`Program Files`, `ProgramData`, `AppData`).
 - `RecycleBinOf(path)`: la cartella del Cestino dell'utente su quel disco, `<disco>\$Recycle.Bin\<SID>`.
 
@@ -113,11 +111,10 @@ Quelle per l'utente sono descritte nel [README](../README.md#riga-di-comando). T
 | Opzione | Cosa fa |
 |---|---|
 | `--toggle`, `--show`, `--hide`, `--exit` | il comando per l'istanza aperta |
-| `--sort <file>…` | i file da smistare: tutto quello che segue è un percorso, perché Explorer aggiunge i file in fondo |
+| `--sort <file>…` | i file da mandare nell'archivio: tutto quello che segue è un percorso, perché Explorer aggiunge i file in fondo |
 | `--archive <cartella>` | l'archivio, solo per questo avvio |
-| `--desktop <cartella>` | una cartella al posto del Desktop in «Da smistare» |
 | `--render-preview <file.png>` | disegna il pannello in un'immagine ed esce |
-| `--topic`, `--query`, `--inbox`, `--canvas`, `--zoom` | cosa mostrare nell'anteprima |
+| `--topic`, `--query`, `--canvas`, `--zoom` | cosa mostrare nell'anteprima |
 | `--prompt`, `--prompt-link`, `--prompt-move`, `--notice` | una domanda, «Sposta in…» o gli avvisi sopra la bacheca, nell'anteprima |
 | `--settings` (o `--archives`), `--section`, `--welcome` | l'anteprima della finestra Impostazioni |
 | `--benchmark-canvas <file.txt>` | misura quanto è fluida la tela |

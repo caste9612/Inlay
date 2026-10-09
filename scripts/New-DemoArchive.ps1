@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Crea un archivio di prova per Quiver: argomenti annidati, riquadri, programmi, siti e file da smistare.
+    Crea un archivio di prova per Quiver: argomenti annidati, riquadri, programmi, siti e un file sciolto nella radice.
 
 .EXAMPLE
     .\scripts\New-DemoArchive.ps1 -Path D:\ArchivioDemo
@@ -55,7 +55,6 @@ New-DemoShortcut 'Strumenti\Programmi\Blocco note.lnk' "$env:WINDIR\System32\not
 New-DemoShortcut 'Strumenti\Programmi\Prompt dei comandi.lnk' "$env:WINDIR\System32\cmd.exe"
 New-DemoShortcut 'Strumenti\Cartelle\Download.lnk' (Join-Path $env:USERPROFILE 'Downloads')
 New-DemoWebLink 'Strumenti\Siti\GlazeWM.url' 'https://github.com/glzr-io/glazewm'
-New-DemoFile '_Da smistare\scansione_001.txt'
 New-DemoFile 'documento scaricato.txt'
 
 # Clienti, Rossi, Bianchi e Interni sono sotto-argomenti: compaiono nel menu laterale invece che come riquadri.

@@ -14,7 +14,6 @@ Sono tutti `record` immutabili, letti dal disco a ogni ricarica. L'app li avvolg
 | `Tile` | un riquadro: titolo, cartella, se è «Generale», elementi già in ordine, colore, misura, ordinamento | `Board.cs` |
 | `Board` | la bacheca di un argomento: l'argomento e i suoi riquadri | `Board.cs` |
 | `ArchiveItem` | un elemento: percorso, nome, se è una cartella, data di modifica, dimensione | `ArchiveItem.cs` |
-| `InboxSource` | una provenienza di «Da smistare» fuori dall'archivio, come il Desktop | `ArchiveReader.cs` |
 | `Destination` | un posto dove mandare file, per «Sposta in…» | `ArchiveReader.cs` |
 
 - `ArchiveItem.DisplayName` toglie `.lnk` e `.url`, come Explorer. `Size` è null per le cartelle; le date sono in ora locale.
@@ -22,27 +21,25 @@ Sono tutti `record` immutabili, letti dal disco a ogni ricarica. L'app li avvolg
 
 ## Nomi e chiavi (`ArchiveLayout`)
 
-- `.quiver` (la cartella dei metadati), `archive.json` e `_Da smistare` (l'inbox interna) sono costanti di `ArchiveLayout`.
+- `.quiver` (la cartella dei metadati) e `archive.json` sono costanti di `ArchiveLayout`.
 - I nomi che iniziano con un punto (`.quiver`, `.git`) non si mostrano mai, e nemmeno i file con l'attributo Nascosto o di Sistema (`TopLevelOnly`).
 - **La chiave dei metadati** di una cartella è il suo percorso relativo alla radice, con le barre `/`: `Lavoro/Clienti/Rossi`. Le chiavi si confrontano senza badare a maiuscole e minuscole, come i percorsi di Windows. `IsKeyAtOrBelow` dice se una chiave è una cartella o qualcosa che sta dentro.
 - `IsLinkToElsewhere`: junction e collegamenti simbolici non si seguono, né nella ricerca né nel calcolo delle dimensioni, perché potrebbero girare in tondo o uscire dall'archivio. I segnaposto di OneDrive invece sono cartelle normali.
 
 ## Leggere l'archivio (`ArchiveReader`)
 
-`new ArchiveReader(root, metadata, inboxSources)`. Ogni metodo rilegge il disco: non c'è cache.
+`new ArchiveReader(root, metadata)`. Ogni metodo rilegge il disco: non c'è cache.
 
-- `ReadTopics()`: le cartelle della radice, tranne `_Da smistare`, sono argomenti; più in basso lo sono solo quelle con `"kind": "topic"`. Vengono prima quelle con un `"order"`, poi le altre per nome (l'ordinamento è stabile).
+- `ReadTopics()`: le cartelle della radice sono argomenti, anche una `_Da smistare` lasciata dalle versioni che l'avevano; più in basso lo sono solo quelle con `"kind": "topic"`. Vengono prima quelle con un `"order"`, poi le altre per nome (l'ordinamento è stabile).
 - `ReadBoard(topic)`: prima «Generale», se l'argomento ha file sciolti, poi un riquadro per ogni sottocartella che non è un argomento, nello stesso ordine.
   - «Generale» usa la chiave del suo argomento per misura, ordinamento e ordine a mano, ma non ne mostra il colore.
   - Il colore di un riquadro è `ChosenColorOf`: quello dato da Quiver quando la cartella era un argomento della radice non conta.
   - Gli elementi passano da `ItemArrangement.Arrange` ([più sotto](#ordine-degli-elementi-itemarrangement-naturalstringcomparer)).
-- `ReadInbox()`: i riquadri di «Da smistare», tranne quelli vuoti. Prima «Nell'archivio», con i file sciolti nella radice e il contenuto di `_Da smistare` (la cartella che riceve quello che ci si lascia sopra), poi uno per ogni provenienza, come il Desktop. La cartella che contiene l'archivio non compare tra le cose da smistare.
+- `ReadRootFiles()`: i file lasciati sciolti nella radice, che nessun argomento mostra: la barra di stato dice quanti sono.
 - `ReadDestinations()`: per «Sposta in…», nell'ordine della barra laterale: ogni argomento (per i suoi file sciolti), i suoi riquadri, poi i sotto-argomenti. `Location` è il percorso da mostrare, come «Lavoro › Clienti».
-- `IsInInbox(path)`: se un elemento sta tra le cose da smistare. Serve alle regole di trasferimento: senza tasti, da lì si sposta anche su un altro disco.
-- `InboxSources` scarta le cartelle che stanno dentro l'archivio, già mostrate come argomenti.
 - Gli elementi di una cartella: prima le cartelle, poi i file, in ordine naturale («Verbale 2» prima di «Verbale 10»). Una cartella che non si può leggere si mostra vuota.
 
-Le costanti che l'utente vede: `GeneralTileTitle` («Generale»), `ArchiveInboxTitle` («Nell'archivio»), `PathSeparator` (« › »).
+Le costanti che l'utente vede: `GeneralTileTitle` («Generale») e `PathSeparator` (« › »).
 
 ## I metadati (`ArchiveMetadata`, `MetadataStore`)
 
@@ -79,10 +76,10 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 
 ## Le modifiche da fuori (`ArchiveWatcher`)
 
-- Un `FileSystemWatcher` su tutta la radice, più uno senza sottocartelle per ogni cartella delle provenienze di «Da smistare»: il Desktop ne ha due, quello dell'utente e quello comune.
+- Un `FileSystemWatcher` su tutta la radice, sottocartelle comprese.
 - Guarda solo i nomi (creazione, eliminazione, rinomina), non il contenuto né le date: le date si aggiornano perché la bacheca si rilegge a ogni apertura del pannello.
 - Gli eventi vicini si fondono in uno solo, `Changed`, dopo un ritardo che sceglie chi lo crea; arriva su un thread del pool. Un errore del watcher, come il buffer pieno con eventi persi, fa partire comunque una ricarica.
-- Una provenienza che non si può osservare si salta: verrà riletta all'apertura del pannello.
+- Se la radice non si può osservare, come può succedere su un disco di rete, `MainViewModel` lo scrive nel log, e la bacheca si rilegge comunque a ogni apertura del pannello.
 
 ## Spostare, copiare o collegare (`TransferRules`)
 
@@ -93,7 +90,7 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 | la destinazione è dentro una delle sorgenti, o le sorgenti sono già tutte lì | niente (`None`) |
 | `Alt`, oppure `Ctrl+Maiusc` | collegamento (`Link`) |
 | `Ctrl` | copia (`Copy`) |
-| `Maiusc`, oppure `preferMove`: gli elementi vengono da «Da smistare» | spostamento (`Move`) |
+| `Maiusc` | spostamento (`Move`) |
 | `preferLink`: gli elementi hanno già un loro posto | collegamento |
 | nessuna delle precedenti | spostamento sullo stesso disco, copia tra dischi diversi |
 
@@ -134,8 +131,8 @@ Il Cestino di ogni disco tiene ogni elemento come due file: `$R…` è l'element
 
 ## La ricerca (`SearchIndex`, `SearchText`)
 
-- `SearchIndex.Build(root, inboxSources, ct)` mette in memoria tutti i file e le cartelle dell'archivio, senza quelli nascosti, di sistema o con il punto davanti, e senza seguire junction e collegamenti simbolici. Aggiunge gli elementi di primo livello delle provenienze di «Da smistare», con il titolo della provenienza al posto della cartella.
-- `ArchiveCount` e `ArchiveBytes` sono i numeri della barra di stato («55.781 elementi · 2,3 GB»): solo l'archivio, senza le provenienze.
+- `SearchIndex.Build(root, ct)` mette in memoria tutti i file e le cartelle dell'archivio, senza quelli nascosti, di sistema o con il punto davanti, e senza seguire junction e collegamenti simbolici. I file sciolti nella radice ci sono, con «Archivio» come posto.
+- `ArchiveCount` e `ArchiveBytes` sono i numeri della barra di stato («55.781 elementi · 2,3 GB»).
 - `Search(query, max)`: ogni parola deve comparire nel nome o nel percorso. `SearchText.Score` dà 100 punti se il nome comincia con la parola, 70 se ci comincia una sua parola, 40 se la parola è in mezzo al nome e 10 se è solo nel percorso, poi toglie un quarto della lunghezza del nome: a parità vincono i nomi corti. A parità di punteggio, l'ordine naturale.
 - `SearchText.Normalize` toglie maiuscole e accenti: «perche» trova «Perché».
 

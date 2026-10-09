@@ -2,10 +2,7 @@ using System.IO.Enumeration;
 
 namespace Quiver.Core;
 
-/// <param name="RelativeDirectory">
-/// Folder containing the item, relative to the root; empty for the root itself. For the items of an inbox source,
-/// like the Desktop, the title of the source.
-/// </param>
+/// <param name="RelativeDirectory">Folder containing the item, relative to the root; empty for the root itself.</param>
 public sealed record SearchHit(ArchiveItem Item, string RelativeDirectory, int Score);
 
 /// <summary>In-memory list of every file and folder in the archive, searchable by name.</summary>
@@ -22,34 +19,16 @@ public sealed class SearchIndex
 
     public int Count => _entries.Length;
 
-    /// <summary>The files and folders of the archive, without those of «Da smistare» that are on the Desktop.</summary>
+    /// <summary>The files and folders of the archive, the hidden ones left out.</summary>
     public int ArchiveCount { get; }
 
-    /// <summary>What the files of the archive take, the hidden ones and «Da smistare» on the Desktop left out.</summary>
+    /// <summary>What the files of the archive take, the hidden ones left out.</summary>
     public long ArchiveBytes { get; }
 
-    public static SearchIndex Build(string root, CancellationToken cancellationToken = default) =>
-        Build(root, [], cancellationToken);
-
-    /// <param name="inboxSources">
-    /// Also indexed, but only what is shown on their tiles: the Desktop can hold anything, even big folders.
-    /// </param>
-    public static SearchIndex Build(string root, IReadOnlyList<InboxSource> inboxSources, CancellationToken cancellationToken = default)
+    public static SearchIndex Build(string root, CancellationToken cancellationToken = default)
     {
         var entries = IndexArchive(Path.GetFullPath(root), cancellationToken);
-        var archiveCount = entries.Count;
-        var archiveBytes = entries.Sum(entry => entry.Item.Size ?? 0);
-        foreach (var source in inboxSources)
-        {
-            foreach (var item in source.Folders.SelectMany(TopLevelItems))
-            {
-                // The folder holding the archive does not count, as on the inbox tiles.
-                if (item.IsFolder && TransferRules.IsSameOrInside(Path.GetFullPath(root), item.FullPath))
-                    continue;
-                entries.Add(new Entry(item, source.Title, SearchText.Normalize(item.DisplayName), SearchText.Normalize(source.Title)));
-            }
-        }
-        return new SearchIndex([.. entries], archiveCount, archiveBytes);
+        return new SearchIndex([.. entries], entries.Count, entries.Sum(entry => entry.Item.Size ?? 0));
     }
 
     private static List<Entry> IndexArchive(string root, CancellationToken cancellationToken)
@@ -82,30 +61,6 @@ public sealed class SearchIndex
             entries.Add(new Entry(item, relativeDirectory, SearchText.Normalize(item.DisplayName), SearchText.Normalize(relativeDirectory)));
         }
         return entries;
-    }
-
-    private static IEnumerable<ArchiveItem> TopLevelItems(string folder)
-    {
-        var options = new EnumerationOptions
-        {
-            IgnoreInaccessible = true,
-            AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
-        };
-        try
-        {
-            return new FileSystemEnumerable<ArchiveItem>(
-                folder,
-                (ref FileSystemEntry entry) => new ArchiveItem(
-                    entry.ToFullPath(), entry.FileName.ToString(), entry.IsDirectory, entry.LastWriteTimeUtc.LocalDateTime),
-                options)
-            {
-                ShouldIncludePredicate = (ref FileSystemEntry entry) => !ArchiveLayout.IsHiddenName(entry.FileName),
-            }.ToList();
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return [];
-        }
     }
 
     /// <summary>

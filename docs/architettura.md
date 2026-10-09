@@ -69,7 +69,7 @@ I file più grandi, dove sta il grosso del comportamento: `ViewModels/MainViewMo
 
 ## Come scorre il lavoro
 
-**Leggere.** `MainViewModel.Reload()` legge `archive.json` (`MetadataStore`), crea un `ArchiveReader` e ne ricava argomenti, bacheca, «Da smistare» ed eventualmente la tela. `Reconciler` porta le liste osservabili in linea con quello che ha letto, tenendo i view model che ci sono ancora; la vista, legata con i binding, riceve solo le differenze ([interfaccia.md](interfaccia.md#ricaricare-reload)).
+**Leggere.** `MainViewModel.Reload()` legge `archive.json` (`MetadataStore`), crea un `ArchiveReader` e ne ricava argomenti, bacheca, file sciolti nella radice ed eventualmente la tela. `Reconciler` porta le liste osservabili in linea con quello che ha letto, tenendo i view model che ci sono ancora; la vista, legata con i binding, riceve solo le differenze ([interfaccia.md](interfaccia.md#ricaricare-reload)).
 
 **Agire.** Un gesto arriva al code-behind di `PanelView`, che decide cosa significa (per i trascinamenti con `PlanDrop`) e chiama un metodo di `MainViewModel`. Quello usa le regole del Core (`TransferRules`, `ArchiveNames`…), aspetta il suo turno, fa lavorare la shell sul thread delle operazioni, aggiorna i metadati, registra il passo per annullare, mostra un avviso e ricarica ([operazioni-sui-file.md](operazioni-sui-file.md)).
 

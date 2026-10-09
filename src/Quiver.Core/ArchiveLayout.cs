@@ -12,9 +12,6 @@ public static class ArchiveLayout
 
     public const string MetadataFileName = "archive.json";
 
-    /// <summary>Folder in the archive root for files that still have to be sorted.</summary>
-    public const string InboxFolderName = "_Da smistare";
-
     internal static readonly EnumerationOptions TopLevelOnly = new()
     {
         IgnoreInaccessible = true,

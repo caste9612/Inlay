@@ -441,13 +441,6 @@ public partial class PanelView : UserControl
         ShowTile(tile);
     }
 
-    /// <summary>«Da smistare» on the canvas is a zone: the view flies to it.</summary>
-    private void InboxButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel.IsCanvasVisible && ViewModel.Canvas.Inbox is { } inbox)
-            ShowZone(inbox);
-    }
-
     private void ShowZone(ZoneViewModel zone, bool animated = true)
     {
         if (AllDescendants<Border>(ZonesControl).FirstOrDefault(border => border.Name == "ZoneFrame" && ReferenceEquals(border.DataContext, zone)) is { } frame)
@@ -1245,22 +1238,15 @@ public partial class PanelView : UserControl
     }
 
     /// <summary>
-    /// Holding a drag over a topic in the sidebar, over a sub-topic button or over "Da smistare" opens it after a moment,
-    /// so the files can go straight into one of its tiles.
+    /// Holding a drag over a topic in the sidebar or over a sub-topic button opens it after a moment, so the files can go
+    /// straight into one of its tiles.
     /// </summary>
     private void ArmSpring(object target, DragEventArgs e)
     {
         // A tile dragged by its title moves into the topic it is dropped on: its own board must stay. A topic changing
-        // place opens nothing either. The board's background and the empty part of the sidebar share the panel's data
-        // with the "Da smistare" row, and open nothing.
+        // place opens nothing either.
         var opens = !e.Data.GetDataPresent(TileFormat) && !e.Data.GetDataPresent(TopicFormat) &&
-                    !ReferenceEquals(target, BoardArea) && !ReferenceEquals(target, TopicTree) &&
-                    ((target as FrameworkElement)?.DataContext switch
-                    {
-                        TopicViewModel topic => !ReferenceEquals(topic, ViewModel.SelectedTopic),
-                        MainViewModel => !ViewModel.IsInboxShown,
-                        _ => false,
-                    });
+                    (target as FrameworkElement)?.DataContext is TopicViewModel topic && !ReferenceEquals(topic, ViewModel.SelectedTopic);
         if (!opens)
         {
             if (ReferenceEquals(target, _springTarget))
@@ -1284,16 +1270,10 @@ public partial class PanelView : UserControl
     {
         var target = (_springTarget as FrameworkElement)?.DataContext;
         DisarmSpring();
-        switch (target)
-        {
-            case TopicViewModel topic:
-                topic.IsExpanded = true;
-                ViewModel.SelectTopicCommand.Execute(topic);
-                break;
-            case MainViewModel:
-                ViewModel.ShowInboxCommand.Execute(null);
-                break;
-        }
+        if (target is not TopicViewModel topic)
+            return;
+        topic.IsExpanded = true;
+        ViewModel.SelectTopicCommand.Execute(topic);
     }
 
     private DropPlan PlanDrop(object target, DragEventArgs e)
@@ -1322,7 +1302,7 @@ public partial class PanelView : UserControl
         }
 
         // Rows dragged inside their own tile change place there, unless Ctrl or Alt asks for something else.
-        if (context is TileViewModel { CanArrange: true } arranged && ReferenceEquals(arranged, _dragSourceTile) && _draggedItems.Count > 0 &&
+        if (context is TileViewModel arranged && ReferenceEquals(arranged, _dragSourceTile) && _draggedItems.Count > 0 &&
             !e.KeyStates.HasFlag(DragDropKeyStates.ControlKey) && !e.KeyStates.HasFlag(DragDropKeyStates.AltKey) &&
             target is DependencyObject box && FindDescendants<ListBox>(box).FirstOrDefault() is { } rows)
             return PlanArrangeDrop(arranged, rows, e);
@@ -1334,7 +1314,6 @@ public partial class PanelView : UserControl
             {
                 TileViewModel tile => tile.FolderPath,
                 TopicViewModel topic => topic.Topic.FullPath,
-                MainViewModel main => main.InboxPath,
                 _ => null,
             };
         if (destination is null)
@@ -1349,8 +1328,6 @@ public partial class PanelView : UserControl
             forceCopy: e.KeyStates.HasFlag(DragDropKeyStates.ControlKey),
             forceMove: e.KeyStates.HasFlag(DragDropKeyStates.ShiftKey),
             forceLink: e.KeyStates.HasFlag(DragDropKeyStates.AltKey),
-            // What waits to be sorted is moved even to another drive, the Desktop's files too: sorting it is the point.
-            preferMove: paths.All(ViewModel.IsInInbox),
             preferLink: paths.All(path => TransferRules.HasItsOwnPlace(path, ViewModel.Root)));
         // Some sources only allow copying, others only moving.
         if (kind == TransferKind.Link && !e.AllowedEffects.HasFlag(DragDropEffects.Link))

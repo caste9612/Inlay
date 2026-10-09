@@ -27,10 +27,10 @@ Serve Windows 11 con l'SDK di .NET 10.
 dotnet build Quiver.slnx
 dotnet test
 .\scripts\New-DemoArchive.ps1 -Path D:\ArchivioDemo
-dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\DesktopDiProva
+dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo
 ```
 
-- `--archive` usa quell'archivio solo per questo avvio; `--desktop` mostra una cartella di prova al posto del Desktop, così non si spostano i propri file.
+- `--archive` usa quell'archivio solo per questo avvio, senza cambiare quello delle impostazioni.
 - Se Quiver è già aperto (quello installato, per esempio), un secondo Quiver gli passa il comando e si chiude: per provare il codice nuovo bisogna prima uscire da quello aperto (**Esci** nel menu della tray). Le anteprime (`--render-preview`) e la misura della tela (`--benchmark-canvas`) invece funzionano anche con Quiver aperto.
 - Per guardare un cambiamento dell'interfaccia senza aprire finestre: `--render-preview pannello.png` ([test.md](test.md#verificare-linterfaccia-senza-aprirla)).
 
@@ -48,10 +48,9 @@ L'interfaccia e i documenti parlano italiano, il codice inglese. Le parole sono 
 | elemento | `ArchiveItem`, `ItemViewModel` | un file, una cartella o un collegamento dentro un riquadro |
 | bacheca | `Board`, `MainViewModel.Tiles` | i riquadri di un argomento |
 | tela | canvas, `CanvasViewModel`, `CanvasSurface` | tutto l'archivio su una superficie da zoomare |
-| zona | zone, `ZoneViewModel` | un argomento, o «Da smistare», sulla tela |
+| zona | zone, `ZoneViewModel` | un argomento sulla tela |
 | livello (lontano, medio, vicino) | `CanvasLevel` (`Far`, `Middle`, `Near`) | cosa mostra la tela secondo lo zoom |
-| «Da smistare» | inbox, `InboxSource`, `_Da smistare` | i file da mettere a posto: nella radice, in `_Da smistare`, sul Desktop, in Download |
-| provenienza | `InboxSource` | un posto fuori dall'archivio mostrato in «Da smistare», come il Desktop |
+| file sciolti nella radice | `ReadRootFiles`, `RootFilesText` | i file lasciati nella cartella dell'archivio, fuori da ogni argomento: li conta la barra di stato |
 | metadati | `ArchiveMetadata`, `FolderMetadata`, `archive.json` | quello che le cartelle non sanno dire: argomenti, ordine, colori, misure |
 | chiave | relative key | il percorso di una cartella relativo alla radice, con le `/` |
 | collegamento | shortcut, `.lnk`, `.url`, `TransferKind.Link` | quello con cui entra ciò che ha già un suo posto |

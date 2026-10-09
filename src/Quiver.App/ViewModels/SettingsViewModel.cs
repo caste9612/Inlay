@@ -9,9 +9,6 @@ public interface ISettingsHost : IArchiveHost
 {
     /// <summary>Registers the shortcut now. False when another program holds it: the one in use stays.</summary>
     bool TryUseHotkey(string shortcut);
-
-    /// <summary>The places of «Da smistare» changed: the panel reads them again from the settings.</summary>
-    void InboxChanged();
 }
 
 /// <summary>The two things Quiver sets in Windows: its start with the session, and its place in the «Invia a» menu.</summary>
@@ -33,13 +30,12 @@ public enum SettingsSection
 {
     Archives,
     Hotkey,
-    Inbox,
     Windows,
 }
 
 /// <summary>
 /// The settings of this PC, each applied the moment it changes: the archives (as the vaults of Obsidian), the shortcut
-/// that opens the panel, what «Da smistare» shows, and what Quiver sets in Windows. The first time, before any archive,
+/// that opens the panel, and what Quiver sets in Windows. The first time, before any archive,
 /// the window greets and only the archives matter.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
@@ -61,12 +57,6 @@ public sealed partial class SettingsViewModel : ObservableObject
     private string? _hotkeyProblem;
 
     [ObservableProperty]
-    private bool _inboxDesktop;
-
-    [ObservableProperty]
-    private bool _inboxDownloads;
-
-    [ObservableProperty]
     private bool _autostart;
 
     [ObservableProperty]
@@ -84,8 +74,6 @@ public sealed partial class SettingsViewModel : ObservableObject
         Archives = new ArchivesViewModel(settings, host, reserved);
         _section = section;
         _hotkey = settings.Hotkey;
-        _inboxDesktop = settings.InboxDesktop;
-        _inboxDownloads = settings.InboxDownloads;
         _autostart = windows.AutostartEnabled;
         _sendTo = windows.SendToInstalled;
     }
@@ -119,20 +107,6 @@ public sealed partial class SettingsViewModel : ObservableObject
         Hotkey = shortcut;
         HotkeyProblem = null;
         return null;
-    }
-
-    partial void OnInboxDesktopChanged(bool value)
-    {
-        _settings.InboxDesktop = value;
-        Save();
-        _host.InboxChanged();
-    }
-
-    partial void OnInboxDownloadsChanged(bool value)
-    {
-        _settings.InboxDownloads = value;
-        Save();
-        _host.InboxChanged();
     }
 
     partial void OnAutostartChanged(bool value)

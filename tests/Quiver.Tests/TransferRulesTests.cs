@@ -59,15 +59,6 @@ public sealed class TransferRulesTests
     }
 
     [Fact]
-    public void WhatWaitsToBeSorted_IsMoved_EvenToAnotherDrive_ButCtrlStillCopies()
-    {
-        string[] desktop = [@"C:\Users\me\Desktop\offerta.pdf"];
-        Assert.Equal(TransferKind.Move, TransferRules.Choose(desktop, @"D:\Archivio\Lavoro", false, false, preferMove: true));
-        Assert.Equal(TransferKind.Copy, TransferRules.Choose(desktop, @"D:\Archivio\Lavoro", forceCopy: true, forceMove: false, preferMove: true));
-        Assert.Equal(TransferKind.Link, TransferRules.Choose(desktop, @"D:\Archivio\Lavoro", false, false, forceLink: true, preferMove: true));
-    }
-
-    [Fact]
     public void WhatHasItsOwnPlace_EntersAsAShortcut_UnlessAKeySaysOtherwise()
     {
         string[] program = [@"C:\Program Files\App\app.exe"];

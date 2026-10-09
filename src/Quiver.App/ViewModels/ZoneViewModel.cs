@@ -6,13 +6,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace Quiver.App.ViewModels;
 
 /// <summary>
-/// A zone of the canvas: a topic with its tiles and, inside, the zones of its topics; or «Da smistare», with a tile for
-/// each place things wait in.
+/// A zone of the canvas: a topic with its tiles and, inside, the zones of the topics inside it.
 /// </summary>
 public sealed partial class ZoneViewModel : ObservableObject
 {
-    public const string InboxKey = "inbox:";
-
     /// <summary>The columns of tiles a zone has when nobody gave it a width.</summary>
     public const int UsualColumns = 3;
 
@@ -26,25 +23,23 @@ public sealed partial class ZoneViewModel : ObservableObject
     [ObservableProperty]
     private Rect? _bounds;
 
-    /// <summary>The color of its topic: on the border and the name of the zone, and from afar a light tint. None for «Da smistare».</summary>
+    /// <summary>The color of its topic: on the border and the name of the zone, and from afar a light tint.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasColor))]
     private Brush? _colorBrush;
 
-    public ZoneViewModel(string key, string title, TopicViewModel? topic)
+    public ZoneViewModel(string key, string title, TopicViewModel topic)
     {
         Key = key;
         _title = title;
         Topic = topic;
     }
 
-    /// <summary>What tells a zone from the others: the key of its topic, or <see cref="InboxKey"/>.</summary>
+    /// <summary>What tells a zone from the others: the key of its topic.</summary>
     public string Key { get; }
 
-    /// <summary>The topic shown, the same as in the sidebar; null for «Da smistare».</summary>
-    public TopicViewModel? Topic { get; private set; }
-
-    public bool IsInbox => Topic is null;
+    /// <summary>The topic shown, the same as in the sidebar.</summary>
+    public TopicViewModel Topic { get; private set; }
 
     public bool HasColor => ColorBrush is not null;
 
@@ -64,11 +59,11 @@ public sealed partial class ZoneViewModel : ObservableObject
     public IEnumerable<ZoneViewModel> SelfAndDescendants() => Children.SelectMany(child => child.SelfAndDescendants()).Prepend(this);
 
     /// <summary>The zone read again: its topic view model (the same key, maybe a new instance) and how big it is.</summary>
-    public void Update(string title, TopicViewModel? topic)
+    public void Update(string title, TopicViewModel topic)
     {
         Title = title;
         Topic = topic;
-        ColorBrush = topic?.ColorBrush;
+        ColorBrush = topic.ColorBrush;
         var tileColumns = Tiles.Sum(tile => tile.Columns);
         var childColumns = Children.Sum(child => child.Columns);
         var columns = Math.Clamp(Math.Max(tileColumns, childColumns), 1, UsualColumns);

@@ -6,7 +6,7 @@ Come è fatto il pannello: view model, ricarica, ricerca, selezione, tastiera e 
 
 - **MVVM con CommunityToolkit.Mvvm**: proprietà con `[ObservableProperty]` e `[NotifyPropertyChangedFor]`, comandi con `[RelayCommand]`, reazioni nei metodi parziali `On…Changed`.
 - **I view model** stanno in `ViewModels`. `MainViewModel` è lo stato del pannello; attorno a lui `TopicViewModel`, `TileViewModel`, `ItemViewModel` (e `SearchResultViewModel`), `ZoneViewModel` e `CanvasViewModel`, più `PromptViewModel`, `DestinationPickerViewModel` e `ToastViewModel` per domande, «Sposta in…» e avvisi.
-- **I gesti stanno nel code-behind** di `PanelView` (`Views/PanelView.xaml.cs`): tastiera, mouse, trascinamenti e menu decidono cosa fare e chiamano i metodi di `MainViewModel`. I comandi sono pochi (`SelectTopicCommand`, `ShowInboxCommand` e quelli delle domande).
+- **I gesti stanno nel code-behind** di `PanelView` (`Views/PanelView.xaml.cs`): tastiera, mouse, trascinamenti e menu decidono cosa fare e chiamano i metodi di `MainViewModel`. I comandi sono pochi (`SelectTopicCommand` e quelli delle domande).
 - **Il view model parla alla vista con eventi**: `FileOperationCompleted` (la finestra si riprende il focus), `SelectionRestored` (il focus va sulla selezione), `ShowOnCanvasRequested` (volo a un riquadro), `Reloaded` (il focus torna dov'era).
 - **I testi dell'interfaccia** sono in italiano, scritti direttamente nel XAML e nel codice; i commenti e i nomi sono in inglese.
 
@@ -17,22 +17,22 @@ Come è fatto il pannello: view model, ricarica, ricerca, selezione, tastiera e 
 | argomenti, sotto-argomenti della bacheca, riquadri della bacheca | `Topics`, `SubTopics`, `Tiles` |
 | ricerca | `Query`, `IsSearching`, `Results`, `ResultsHeader` |
 | vista | `IsCanvasShown`, `ViewIndex`, `IsBoardVisible`, `IsCanvasVisible`, `Canvas`, `IsSidebarOpen` |
-| bacheca in vista | `SelectedTopic`, `IsInboxShown`, `BoardTitle`, `BoardPath`, `EmptyMessage`, `BoardFolder` |
+| bacheca in vista | `SelectedTopic`, `BoardTitle`, `BoardPath`, `EmptyMessage`, `BoardFolder` |
 | domande | `Prompt`, `Picker` |
-| avvisi e barra di stato | `Toasts`, `Status`, `Activity`, `IsBusy`, `ArchiveSummary`, `SelectionSummary`, `DiskText`, `IsDiskLow`, `InboxCount` |
+| avvisi e barra di stato | `Toasts`, `Status`, `Activity`, `IsBusy`, `ArchiveSummary`, `SelectionSummary`, `DiskText`, `IsDiskLow`, `RootFilesText` |
 | annullare | `CanUndo`, `UndoLabel` |
 
-Il costruttore riceve l'archivio e alcune dipendenze sostituibili: `live` (in tempo reale, con indice in background, watcher e coda delle operazioni; falso nelle anteprime e nei test), le provenienze di «Da smistare», il Cestino, le destinazioni recenti e `readOnly` (le anteprime non scrivono niente nell'archivio). `DiskOf` permette ai test di fingere lo spazio libero.
+Il costruttore riceve l'archivio e alcune dipendenze sostituibili: `live` (in tempo reale, con indice in background, watcher e coda delle operazioni; falso nelle anteprime e nei test), il Cestino, le destinazioni recenti e `readOnly` (le anteprime non scrivono niente nell'archivio). `DiskOf` permette ai test di fingere lo spazio libero.
 
 Il ciclo di vita:
 
 - `LoadArchive(root)` riparte da zero: nuovo lettore, nessun indice, nessuna selezione, registro e avvisi svuotati; poi ricarica e, se `live`, indice e watcher.
-- `ReleaseArchive()` smette di guardare e indicizzare la cartella, perché si possa rinominare o spostare; `UseInboxSources` rilegge con le provenienze nuove, tenendo il registro.
+- `ReleaseArchive()` smette di guardare e indicizzare la cartella, perché si possa rinominare o spostare.
 - `OnPanelShowing()` svuota la ricerca, le domande e gli avvisi e ricarica; `OnPanelHidden()` conferma i nomi in modifica; `OnWindowActivated()` ricarica se non c'è niente in corso.
 
 ## Ricaricare (`Reload`)
 
-A ogni ricarica `MainViewModel` legge i metadati, crea un nuovo `ArchiveReader`, legge gli argomenti (dando un colore a quelli nuovi della radice), riallinea l'albero, conta «Da smistare», rilegge la bacheca in vista (o l'argomento più vicino che c'è ancora, o il primo), la tela se è in vista, rimette la selezione chiesta, aggiorna la barra di stato e avvisa la vista.
+A ogni ricarica `MainViewModel` legge i metadati, crea un nuovo `ArchiveReader`, legge gli argomenti (dando un colore a quelli nuovi della radice), riallinea l'albero, conta i file sciolti nella radice, rilegge la bacheca in vista (o l'argomento più vicino che c'è ancora, o il primo), la tela se è in vista, rimette la selezione chiesta, aggiorna la barra di stato e avvisa la vista.
 
 - **Quando**: all'apertura del pannello e tornando alla finestra (il watcher vede solo i nomi, non le date), dopo ogni operazione, dopo ogni cambiamento dei metadati, tornando dalla tela alla bacheca (verso la tela si rilegge solo la tela), e quando il watcher segnala un cambiamento (dopo 400 ms di calma). La lettura avviene sul thread dell'interfaccia: una bacheca si legge in un attimo, la tela intera richiede tutte le bacheche.
 - **Quando no**: se il pannello è nascosto, se c'è una domanda aperta, se un'operazione è in corso o se un nome è in modifica, la ricarica viene rimandata (`_reloadPending`) e fatta appena possibile, perché butterebbe via quel lavoro.
@@ -43,7 +43,7 @@ A ogni ricarica `MainViewModel` legge i metadati, crea un nuovo `ArchiveReader`,
 | `TopicViewModel` | la chiave dei metadati dell'argomento |
 | `TileViewModel` | `general:` o `folder:` più la cartella |
 | `ItemViewModel` | `file:` o `folder:` più il percorso |
-| `ZoneViewModel` | la chiave dell'argomento, o `inbox:` |
+| `ZoneViewModel` | la chiave dell'argomento |
 
 - **La selezione dopo una ricarica**: un'operazione chiama `SelectAfterReload(paths)`; la ricarica seleziona quegli elementi e solleva `SelectionRestored`, e la vista mette il focus sul primo. Se l'elemento con il focus è sparito, `PanelView` lo rimette dov'era (nell'albero, sul riquadro, sulla bacheca o nella ricerca).
 
@@ -94,7 +94,7 @@ Mentre una domanda è aperta, i tasti vanno a lei: `Esc` annulla, `Invio` confer
 - **`ToastViewModel`**: tipo (`Success`, `Info`, `Warning`, `Danger`), titolo, testo, e facoltativi **Mostra** (`Notice`) e **Annulla** (`UndoStep`, finché è l'ultimo passo del registro).
 - **`Tell`**: un avviso uguale a uno già in vista lo sostituisce; al massimo tre, il più vecchio esce. Attenzioni ed errori vanno anche nel log. Gli avvisi si svuotano a ogni apertura del pannello e cambiando archivio.
 - **`ToastClock`**: successi e notizie si chiudono dopo sei secondi, con il conto fermo mentre il puntatore o il focus sono sopra. Attenzioni ed errori restano finché non si chiudono.
-- **La barra di stato**: a sinistra l'archivio (un clic lo apre in Explorer) con `ArchiveSummary`, oppure, durante un'operazione, i LED di `Brace.Activity` con `Activity`; a destra `SelectionSummary` (quanti elementi sono selezionati e quanto pesano i loro file: come in Explorer, il peso delle cartelle non si conta), lo spazio libero (con l'icona di avviso quando è poco) e **?**, i tasti da sapere.
+- **La barra di stato**: a sinistra l'archivio (un clic lo apre in Explorer) con `ArchiveSummary` e, quando ce ne sono, i file sciolti nella radice (`RootFilesText`: un clic apre la radice), oppure, durante un'operazione, i LED di `Brace.Activity` con `Activity`; a destra `SelectionSummary` (quanti elementi sono selezionati e quanto pesano i loro file: come in Explorer, il peso delle cartelle non si conta), lo spazio libero (con l'icona di avviso quando è poco) e **?**, i tasti da sapere.
 - **I tasti da sapere** sono `MainViewModel.Shortcuts`, costruiti da `ShortcutGroup.For(Hotkey)`: tra loro c'è la scorciatoia in uso, che `App` passa al view model all'avvio e ogni volta che cambia nelle impostazioni.
 
 ## I menu
@@ -129,7 +129,7 @@ Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che rest
 
 - Larga 264 punti; chiusa (`Ctrl+B` o il pulsante nella barra del titolo) non occupa spazio, e Quiver ricorda com'era.
 - **Gli argomenti** sono un `TreeView` con lo stile `TopicItem`: righe da 32 punti e nomi da 14 (`NavRowHeight`, `NavTextSize`), quelli della radice un po' più marcati, l'icona del colore dell'argomento. Quello scelto ha la cartella piena e lo sfondo `accent-subtle`, che diventa `Brace.SelectionInactive` quando il focus non è nell'albero.
-- In fondo **«Da smistare»** (`InboxRow`) con il numero di elementi; in alto il **+** per un argomento nuovo.
+- In alto il **+** per un argomento nuovo.
 
 ## La barra del titolo
 
@@ -149,10 +149,9 @@ Disegnata da Quiver come `br-titlebar` di Brace, perché Brace per WPF non ne ha
 
 ## Le impostazioni (`SettingsViewModel`, `ArchivesViewModel`)
 
-`SettingsView` ha le pagine a sinistra (`SettingsSection`: Archivi, Scorciatoia, Da smistare, Avvio ed Explorer) e la pagina scelta a destra. Ogni cambiamento vale subito. La prima volta (`IsWelcome`) c'è solo la pagina degli archivi.
+`SettingsView` ha le pagine a sinistra (`SettingsSection`: Archivi, Scorciatoia, Avvio ed Explorer) e la pagina scelta a destra. Ogni cambiamento vale subito. La prima volta (`IsWelcome`) c'è solo la pagina degli archivi.
 
 - **Scorciatoia**: `HotkeyBox` registra la combinazione premuta (con `Ctrl`, `Alt` o `Win`; `Maiusc` da solo no; `Esc` lascia quella di prima). `UseHotkey` la prova subito tramite `ISettingsHost.TryUseHotkey` e la salva solo se Windows la dà a Quiver; se no, sotto il campo compare il motivo.
-- **Da smistare**: Desktop e Download. Cambiandoli si salva e il pannello rilegge le provenienze.
 - **Avvio ed Explorer**: avvio con Windows e voce di «Invia a», tramite `IWindowsIntegration`. Se Windows rifiuta, l'interruttore torna com'era e un messaggio lo dice.
 - **Archivi** (`ArchivesViewModel`):
   - l'elenco viene dalle impostazioni, il più recente per primo, con «In uso» o «Non trovato»; sotto ogni archivio, contato in background, quanto occupa e quanto spazio ha il suo disco;

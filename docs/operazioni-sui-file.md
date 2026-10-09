@@ -8,7 +8,7 @@ I principi da rispettare sono quelli di [PROGETTO.md §3](../PROGETTO.md#3-princ
 
 | Gesto | Metodo di `MainViewModel` |
 |---|---|
-| trascinare file su un riquadro, un argomento o «Da smistare» | `Transfer`, oppure `SaveDropped` per allegati e link ([più sotto](#trascinare)) |
+| trascinare file su un riquadro o un argomento | `Transfer`, oppure `SaveDropped` per allegati e link ([più sotto](#trascinare)) |
 | `Ctrl+V`, «Incolla collegamento» | `PasteInto`, `PasteLinksInto` |
 | «Sposta in…», «Invia a Quiver» | `AskDestination` → `SendTo` → `Transfer` |
 | `Canc` | `AskRecycle` → `Recycle` |
@@ -34,7 +34,7 @@ Spostamenti, copie, eliminazioni e annullamenti passano da `BeginFileWork(activi
 
 `Transfer(paths, destinationFolder, kind)` aspetta il turno, poi `TransferNow`:
 
-1. **La cartella di arrivo** viene creata se manca (`EnsureFolder`): `_Da smistare` esiste solo quando qualcosa ci arriva.
+1. **La cartella di arrivo** viene creata se manca (`EnsureFolder`), per esempio se nel frattempo è stata tolta da Explorer.
 2. **I collegamenti** (`TransferKind.Link`) vanno a `CreateLinks` ([più sotto](#collegamenti)).
 3. **Lo spazio**: per le copie, e per gli spostamenti da un altro disco (Windows copia e poi cancella), `NotEnoughRoom` conta quanto occupano i file (`FolderSize`, lontano dal thread dell'interfaccia) e lo confronta con lo spazio libero (`DiskOf`). Se non ci stanno, un avviso lo dice e non si comincia.
 4. **Dove arriverà ogni elemento** (`landings`, per gli spostamenti): solo quelli il cui nome è libero nella destinazione. Se il nome è preso, l'utente sceglie nella finestra della shell cosa fare, quindi non si sa dove finirà l'elemento, e `Ctrl+Z` lo lascerà stare. Per le copie conta invece quello che compare di nuovo nella cartella (punto 8).
@@ -54,10 +54,10 @@ Il tipo di operazione (spostare, copiare o collegare) lo decide chi chiama: per 
 
 ## «Sposta in…» e «Invia a Quiver»
 
-- **`AskDestination(paths)`** apre l'elenco dei posti (`DestinationPickerViewModel`) con le destinazioni di `ArchiveReader.ReadDestinations`, tolte quelle dove l'operazione non farebbe niente. Se tutti gli elementi hanno già un loro posto (programmi, cose in rete) e non vengono da «Da smistare», l'elenco crea collegamenti invece di spostare.
+- **`AskDestination(paths)`** apre l'elenco dei posti (`DestinationPickerViewModel`) con le destinazioni di `ArchiveReader.ReadDestinations`, tolte quelle dove l'operazione non farebbe niente. Se tutti gli elementi hanno già un loro posto (programmi, cose in rete), l'elenco crea collegamenti invece di spostare.
 - **`SendTo`** ricorda la destinazione tra le recenti (`RecentDestinations`) e fa partire `Transfer` senza aspettarlo: l'elenco si chiude subito.
 - **«Invia a Quiver»** in Explorer lancia `Quiver.exe --sort <file>…`; l'istanza unica passa i file a quella aperta, che mostra la finestra e chiama `AskDestination` ([windows.md](windows.md#listanza-unica-singleinstance)).
-- **`ShowNotice`** («Mostra» su un avviso): sulla bacheca apre l'argomento, o «Da smistare», dove sono finiti gli elementi e li seleziona; sulla tela vola al riquadro (`ShowOnCanvasRequested`).
+- **`ShowNotice`** («Mostra» su un avviso): sulla bacheca apre l'argomento dove sono finiti gli elementi e li seleziona; sulla tela vola al riquadro (`ShowOnCanvasRequested`).
 
 ## Collegamenti
 
@@ -118,7 +118,7 @@ Le garanzie:
 - **Un annullamento non sovrascrive mai niente**: rimette le cose solo in posti liberi.
 - **Elimina per sempre solo una cartella vuota creata da Quiver** (`CreateStep`). Tutto il resto passa dal Cestino, e dove il Cestino non c'è l'annullamento non si fa.
 - **Quello che è cambiato nel frattempo resta com'è**, e l'avviso dice quanti elementi sono stati lasciati stare.
-- **Il registro si svuota cambiando archivio** (`LoadArchive`), non cambiando le provenienze di «Da smistare». Vive solo in memoria, fino a 50 passi.
+- **Il registro si svuota cambiando archivio** (`LoadArchive`). Vive solo in memoria, fino a 50 passi.
 
 ## Trascinare
 
@@ -136,17 +136,17 @@ Mentre si trascina, `DragLabelAdorner` mostra accanto al puntatore il nome o «N
 
 ### Dove si può lasciare, e cosa succede (`PlanDrop`)
 
-Le destinazioni sono i riquadri, lo sfondo della bacheca (la cartella dell'argomento, o `_Da smistare`), i pulsanti dei sotto-argomenti sopra la bacheca, gli argomenti della barra laterale e la riga «Da smistare». `PlanDrop` produce un `DropPlan`, in quest'ordine:
+Le destinazioni sono i riquadri, lo sfondo della bacheca (la cartella dell'argomento), i pulsanti dei sotto-argomenti sopra la bacheca e gli argomenti della barra laterale. `PlanDrop` produce un `DropPlan`, in quest'ordine:
 
 1. **Un argomento** (`PlanTopicDrop`): sul 30 % alto di una riga va prima di quell'argomento, sul 30 % basso dopo (e dopo tutto quello che c'è aperto sotto), nel 40 % centrale ci entra dentro. Sulla parte vuota della barra va in fondo agli argomenti della radice. Non può andare dentro se stesso né dentro un suo sotto-argomento (`MainViewModel.CanGoUnder`). Poi `MoveTopic`: tra gli stessi argomenti cambia solo l'ordine; sotto un altro argomento la cartella si sposta, resta un argomento, e un nome già preso lì viene rifiutato invece di unire le due cartelle.
 2. **La parte vuota della barra laterale** accetta solo argomenti.
 3. **Un riquadro preso per il titolo**, lasciato sullo sfondo o su un riquadro accanto, cambia posto (`MoveTile`): sullo sfondo va in fondo, su un altro riquadro va prima di lui. Su un riquadro di un'altra zona della tela non fa niente: smistare tra argomenti diversi sulla tela è la fase 2. Lasciato su un argomento della barra, invece, conta come cartella e ci viene spostato dentro (punto 5).
 4. **Righe lasciate nel loro stesso riquadro**, senza `Ctrl` né `Alt`, cambiano posto (`MoveItems`, ordine a mano): vanno prima della riga sotto il puntatore, o dopo l'ultima in vista.
-5. **File** (`FileDrop`): la destinazione è la cartella del riquadro, dell'argomento, di «Da smistare» o della bacheca. Il tipo di operazione lo decide `TransferRules.Choose` con i tasti tenuti premuti; senza tasti, quello che viene da «Da smistare» si sposta anche su un altro disco (`preferMove`) e quello che ha un suo posto diventa un collegamento (`preferLink`). Se il programma da cui arrivano i file non permette quell'effetto, si ripiega sulla copia, o su niente.
+5. **File** (`FileDrop`): la destinazione è la cartella del riquadro, dell'argomento o della bacheca. Il tipo di operazione lo decide `TransferRules.Choose` con i tasti tenuti premuti; senza tasti, quello che ha un suo posto diventa un collegamento (`preferLink`). Se il programma da cui arrivano i file non permette quell'effetto, si ripiega sulla copia, o su niente.
 6. **File che non sono ancora file** (allegati, link del browser, senza `FileDrop` ma con `FileGroupDescriptorW`): `SaveDropped`, come una copia.
 
 ### Durante e alla fine
 
 - **`DragOver`** mostra l'effetto (spostare, copiare, collegare) e illumina la destinazione: il bordo del riquadro in `accent`, o la riga dell'argomento in `accent-subtle`. Per un riquadro, una riga o un argomento che cambia posto, `InsertionAdorner` disegna la linea dove andrà.
-- **Aprire restando sopra**: con un trascinamento di file sopra un argomento, un pulsante di sotto-argomento o «Da smistare» per 700 ms, la bacheca passa lì, come le cartelle di Explorer. Il conto parte quando si entra, e muoversi lì sopra non lo fa ripartire. Non succede trascinando un riquadro o un argomento.
+- **Aprire restando sopra**: con un trascinamento di file sopra un argomento o un pulsante di sotto-argomento per 700 ms, la bacheca passa lì, come le cartelle di Explorer. Il conto parte quando si entra, e muoversi lì sopra non lo fa ripartire. Non succede trascinando un riquadro o un argomento.
 - **`Drop`** risponde sempre «nessun effetto» al programma da cui arrivano i file: lo spostamento o la copia li fa Quiver, e l'altro programma non deve cancellare niente. Il lavoro parte con `Dispatcher.BeginInvoke`, a trascinamento finito, così una copia lunga non tiene bloccato l'altro programma. L'unica eccezione è `SaveDropped`, che deve leggere il contenuto mentre il rilascio è ancora in corso.

@@ -16,7 +16,6 @@ public sealed class DestinationsTests : IDisposable
         _archive.AddFolder("Lavoro/Interni");
         _archive.AddFolder("Lavoro/Archivio");
         _archive.AddFolder("Personale");
-        _archive.AddFolder(ArchiveLayout.InboxFolderName);
         _archive.AddFolder(".git");
         var metadata = new ArchiveMetadata();
         metadata.SetTopic("Lavoro/Clienti", true);

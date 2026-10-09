@@ -1,6 +1,6 @@
 # Quiver — documento di progetto
 
-*Stato: versione 0.3.2, release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano»; con la 0.2.2 il Desktop vero è stato svuotato nell'archivio. Dalla 0.2.3 le operazioni sui file in un thread a parte, la misura e l'ordine dei riquadri, gli argomenti trascinabili. Dalla 0.3.0 la tela (fasi 0 e 1), i colori degli argomenti, la barra di stato come in Explorer, gli avvisi e il controllo dello spazio su disco; dalla 0.3.1 la barra degli argomenti richiudibile. Il codice è descritto in `docs/`. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 10 ottobre 2026.*
+*Stato: versione 0.3.2, release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano»; con la 0.2.2 il Desktop vero è stato svuotato nell'archivio. Dalla 0.2.3 le operazioni sui file in un thread a parte, la misura e l'ordine dei riquadri, gli argomenti trascinabili. Dalla 0.3.0 la tela (fasi 0 e 1), i colori degli argomenti, la barra di stato come in Explorer, gli avvisi e il controllo dello spazio su disco; dalla 0.3.1 la barra degli argomenti richiudibile. Dopo la 0.3.2 «Da smistare» è stato tolto. Il codice è descritto in `docs/`. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 10 ottobre 2026.*
 
 ## 1. Il problema
 
@@ -14,7 +14,7 @@ Un'app dedicata che **sostituisce il desktop** come posto dove tenere e ritrovar
 
 - I file vivono in un **archivio dedicato**: una normale cartella con sottocartelle vere, che l'app legge e gestisce.
 - L'app si richiama all'istante con una scorciatoia (**pannello**) oppure resta aperta in un **workspace dedicato** di GlazeWM.
-- Il desktop di Windows non serve più: le sue icone si possono nascondere e l'app lo usa solo come "inbox" per i file che i programmi continuano a salvarci.
+- Il desktop di Windows non serve più: le sue icone si possono nascondere, e quello che i programmi continuano a salvarci si manda nell'archivio con «Invia a Quiver» o trascinandolo. Fino alla 0.3.2 Quiver lo mostrava come «Da smistare», insieme ai file sciolti nella radice dell'archivio: dopo è stato tolto.
 
 ### Perché non uno strumento esistente
 
@@ -42,7 +42,7 @@ Un'app dedicata che **sostituisce il desktop** come posto dove tenere e ritrovar
   - poi si apre dal nome dell'archivio in alto nel pannello o dal menu della tray;
   - permette di passare da un archivio all'altro, rinominarli, spostarli e toglierli dall'elenco, senza toccare i file.
 - Spostare un archivio sullo stesso disco è un attimo: cambia solo il percorso della cartella. Su un altro disco Quiver lo copia, confronta la copia con l'originale byte per byte e passa alla copia solo se sono identiche. La cartella vecchia va nel Cestino solo se lo dice l'utente.
-- Non possono essere archivi un disco intero, il Desktop (è tra le cose da smistare), la cartella dell'utente, quelle di Windows e dei programmi. Un archivio non sta dentro un altro né ne contiene uno.
+- Non possono essere archivi un disco intero, il Desktop (Quiver ne prende il posto), la cartella dell'utente, quelle di Windows e dei programmi. Un archivio non sta dentro un altro né ne contiene uno.
 - Il posto consigliato è sullo stesso disco del Desktop, per esempio `C:\Users\<utente>\Archivio`. Così spostare nell'archivio i file del Desktop è istantaneo, senza copie.
 
 ### Struttura
@@ -51,7 +51,6 @@ Ogni archivio è organizzato così (es. `D:\Archivio`):
 
 ```
 D:\Archivio\
-├─ _Da smistare\                ← inbox interna
 ├─ Lavoro\                      ← argomento (menu laterale)
 │  ├─ Clienti\                  ← sotto-argomento
 │  │  ├─ Rossi\                 ← sotto-argomento
@@ -65,6 +64,7 @@ D:\Archivio\
 │  └─ Interni\
 ├─ Personale\
 ├─ Strumenti\
+├─ scaricato.pdf                ← file sciolto nella radice: lo segnala la barra di stato
 └─ .quiver\                     ← nascosta: metadati dell'archivio
 ```
 
@@ -75,8 +75,8 @@ D:\Archivio\
 - **Generale**: riquadro automatico con i file sciolti che stanno direttamente nella cartella dell'argomento.
 - **Elemento**: tutto ciò che sta dentro un riquadro: file, cartelle (si aprono in Explorer, in seguito anche dentro l'app) e collegamenti.
 - Un argomento che contiene solo sotto-argomenti mostra sulla bacheca le loro schede, per navigarci dentro.
-- I file lasciati direttamente nella radice finiscono nell'inbox.
-- Cartelle speciali: `_Da smistare` (inbox) e `.quiver` (nascosta).
+- I file lasciati direttamente nella radice non sono in nessun argomento: la barra di stato dice quanti sono, e la ricerca li trova.
+- Cartella speciale: `.quiver` (nascosta). Una `_Da smistare` lasciata dalle versioni che avevano «Da smistare» è un argomento come gli altri.
 
 ### Tipi di elemento
 
@@ -120,7 +120,7 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
 - Se una cartella viene rinominata o spostata dall'app, i metadati la seguono subito. Se succede da Explorer, i metadati restano sotto il nome di prima: la cartella perde posizione, misura e colore, mai i file.
 - Un `archive.json` rovinato, che non è più JSON valido, viene messo da parte com'era, in `archive.json.corrupt`, e l'archivio riparte con i metadati vuoti: i file non cambiano.
 
-Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Quiver la prova all'istante e la tiene solo se Windows gliela dà. Anche un `settings.json` rovinato viene messo da parte, in `settings.json.corrupt`, e Quiver riparte dalle impostazioni predefinite.
+Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, finestra) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Quiver la prova all'istante e la tiene solo se Windows gliela dà. Anche un `settings.json` rovinato viene messo da parte, in `settings.json.corrupt`, e Quiver riparte dalle impostazioni predefinite.
 
 ## 5. Interfaccia
 
@@ -138,14 +138,14 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 │   Strumenti    │                                                    │
 │                │                                                    │
 │                │                                                    │
-│ ↓ Da smistare 4│                                                    │
+│                │                                                    │
 ├────────────────┴────────────────────────────────────────────────────┤
 │ D:\Archivio · 1.240 elementi             Invio apri  F2 rinomina  … │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 - **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre le Impostazioni sulla pagina **Archivi**) e il pulsante per chiudere.
-- **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale. Si chiude e si riapre con il pulsante accanto al nome di Quiver, nella barra del titolo, o con `Ctrl+B`: chiusa non occupa spazio, e Quiver ricorda com'era (dalla 0.3.1).
+- **Barra laterale**: l'albero degli argomenti, con + per crearne uno. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale. Si chiude e si riapre con il pulsante accanto al nome di Quiver, nella barra del titolo, o con `Ctrl+B`: chiusa non occupa spazio, e Quiver ricorda com'era (dalla 0.3.1).
 - **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica. Un riquadro può occupare fino a tre colonne: se non ci sta in quello che resta della riga, va a capo.
 - **Barra di stato**, come in Explorer e come br-statusbar di Brace: a sinistra l'archivio, quanti elementi contiene e quanto occupano, oppure l'operazione in corso con i LED di br-activity; a destra la selezione e quanto pesa, lo spazio libero sul disco dell'archivio (in giallo sotto il 10 % o sotto 5 GB) e **?** con i tasti da sapere.
 - **Avvisi** (br-toast di Brace), in basso a destra: l'esito di un'operazione con **Annulla** e **Mostra**, e i problemi. Gli esiti si chiudono da soli dopo sei secondi, non mentre il puntatore è sopra; i problemi restano finché non si chiudono, e vanno anche nel log.
@@ -207,9 +207,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - gli argomenti si riordinano trascinandoli sopra o sotto un altro; lasciati al centro di un altro argomento ci entrano come sotto-argomenti, con la loro cartella. Due argomenti con lo stesso nome non si uniscono: Quiver chiede di rinominarne uno.
 - L'angolo in basso a destra di un riquadro, al passaggio del mouse, ne cambia la misura: in larghezza scatta a una, due o tre colonne, in altezza a righe. Il doppio clic sull'angolo, o «Misura automatica» nel menu, torna alla misura che segue gli elementi. Le righe sono misurate sullo schermo, non supposte: con la scala al 125 % Windows arrotonda una riga da 22 a 22,4 punti.
 - Il menu … del riquadro ha **Ordina per**: nome, data di modifica, tipo o dimensione, crescente o decrescente. Prende il posto dell'ordine dato a mano, e viceversa.
-- Spostare, copiare o collegare segue le regole di Explorer: sullo stesso disco si sposta, tra dischi diversi si copia; `Ctrl` copia, `Maiusc` sposta, `Alt` o `Ctrl+Maiusc` crea un collegamento. Con due eccezioni, coerenti con i principi:
-  - quello che ha già un suo posto (programmi `.exe`, cartelle e file in rete) entra come collegamento;
-  - quello che sta in «Da smistare» viene spostato anche su un altro disco.
+- Spostare, copiare o collegare segue le regole di Explorer: sullo stesso disco si sposta, tra dischi diversi si copia; `Ctrl` copia, `Maiusc` sposta, `Alt` o `Ctrl+Maiusc` crea un collegamento. Con un'eccezione, coerente con i principi: quello che ha già un suo posto (programmi `.exe`, cartelle e file in rete) entra come collegamento. Fino alla 0.3.2 ce n'era un'altra: quello che stava in «Da smistare» veniva spostato anche su un altro disco.
 
 ## 6. Funzioni e versioni
 
@@ -230,6 +228,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 - Inbox: `_Da smistare`, il Desktop e, se si vuole, Download. Ci finiscono anche i collegamenti che gli installer mettono sul desktop, così un programma appena installato si aggiunge con un gesto.
   - **Fatto**: «Da smistare» mostra un riquadro per ogni provenienza, il Desktop comprende quello comune a tutti gli utenti, Download si attiva dalle impostazioni e la ricerca trova anche questi file.
+  - **Tolto** dopo la 0.3.2, con il Desktop e Download: i file sciolti nella radice li segnala la barra di stato, e una cartella `_Da smistare` è un argomento come gli altri.
   - **Fatto**: «Sposta in…» dal tasto destro manda la selezione nel riquadro o nell'argomento scelto per nome, con le destinazioni recenti in cima (tenute per PC in `%APPDATA%\Quiver\recenti.json`); «Invia a Quiver» nel menu «Invia a» di Explorer fa lo stesso con i file scelti lì, passandoli all'istanza aperta con `--sort`.
 - **Fatto**: annulla (`Ctrl+Z`) per spostamenti, copie, collegamenti, rinomine, nuove cartelle, ordine dei riquadri e degli argomenti, ordinamenti, misure, promozioni ed eliminazioni. Quello che è andato nel Cestino torna al suo posto.
 - Menu contestuale completo di Windows (7-Zip e simili).
@@ -257,7 +256,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - Anteprima rapida con `Spazio` e miniature.
 - Ricerca dentro i file (con l'indice di Windows o con Everything).
 - Recenti e preferiti per argomento.
-- Regole automatiche per l'inbox (es. `*.dwg` → Rossi/Disegni).
+- Regole automatiche per i file mandati con «Invia a Quiver» (es. `*.dwg` → Rossi/Disegni).
 - Pulsante in Zebar.
 - Archivio condiviso tra più PC.
 
@@ -295,7 +294,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 - **Piattaforma**: C# / .NET 10, WPF, Windows 11 x64.
 - **Struttura della soluzione**:
-  - `Quiver.Core`: la logica, senza interfaccia grafica. Contiene il modello dell'archivio e di «Da smistare», i metadati, le regole per spostare, copiare o collegare, il registro per annullare, il ripristino dal Cestino, l'indice per la ricerca e il controllo delle modifiche fatte da fuori. Si può testare in automatico.
+  - `Quiver.Core`: la logica, senza interfaccia grafica. Contiene il modello dell'archivio, i metadati, le regole per spostare, copiare o collegare, il registro per annullare, il ripristino dal Cestino, l'indice per la ricerca e il controllo delle modifiche fatte da fuori. Si può testare in automatico.
   - `Quiver.App`: l'interfaccia WPF. Contiene finestre (pannello e Home), viste e view model, tray, impostazioni, il collegamento con le funzioni di Windows (icone, operazioni sui file della shell, collegamenti `.lnk`, file trascinati da Outlook e dal browser, menu contestuale, posizione delle icone sul desktop, scorciatoia globale) e il client IPC di GlazeWM.
   - `Quiver.Tests`: i test di `Quiver.Core`.
   - `Quiver.App.Tests`: i test delle operazioni sui file fatte dalla shell e dei view model del pannello e degli archivi, su archivi temporanei.
@@ -336,7 +335,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Focus**: Windows limita le app che si portano in primo piano da sole. Una scorciatoia registrata dall'app lo consente, ma va provato bene con GlazeWM e con più monitor.
 - **Archivio su più PC**: possibili conflitti su `archive.json` e programmi installati in percorsi diversi. Per ora è rimandato.
 - **Installer non firmato**: Windows avvisa al primo avvio (SmartScreen). Una firma del codice costa e per ora non serve.
-- **Da decidere**: se rinominare la cartella `aaa` in `Quiver`; se includere Download nell'inbox (per ora è un'impostazione, spenta). Dove mettere l'archivio lo sceglie l'utente nella finestra Archivi; il consiglio è lo stesso disco del Desktop.
+- **Da decidere**: se rinominare la cartella `aaa` in `Quiver`. Dove mettere l'archivio lo sceglie l'utente nella finestra Archivi; il consiglio è lo stesso disco del Desktop.
 
 ## 10. Prossimi passi
 
@@ -354,7 +353,8 @@ Fatto:
 - le fasi 0 e 1 della tela (§11): `MainViewModel` con tutte le bacheche insieme, la vista Tela con una zona per argomento e i sotto-argomenti dentro, lo zoom a tre livelli e i voli dalla barra laterale, dalla ricerca e da «Mostra». Sull'archivio di prova pesante si apre in meno di 2 secondi invece di 14; misurata sul PC vero, va a 55-60 fotogrammi al secondo con l'archivio vero e a 45 con quello pesante. Verificate con i test, con le anteprime e con la misura, non ancora dal vivo;
 - subito dopo, su richiesta: i colori degli argomenti, dati una volta da Quiver e tenuti nell'archivio, nella barra laterale e sulla tela; la barra di stato come in Explorer, con la selezione, lo spazio libero e i tasti da sapere sotto **?**; esiti e problemi in avvisi in basso a destra; quanto occupa ogni archivio in Impostazioni, e il controllo dello spazio prima di copiare. Verificato con i test e con le anteprime, non ancora dal vivo;
 - l'8 ottobre, dopo la 0.3.0: il tasto destro sugli argomenti di nuovo funzionante e la barra degli argomenti richiudibile con `Ctrl+B` (0.3.1); sulla tela, i nomi degli elementi nei riquadri visti a metà strada (0.3.2);
-- il 9 e il 10 ottobre: la documentazione del codice in `docs/`, scritta leggendo tutto il codice e poi controllata contro di esso, e le correzioni trovate così. Il **?** dice la scorciatoia in uso, non sempre `Alt+E`; un `settings.json` rovinato viene messo da parte invece di andare perso; la copia di un archivio su un altro disco non blocca più Quiver; una copia fatta in una cartella di cui non si leggono i nomi non si annulla più, perché `Ctrl+Z` avrebbe mandato nel Cestino anche quello che c'era già; sulla tela, una cartella nuova nel «Generale» di una zona va nel suo argomento. Verificato con i test, non ancora dal vivo.
+- il 9 e il 10 ottobre: la documentazione del codice in `docs/`, scritta leggendo tutto il codice e poi controllata contro di esso, e le correzioni trovate così. Il **?** dice la scorciatoia in uso, non sempre `Alt+E`; un `settings.json` rovinato viene messo da parte invece di andare perso; la copia di un archivio su un altro disco non blocca più Quiver; una copia fatta in una cartella di cui non si leggono i nomi non si annulla più, perché `Ctrl+Z` avrebbe mandato nel Cestino anche quello che c'era già; sulla tela, una cartella nuova nel «Generale» di una zona va nel suo argomento. Verificato con i test, non ancora dal vivo;
+- il 10 ottobre, su richiesta: tolto «Da smistare», con il Desktop e Download (anche dalla ricerca) e la pagina delle impostazioni. I file sciolti nella radice li segnala la barra di stato, con un clic per aprirla in Explorer; una cartella `_Da smistare` è un argomento come gli altri. Verificato con i test e con le anteprime, non ancora dal vivo.
 
 1. Provare dal vivo la 0.2.3: le copie lunghe, gli argomenti trascinati, l'angolo dei riquadri, «Ordina per» e l'ordine a mano.
 2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor. E la copia di un archivio su un altro disco, che ora lascia Quiver usabile.
@@ -367,7 +367,7 @@ Fatto:
 
 ### L'idea
 
-Una superficie unica, da spostare e da zoomare, con tutto l'archivio insieme: la scrivania organizzata dell'idea di partenza. Ogni argomento è una **zona** con dentro i suoi riquadri, gli stessi della bacheca con le loro misure, colori e ordini; i sotto-argomenti sono zone dentro la zona del loro argomento. Anche **Da smistare** è una zona: si trascina da lì a qualunque riquadro dell'archivio senza cambiare argomento.
+Una superficie unica, da spostare e da zoomare, con tutto l'archivio insieme: la scrivania organizzata dell'idea di partenza. Ogni argomento è una **zona** con dentro i suoi riquadri, gli stessi della bacheca con le loro misure, colori e ordini; i sotto-argomenti sono zone dentro la zona del loro argomento.
 
 Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non saltano quando cambiano la risoluzione o i monitor, come succedeva sul desktop (§1).
 
@@ -389,11 +389,11 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 
 ### Dove vanno le zone
 
-- La prima volta le dispone Quiver, nell'ordine della barra laterale, con Da smistare in alto a sinistra.
+- La prima volta le dispone Quiver, nell'ordine della barra laterale.
 - Appena l'utente sposta una zona, tutte tengono il posto in cui sono: da lì in poi i posti sono suoi.
 - Un argomento nuovo trova posto da solo, nel primo spazio libero sotto le zone che ci sono.
 - Quando una zona cresce (un riquadro nuovo, uno più alto) e arriva su un'altra, quella sotto scende quanto basta. Le zone non si coprono mai.
-- Nei metadati, per ogni argomento della radice e per Da smistare: `"canvas": { "x": 0, "y": 0, "columns": 3 }`, in punti della tela al 100 %. Per la tela non si sposta nessun file; spostare e allargare una zona si annulla con `Ctrl+Z`.
+- Nei metadati, per ogni argomento della radice: `"canvas": { "x": 0, "y": 0, "columns": 3 }`, in punti della tela al 100 %. Per la tela non si sposta nessun file; spostare e allargare una zona si annulla con `Ctrl+Z`.
 
 ### Come è fatta
 
@@ -421,8 +421,8 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 ### Fasi
 
 0. **Preparazione**, senza niente di nuovo da vedere: `MainViewModel` con più bacheche insieme, il modello del riquadro condiviso. Tutti i test di oggi devono passare.
-1. **La tela da guardare**: l'interruttore, le zone disposte da Quiver (Da smistare compreso, i sotto-argomenti dentro), zoom e spostamento, i tre livelli, i voli dalla barra laterale e dalla ricerca, aprire e tasto destro al livello vicino. Più la misura delle prestazioni.
-2. **Smistare sulla tela**: trascinare tra riquadri di argomenti diversi e dalla zona Da smistare, il rettangolo con `Maiusc`, gli appunti, la rinomina, `Ctrl+Z`, le righe che mostrano dove va un riquadro o un elemento. Da vicino buona parte funziona già, perché i riquadri della tela sono quelli della bacheca; mancano lo spostamento di un riquadro in un'altra zona e il rettangolo.
+1. **La tela da guardare**: l'interruttore, le zone disposte da Quiver (i sotto-argomenti dentro), zoom e spostamento, i tre livelli, i voli dalla barra laterale e dalla ricerca, aprire e tasto destro al livello vicino. Più la misura delle prestazioni.
+2. **Smistare sulla tela**: trascinare tra riquadri di argomenti diversi, il rettangolo con `Maiusc`, gli appunti, la rinomina, `Ctrl+Z`, le righe che mostrano dove va un riquadro o un elemento. Da vicino buona parte funziona già, perché i riquadri della tela sono quelli della bacheca; mancano lo spostamento di un riquadro in un'altra zona e il rettangolo.
 3. **La tua scrivania**: zone da spostare e allargare, i posti nell'archivio, i nuovi argomenti sistemati da soli, le zone che scendono invece di coprirsi, la vista ricordata.
 4. **Dopo**: la minimappa, la tastiera tra le zone e la modalità Home a schermo intero per il workspace di GlazeWM, con la tela dentro (§7). Il colore delle zone, previsto qui, è arrivato prima, con la 0.3.0.
 

@@ -30,11 +30,11 @@ Per provarlo senza i tuoi file:
 
 ```powershell
 .\scripts\New-DemoArchive.ps1 -Path D:\ArchivioDemo
-dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\DesktopDiProva
+dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo
 ```
 
 - `--archive` vale solo per quell'avvio: non cambia l'archivio in uso nelle impostazioni.
-- `--desktop <cartella>` fa mostrare a **Da smistare** quella cartella al posto del Desktop vero. Così trascinando non si spostano i propri file nell'archivio di prova.
+- Se il Quiver installato è aperto, prima esci da quello (**Esci** nel menu della tray): un secondo Quiver passa il comando a quello aperto e si chiude.
 
 ## Uso
 
@@ -46,7 +46,7 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 - **Aprire**: doppio clic o `Invio`. `Ctrl+Invio` mostra l'elemento in Explorer.
 - **Rinominare**: `F2`, oppure un secondo clic, lento, su un elemento già selezionato. Il nome si modifica sul posto e, come in Explorer, i collegamenti non mostrano `.lnk` o `.url`. `Invio` conferma, `Esc` annulla e un clic altrove conferma.
 - **Eliminare**: `Canc` sposta nel Cestino. Per le cartelle Quiver chiede prima conferma.
-- **Sposta in…**: dal tasto destro su uno o più elementi, anche in **Da smistare** e tra i risultati della ricerca. Si apre l'elenco dei riquadri e degli argomenti, con quelli usati di recente in cima: basta scrivere una parte del nome e premere `Invio`, o fare doppio clic. Un argomento riceve i file tra i suoi file sciolti. I file vengono spostati anche da un altro disco; i programmi e quello che sta in rete entrano come collegamenti.
+- **Sposta in…**: dal tasto destro su uno o più elementi, anche tra i risultati della ricerca. Si apre l'elenco dei riquadri e degli argomenti, con quelli usati di recente in cima: basta scrivere una parte del nome e premere `Invio`, o fare doppio clic. Un argomento riceve i file tra i suoi file sciolti. I file vengono spostati anche da un altro disco; i programmi e quello che sta in rete entrano come collegamenti.
 - **Invia a Quiver**: in Explorer, tasto destro su uno o più file, **Invia a** › **Quiver**: il pannello si apre chiedendo dove metterli, come con **Sposta in…**.
 - **Annullare**: `Ctrl+Z` annulla l'ultima operazione fatta in Quiver, anche più volte di seguito. Vale per spostamenti, copie, collegamenti, rinomine, nuove cartelle, riquadri e argomenti, ordine dei riquadri e Cestino: quello che ci hai mandato torna al suo posto. Si trova anche nel menu del tasto destro sulla bacheca. Dopo uno spostamento, una copia, un collegamento o un'eliminazione, in basso a destra compare un avviso con **Annulla** e, quando c'è un posto dove andare, **Mostra**, che porta sulla destinazione con gli elementi selezionati. **Annulla** resta finché quell'operazione è l'ultima fatta.
 - **Avvisi**: in basso a destra, al massimo tre, il più recente in fondo. Gli esiti e le notizie si chiudono da soli dopo sei secondi, ma non mentre ci tieni sopra il puntatore; i problemi restano finché non li chiudi con la X, e finiscono anche nel log.
@@ -56,10 +56,9 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 - **Copiare e spostare con gli appunti**: `Ctrl+C`, `Ctrl+X` e `Ctrl+V` funzionano anche da e verso Explorer. Si incolla nel riquadro o nell'argomento su cui hai cliccato, altrimenti nella bacheca; anche appena aperto il pannello, con la ricerca vuota. **Incolla collegamento**, dal tasto destro, crea collegamenti ai file copiati, che restano dove sono.
 - **Tasto destro**: Apri con…, Sposta in…, Copia percorso, Proprietà (anche con `Alt+Invio`) e le altre azioni.
 - **Trascinare**:
-  - un file su un riquadro, su un argomento o su **Da smistare** lo sposta lì. Come in Explorer, tra dischi diversi viene copiato; con `Ctrl` copi, con `Maiusc` sposti, con `Alt` (o `Ctrl+Maiusc`) crei un collegamento;
-  - se tieni fermo quello che trascini sopra un argomento, o su **Da smistare**, dopo un attimo la bacheca passa lì e lo lasci nel riquadro giusto, come con le cartelle di Explorer;
+  - un file su un riquadro o su un argomento lo sposta lì. Come in Explorer, tra dischi diversi viene copiato; con `Ctrl` copi, con `Maiusc` sposti, con `Alt` (o `Ctrl+Maiusc`) crei un collegamento;
+  - se tieni fermo quello che trascini sopra un argomento, dopo un attimo la bacheca passa lì e lo lasci nel riquadro giusto, come con le cartelle di Explorer;
   - quello che ha già un suo posto entra come collegamento, come chiede il progetto: i programmi (`.exe`, come fa Explorer) e le cartelle e i file in rete;
-  - quello che arriva da **Da smistare** viene spostato anche su un altro disco: smistarlo è proprio lo scopo;
   - gli allegati e i messaggi di Outlook, e i link e le immagini dal browser, diventano file nel riquadro;
   - un riquadro, preso per il titolo (al passaggio del mouse compare la maniglia a puntini), cambia posto nella bacheca, e l'ordine resta: una riga mostra dove andrà. Lasciato su un argomento, ci entra dentro;
   - le righe di un riquadro, trascinate dentro il riquadro stesso, prendono l'ordine che vuoi; i file che arrivano dopo si mettono in fondo;
@@ -67,13 +66,14 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
   - mentre trascini, un'etichetta accanto al puntatore dice cosa hai in mano: il nome, o quanti elementi;
   - file e cartelle si portano anche fuori da Quiver, in Explorer, in una mail o in un'altra app;
   - per prendere file da Explorer, tieni le due finestre affiancate, oppure fissa Quiver con il pin: resta sopra Explorer mentre trascini. Funziona anche cominciare a trascinare e premere `Alt+E` senza lasciare il tasto del mouse.
-- **Da smistare**: raccoglie in riquadri separati i file lasciati nella radice dell'archivio o nella cartella `_Da smistare` e quelli del Desktop, compreso quello comune a tutti gli utenti dove gli installer mettono i collegamenti. In **Impostazioni › Da smistare** si può togliere il Desktop o aggiungere Download. La ricerca trova anche questi file.
+- **File nella radice**: i file lasciati direttamente nella cartella dell'archivio, fuori da ogni argomento, non compaiono sulla bacheca né sulla tela. La barra di stato dice quanti sono, e un clic apre la radice in Explorer; la ricerca li trova. Una cartella `_Da smistare`, negli archivi fatti con le versioni che avevano «Da smistare», è ora un argomento come gli altri.
+- **Il Desktop** non compare in Quiver: i suoi file si mandano nell'archivio trascinandoli da Explorer o con **Invia a Quiver**.
 - **Cercare**: basta scrivere. Con le frecce scegli un risultato, `Invio` lo apre ed `Esc` torna alla bacheca.
-- **Tela**: con l'interruttore **Bacheca | Tela** in alto a destra, tutto l'archivio insieme, con una zona per argomento e una per **Da smistare**; i sotto-argomenti stanno dentro la zona del loro argomento. Quiver ricorda l'ultima vista usata.
+- **Tela**: con l'interruttore **Bacheca | Tela** in alto a destra, tutto l'archivio insieme, con una zona per argomento; i sotto-argomenti stanno dentro la zona del loro argomento. Quiver ricorda l'ultima vista usata.
   - La rotella zooma attorno al puntatore, dal 10 % al 200 %; sopra un riquadro che scorre lo fa scorrere, e con `Ctrl` zooma sempre. Anche `Ctrl++` e `Ctrl+-`, o i pulsanti accanto alla percentuale.
   - Trascinando sul vuoto, o con la rotella premuta dovunque, si sposta la vista. Il doppio clic sul vuoto, **Mostra tutto** o `Ctrl+0` mettono in vista tutto l'archivio.
   - Da lontano le zone mostrano il nome e i riquadri sono blocchi, con la striscia del loro colore se ne hanno uno; a metà strada i riquadri hanno titolo, numero di elementi e i nomi dei primi, quanti ne entrano; da vicino, dal 70 % circa, sono i riquadri della bacheca, con gli stessi gesti. Le righe dei riquadri arrivano appena la vista si ferma, così spostarsi e zoomare restano fluidi anche con archivi grandi.
-  - Un clic su un argomento nella barra laterale, o su **Da smistare**, vola alla sua zona; il doppio clic sul nome di una zona la inquadra, quello su un riquadro visto da lontano ci vola sopra. Un clic su un risultato della ricerca vola al suo riquadro, con l'elemento selezionato.
+  - Un clic su un argomento nella barra laterale vola alla sua zona; il doppio clic sul nome di una zona la inquadra, quello su un riquadro visto da lontano ci vola sopra. Un clic su un risultato della ricerca vola al suo riquadro, con l'elemento selezionato.
 - **Creare**:
   - un argomento: il pulsante + accanto ad **Argomenti**; dentro un altro argomento, tasto destro su quello;
   - un riquadro: **Nuovo riquadro**, `Ctrl+Maiusc+N` o tasto destro sulla bacheca;
@@ -88,14 +88,14 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 - **Ordina per**: dal menu … di un riquadro, nome, data di modifica, tipo o dimensione, crescente o decrescente; le cartelle vengono prima, come in Explorer. Sostituisce l'ordine dato a mano, e viceversa. Anche questo resta nei metadati, e `Ctrl+Z` lo annulla.
 - **Copie lunghe**: mentre Windows sposta o copia, Quiver resta usabile e la barra di stato dice cosa sta facendo. **Esci** aspetta che l'operazione finisca.
 - **Spazio su disco**: prima di copiare nell'archivio, o di spostarci file da un altro disco, Quiver conta quanto occupano; se non ci stanno lo dice e non comincia, invece di lasciare la copia a metà. Lo stesso vale per **Sposta…** di un archivio su un altro disco.
-- **Barra di stato**: a sinistra l'archivio, con quanti elementi contiene e quanto occupano (un clic lo apre in Explorer), oppure l'operazione in corso; a destra, come in Explorer, quanti elementi sono selezionati e quanto pesano, lo spazio libero sul disco dell'archivio, in giallo quando resta meno del 10 % o meno di 5 GB, e **?**, con i tasti da sapere.
+- **Barra di stato**: a sinistra l'archivio, con quanti elementi contiene e quanto occupano (un clic lo apre in Explorer) e, se ce ne sono, i file sciolti nella radice; oppure l'operazione in corso; a destra, come in Explorer, quanti elementi sono selezionati e quanto pesano, lo spazio libero sul disco dell'archivio, in giallo quando resta meno del 10 % o meno di 5 GB, e **?**, con i tasti da sapere.
 - **Archivi**, come i vault di Obsidian: si aprono dal nome dell'archivio in alto nel pannello, o da **Archivi…** nel menu della tray.
   - Ogni archivio è una cartella normale; la cartella nascosta `.quiver` lo segna come archivio e ne tiene la disposizione.
   - Puoi crearne uno nuovo, usare come archivio una cartella che hai già, passare dall'uno all'altro, rinominarli e toglierli dall'elenco. Togliere dall'elenco non tocca i file.
   - Sotto il nome di ogni archivio, quanto occupa, tutto compreso, e lo spazio libero sul suo disco. Lo conta in sottofondo, aprendo la pagina.
   - **Sposta…** porta l'archivio in un'altra cartella. Sullo stesso disco è un attimo. Su un altro disco Quiver lo copia, confronta la copia con l'originale byte per byte, passa alla copia solo se sono identiche e poi chiede se mandare la cartella vecchia nel Cestino. Mentre copia, Quiver resta usabile; la finestra Impostazioni si chiude a copia finita, ed **Esci** aspetta che finisca.
   - Non possono fare da archivio un disco intero, il Desktop, la cartella del tuo utente o quelle di Windows e dei programmi. Un archivio non può stare dentro un altro.
-- **Impostazioni**: dal menu della tray. Le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito.
+- **Impostazioni**: dal menu della tray. Le pagine sono Archivi, Scorciatoia e Avvio ed Explorer, e ogni cambiamento vale subito.
   - **Scorciatoia**: clicca nel campo e premi la combinazione, con Ctrl, Alt o Win e un tasto. Quiver la prova all'istante: se un altro programma la tiene, resta quella di prima e lo dice.
   - **Avvio ed Explorer**: gli interruttori per **Avvia Quiver con Windows** e per **Quiver nel menu Invia a**.
 - **Tray**: dall'icona puoi aprire Quiver o l'archivio in Explorer, tenere Quiver sempre in primo piano, aprire gli archivi e le impostazioni, o uscire.
@@ -112,17 +112,16 @@ L'icona di Quiver è una bacheca: tre riquadri, uno dei quali ambra, come un riq
 
 - `Quiver.exe --toggle | --show | --hide | --exit` passa il comando all'istanza già aperta, ad esempio da una scorciatoia di GlazeWM.
 - `Quiver.exe --sort <file> [<file>…]` apre il pannello chiedendo dove mandare quei file: è quello che fa **Invia a Quiver**. Se Quiver è già aperto, i file passano all'istanza in esecuzione.
-- `Quiver.exe --archive <cartella> --render-preview <file.png> [--topic Lavoro/Clienti] [--query testo] [--prompt | --prompt-link | --prompt-move | --notice] [--inbox [--desktop <cartella>]]` disegna il pannello in un'immagine senza aprire finestre. Serve per i controlli automatici:
+- `Quiver.exe --archive <cartella> --render-preview <file.png> [--topic Lavoro/Clienti] [--query testo] [--prompt | --prompt-link | --prompt-move | --notice]` disegna il pannello in un'immagine senza aprire finestre. Serve per i controlli automatici:
   - `--prompt` aggiunge una richiesta di conferma, `--prompt-link` la domanda di **Nuovo collegamento…** con un errore, `--prompt-move` l'elenco di **Sposta in…**, `--notice` gli avvisi di uno spostamento, con **Annulla** e **Mostra**, e di un errore;
-  - `--inbox` mostra **Da smistare**, e `--desktop` usa una cartella al posto del Desktop vero, come nelle prove;
-  - `--settings` disegna la finestra **Impostazioni**, con `--section archives|hotkey|inbox|windows` la pagina, e con `--welcome` com'è al primo avvio;
+  - `--settings` disegna la finestra **Impostazioni**, con `--section archives|hotkey|windows` la pagina, e con `--welcome` com'è al primo avvio;
   - `--canvas` disegna la tela, tutta in vista; `--zoom 0.5` la disegna al 50 %, attorno al centro o, con `--topic`, attorno alla zona di quell'argomento.
 - `Quiver.exe --archive <cartella> --benchmark-canvas <file.txt>` misura quanto è fluida la tela su questo PC. Apre la tela dell'archivio in una finestra grande come lo schermo, senza prendere il focus, la muove per otto secondi sempre sullo stesso percorso (avvicinamento, spostamento da vicino, allontanamento, zoom avanti e indietro) e scrive nel file il tempo di apertura, i fotogrammi al secondo e quelli lenti; per ognuno dei più lenti, oltre 100 ms, cosa è successo prima (un cambio di livello, righe create, raccolte della memoria). L'archivio viene solo letto, e funziona anche con Quiver già aperto.
 
 ## Test e diagnostica
 
 - `dotnet test` esegue tre gruppi di test:
-  - le regole dell'archivio, la ricerca, i metadati, Da smistare, i tipi di file, il ripristino dal Cestino (su un Cestino finto, costruito dal test) e il confronto byte per byte di una copia;
+  - le regole dell'archivio, la ricerca, i metadati, i file sciolti nella radice, i tipi di file, il ripristino dal Cestino (su un Cestino finto, costruito dal test) e il confronto byte per byte di una copia;
   - le operazioni sui file: spostare, copiare, rinominare, i collegamenti e i file trascinati da Outlook e dal browser. Il Cestino vero è escluso, per non riempirlo;
   - il pannello: rinomina sul posto, selezione dopo spostamenti e ricaricamenti, nuove cartelle e nuovi riquadri, ordine dei riquadri e degli argomenti, misura dei riquadri, ordinamento e ordine a mano degli elementi, `Ctrl+Z`, **Sposta in…** con le destinazioni recenti, gli avvisi con **Annulla** e **Mostra**, la barra di stato con la selezione e lo spazio libero, il controllo dello spazio prima di una copia, i colori degli argomenti dati una volta e tenuti;
   - la tela: le zone con i sotto-argomenti dentro, la selezione e gli spostamenti tra zone, la camera (zoom attorno a un punto, voli, livelli), la disposizione delle zone senza sovrapposizioni, e le liste dei riquadri che restano senza righe finché non servono, alte come con le righe;

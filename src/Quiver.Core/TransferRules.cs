@@ -16,10 +16,9 @@ public static class TransferRules
     /// <param name="forceCopy">Ctrl held down.</param>
     /// <param name="forceMove">Shift held down.</param>
     /// <param name="forceLink">Alt held down. Ctrl and Shift together ask for a shortcut too, as in Explorer.</param>
-    /// <param name="preferMove">Without keys, a move even to another drive: the items wait to be sorted.</param>
     /// <param name="preferLink">Without keys, a shortcut: the items have a place of their own (see <see cref="HasItsOwnPlace"/>).</param>
     public static TransferKind Choose(IReadOnlyList<string> sources, string destination, bool forceCopy, bool forceMove,
-        bool forceLink = false, bool preferMove = false, bool preferLink = false)
+        bool forceLink = false, bool preferLink = false)
     {
         if (sources.Count == 0)
             return TransferKind.None;
@@ -37,7 +36,7 @@ public static class TransferRules
             return TransferKind.Link;
         if (forceCopy)
             return TransferKind.Copy;
-        if (forceMove || preferMove)
+        if (forceMove)
             return TransferKind.Move;
         if (preferLink)
             return TransferKind.Link;

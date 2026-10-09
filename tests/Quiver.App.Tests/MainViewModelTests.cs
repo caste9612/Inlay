@@ -327,12 +327,12 @@ public sealed class MainViewModelTests : IDisposable
     [Fact]
     public void ATopicThatLeftTheArchive_IsATopicAgainWhenItComesBack() => StaThread.Run(() =>
     {
-        var desktop = Directory.CreateDirectory(_root + "-desktop").FullName;
+        var outside = Directory.CreateDirectory(_root + "-fuori").FullName;
         try
         {
-            using var viewModel = new MainViewModel(_root, live: false, inboxSources: [new InboxSource("Desktop", [desktop])], recent: _recent);
+            using var viewModel = Open();
             viewModel.PromoteTile(viewModel.Tiles.Single(tile => tile.Title == "Archivio"));
-            viewModel.Transfer([Path.Combine(_root, "Lavoro", "Archivio")], desktop, TransferKind.Move);
+            viewModel.Transfer([Path.Combine(_root, "Lavoro", "Archivio")], outside, TransferKind.Move);
             Assert.False(MetadataStore.Load(_root).IsTopic("Lavoro/Archivio"));
 
             viewModel.Undo();
@@ -342,7 +342,7 @@ public sealed class MainViewModelTests : IDisposable
         }
         finally
         {
-            Directory.Delete(desktop, recursive: true);
+            Directory.Delete(outside, recursive: true);
         }
     });
 
@@ -452,29 +452,23 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Empty(Directory.GetFileSystemEntries(Path.Combine(_root, "Lavoro", "Archivio")));
     });
 
-    // ---- Da smistare ----
+    // ---- The root of the archive ----
 
     [Fact]
-    public void TheInbox_ShowsTheDesktop_NextToTheArchivesOwnFiles() => StaThread.Run(() =>
+    public void FilesLooseInTheRoot_AreToldInTheStatusBar_AndTheSearchFindsThem() => StaThread.Run(() =>
     {
+        using (var viewModel = Open())
+            Assert.Null(viewModel.RootFilesText);
+
         AddFile("scaricato.pdf");
-        var desktop = Directory.CreateDirectory(_root + "-desktop").FullName;
-        try
-        {
-            File.WriteAllText(Path.Combine(desktop, "foto.jpg"), "");
-            using var viewModel = new MainViewModel(_root, live: false, inboxSources: [new InboxSource("Desktop", [desktop])], recent: _recent);
+        AddFile("scansione.pdf");
+        using var reopened = Open();
 
-            viewModel.ShowInboxCommand.Execute(null);
-
-            Assert.Equal([ArchiveReader.ArchiveInboxTitle, "Desktop"], viewModel.Tiles.Select(tile => tile.Title));
-            Assert.Equal(2, viewModel.InboxCount);
-            Assert.True(viewModel.IsInInbox(Path.Combine(desktop, "foto.jpg")));
-            Assert.False(viewModel.IsInInbox(Path.Combine(_root, "Lavoro", "Documenti", "a.txt")));
-        }
-        finally
-        {
-            Directory.Delete(desktop, recursive: true);
-        }
+        Assert.Equal("2 file sciolti nella radice", reopened.RootFilesText);
+        // They are in no topic, but the search finds them.
+        reopened.BuildIndexNow();
+        reopened.Query = "scaricato";
+        Assert.Equal("Archivio", Assert.Single(reopened.Results).Location);
     });
 
     [Fact]
@@ -767,7 +761,7 @@ public sealed class MainViewModelTests : IDisposable
     // ---- La tela ----
 
     [Fact]
-    public void TheCanvas_HasAZoneForEachTopic_TheInboxFirst_AndTopicsInsideTheirTopic() => StaThread.Run(() =>
+    public void TheCanvas_HasAZoneForEachTopic_AndTopicsInsideTheirTopic() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         viewModel.PromoteTile(viewModel.Tiles.Single(tile => tile.Title == "Archivio"));
@@ -776,14 +770,14 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.False(viewModel.IsBoardVisible);
         Assert.True(viewModel.IsCanvasVisible);
-        Assert.Equal([ZoneViewModel.InboxKey, "Lavoro", "Personale"], viewModel.Canvas.Zones.Select(zone => zone.Key));
-        var lavoro = viewModel.Canvas.Zones[1];
+        Assert.Equal(["Lavoro", "Personale"], viewModel.Canvas.Zones.Select(zone => zone.Key));
+        var lavoro = viewModel.Canvas.Zones[0];
         Assert.Same(viewModel.Topics.Single(topic => topic.Name == "Lavoro"), lavoro.Topic);
         Assert.Equal(["Documenti"], lavoro.Tiles.Select(tile => tile.Title));
         Assert.Equal(["Lavoro/Archivio"], lavoro.Children.Select(zone => zone.Key));
         // Archivio, now a topic, is a zone inside and no longer a tile.
         Assert.Equal("1 riquadro · 2 elementi", lavoro.Summary);
-        Assert.Equal(["Casa"], viewModel.Canvas.Zones[2].Tiles.Select(tile => tile.Title));
+        Assert.Equal(["Casa"], viewModel.Canvas.Zones[1].Tiles.Select(tile => tile.Title));
     });
 
     [Fact]

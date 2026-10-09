@@ -8,15 +8,18 @@ namespace Quiver.App.ViewModels;
 /// <summary>A box on the board.</summary>
 public sealed partial class TileViewModel : RenameableViewModel
 {
-    /// <summary>The rows a tile shows before scrolling, when nobody gave it a height: about ten.</summary>
+    /// <summary>How tall the list of a tile grows when nobody gave it a height: a little under twelve rows, then it scrolls.</summary>
     public const double UsualListHeight = 268;
 
     private readonly IReadOnlySet<string> _cutPaths;
     private TileSize? _size;
 
     public TileViewModel(Tile tile, string root, IReadOnlySet<string> cutPaths)
-        : this(tile.Title, tile.FolderPath, tile.Items, cutPaths)
     {
+        _cutPaths = cutPaths;
+        Title = tile.Title;
+        FolderPath = tile.FolderPath;
+        Items = new ObservableCollection<ItemViewModel>(tile.Items.Select(NewItem));
         IsGeneral = tile.IsGeneral;
         RelativePath = tile.IsGeneral ? null : ArchiveLayout.ToRelativeKey(root, tile.FolderPath);
         // "Generale" keeps its size and order under its topic's key: it holds the files of the topic's folder.
@@ -27,15 +30,6 @@ public sealed partial class TileViewModel : RenameableViewModel
         ByHand = tile.ByHand;
     }
 
-    /// <summary>A tile that is not a subfolder of a topic, like the inbox.</summary>
-    public TileViewModel(string title, string folderPath, IReadOnlyList<ArchiveItem> items, IReadOnlySet<string> cutPaths)
-    {
-        _cutPaths = cutPaths;
-        Title = title;
-        FolderPath = folderPath;
-        Items = new ObservableCollection<ItemViewModel>(items.Select(NewItem));
-    }
-
     public string Title { get; private set; }
 
     /// <summary>Where files dropped or pasted on the tile go.</summary>
@@ -43,11 +37,11 @@ public sealed partial class TileViewModel : RenameableViewModel
 
     public bool IsGeneral { get; }
 
-    /// <summary>Metadata key of the tile's own folder; null for tiles that are not a subfolder.</summary>
+    /// <summary>Metadata key of the tile's own folder; null for «Generale», whose folder is that of its topic.</summary>
     public string? RelativePath { get; }
 
-    /// <summary>Where its size and the order of its items are kept; null for the tiles of the inbox, outside the archive.</summary>
-    public string? MetadataKey { get; }
+    /// <summary>Where its size and the order of its items are kept: the key of its folder, that of its topic for «Generale».</summary>
+    public string MetadataKey { get; }
 
     public ObservableCollection<ItemViewModel> Items { get; }
 
@@ -71,9 +65,6 @@ public sealed partial class TileViewModel : RenameableViewModel
 
     /// <summary>Only tiles that are a folder of their own can be moved, renamed, deleted, colored or promoted.</summary>
     public bool IsOwnFolder => RelativePath is not null;
-
-    /// <summary>Tiles of the archive, "Generale" included, can be resized and put in order; those of the inbox cannot.</summary>
-    public bool CanArrange => MetadataKey is not null;
 
     /// <summary>The size given to the tile, also while its corner is being dragged; null for the usual one.</summary>
     public TileSize? Size

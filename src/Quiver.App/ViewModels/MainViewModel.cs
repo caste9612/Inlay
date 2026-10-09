@@ -22,7 +22,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private readonly bool _live;
     private readonly bool _readOnly;
-    private IReadOnlyList<InboxSource> _inboxSources;
     private readonly RecycleBin _recycleBin;
     private readonly RecentDestinations _recent;
     private readonly UndoHistory _history = new();
@@ -106,12 +105,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isDiskLow;
 
+    /// <summary>"3 file sciolti nella radice": files no topic shows, in the status bar; null when there are none.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasInboxItems))]
-    private int _inboxCount;
-
-    [ObservableProperty]
-    private bool _isInboxShown;
+    private string? _rootFilesText;
 
     [ObservableProperty]
     private PromptViewModel? _prompt;
@@ -125,20 +121,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// Without it (previews, tests) the board is read only when asked, the search needs <see cref="BuildIndexNow"/>, and
     /// file operations are done before their method returns.
     /// </param>
-    /// <param name="inboxSources">Places outside the archive shown in "Da smistare", like the Desktop.</param>
     /// <param name="recycleBin">Where Ctrl+Z finds what went to the Recycle Bin; by default, the one of Windows.</param>
     /// <param name="recent">Where files were sent last, offered first by «Sposta in…»; by default, those of this PC.</param>
     /// <param name="readOnly">
     /// For previews and measures, which look at the archive and write nothing into it: the colors new topics get are only
     /// shown, not kept.
     /// </param>
-    internal MainViewModel(string root, bool live = true, IReadOnlyList<InboxSource>? inboxSources = null, RecycleBin? recycleBin = null,
-        RecentDestinations? recent = null, bool readOnly = false)
+    internal MainViewModel(string root, bool live = true, RecycleBin? recycleBin = null, RecentDestinations? recent = null,
+        bool readOnly = false)
     {
         _live = live;
         _readOnly = readOnly;
         _shell = live ? new FileOperationQueue() : null;
-        _inboxSources = inboxSources ?? [];
         _recycleBin = recycleBin ?? new RecycleBin(WindowsFolders.RecycleBinOf);
         _recent = recent ?? RecentDestinations.Load();
         LoadArchive(root);
@@ -190,10 +184,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>The archive in the status bar: where it is, and what a click on it does.</summary>
     public string ArchiveToolTip => $"{_root}: apri in Explorer";
 
-    public string InboxPath => _reader.InboxPath;
-
     /// <summary>The folder the board shows: files pasted or dropped on its background go there.</summary>
-    public string? BoardFolder => IsInboxShown ? _reader.InboxPath : _selectedTopic?.Topic.FullPath;
+    public string? BoardFolder => _selectedTopic?.Topic.FullPath;
 
     public TopicViewModel? SelectedTopic => _selectedTopic;
 
@@ -209,8 +201,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         get => IsCanvasShown ? 1 : 0;
         set => IsCanvasShown = value == 1;
     }
-
-    public bool HasInboxItems => InboxCount > 0;
 
     public bool CanUndo => _history.Last is not null;
 
@@ -254,7 +244,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _watcher?.Dispose();
         _watcher = null;
         _root = Path.GetFullPath(root);
-        _reader = new ArchiveReader(_root, new ArchiveMetadata(), _inboxSources);
+        _reader = new ArchiveReader(_root, new ArchiveMetadata());
         _index = null;
         _selectedTopic = null;
         _selectedTopicPath = null;
@@ -262,7 +252,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _history.Clear();
         Toasts.Clear();
         NotifyHistoryChanged();
-        IsInboxShown = false;
         OnPropertyChanged(nameof(ArchiveName));
         OnPropertyChanged(nameof(ArchiveToolTip));
         UpdateArchiveSummary();
@@ -282,18 +271,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _indexing?.Cancel();
         _watcher?.Dispose();
         _watcher = null;
-    }
-
-    /// <summary>The places of «Da smistare» changed in the settings: the archive is read again with them, the history kept.</summary>
-    public void UseInboxSources(IReadOnlyList<InboxSource> sources)
-    {
-        _inboxSources = sources;
-        ReleaseArchive();
-        Reload();
-        if (!_live)
-            return;
-        RebuildIndex();
-        StartWatching();
     }
 
     public void SelectTopicByPath(string relativePath)
@@ -340,12 +317,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Builds the search index synchronously, for preview rendering.</summary>
     public void BuildIndexNow()
     {
-        _index = SearchIndex.Build(_root, _reader.InboxSources);
+        _index = SearchIndex.Build(_root);
         UpdateArchiveSummary();
     }
-
-    /// <summary>Whether a file or folder waits to be sorted: dragged away from there, it is moved even to another drive.</summary>
-    public bool IsInInbox(string path) => _reader.IsInInbox(path);
 
     /// <summary>The selected items of the board or of the canvas, or of the search results while searching.</summary>
     public IReadOnlyList<ItemViewModel> SelectedItems() =>
@@ -511,7 +485,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         Remember(new CreateStep(path));
         _selectedTopicPath = topic.Topic.RelativePath;
-        IsInboxShown = false;
         Reload();
         if (ShownTiles.FirstOrDefault(tile => SamePath(tile.FolderPath, path)) is { } tile)
             BeginRename(tile);
@@ -528,7 +501,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (parent is not null)
             UpdateMetadata(metadata => metadata.SetTopic(KeyOf(path), true));
         _selectedTopicPath = KeyOf(path);
-        IsInboxShown = false;
         Reload();
         if (FindTopic(_selectedTopicPath) is { } topic)
             BeginRename(topic);
@@ -686,7 +658,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var sources = paths.Select(Path.GetFullPath).ToList();
         if (sources.Count == 0)
             return;
-        var link = sources.All(path => TransferRules.HasItsOwnPlace(path, _root) && !IsInInbox(path));
+        var link = sources.All(path => TransferRules.HasItsOwnPlace(path, _root));
         var destinations = _reader.ReadDestinations()
             .Where(destination => KindFor(sources, destination.FullPath, link) != TransferKind.None)
             .ToList();
@@ -731,15 +703,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             ShowOnCanvasRequested?.Invoke(this, full);
             return;
         }
-        if (SamePath(full, _reader.InboxPath) || !IsInsideArchive(full))
-        {
-            IsInboxShown = true;
-        }
-        else
-        {
-            IsInboxShown = false;
+        // A tile shows on the board of its topic, the nearest topic up from its folder.
+        if (IsInsideArchive(full))
             _selectedTopicPath = KeyOf(full);
-        }
         SelectAfterReload(notice.Paths);
         Reload();
     }
@@ -908,7 +874,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Reload();
     }
 
-    /// <summary>The folder where something is about to land; the inbox folder only exists once something lands in it.</summary>
+    /// <summary>The folder where something is about to land, made again if it went away meanwhile, as from Explorer.</summary>
     private bool EnsureFolder(string folder)
     {
         try
@@ -1044,8 +1010,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Gives a tile the size its corner was dragged to, or the usual one with null, kept in the archive.</summary>
     public void ResizeTile(TileViewModel tile, TileSize? size)
     {
-        if (tile.MetadataKey is not { } key)
-            return;
+        var key = tile.MetadataKey;
         var previous = LoadMetadata().SizeOf(key);
         var wanted = size?.Clamped() is { IsUsual: false } clamped ? clamped : null;
         if (previous == wanted)
@@ -1063,8 +1028,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     public void SortTile(TileViewModel tile, SortKey key)
     {
-        if (tile.MetadataKey is not { } metadataKey)
-            return;
+        var metadataKey = tile.MetadataKey;
         var sort = tile.SortedBy == key ? new ItemSort(key, tile.IsDescending) : ItemSort.For(key);
         Arrange(tile, metadataKey, m => m.SetSort(metadataKey, sort));
     }
@@ -1072,8 +1036,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>«Crescente» or «Decrescente», for the sort in use, by name when the items were in order by hand.</summary>
     public void SetSortDirection(TileViewModel tile, bool descending)
     {
-        if (tile.MetadataKey is not { } metadataKey)
-            return;
+        var metadataKey = tile.MetadataKey;
         var sort = new ItemSort(tile.SortedBy ?? SortKey.Name, descending);
         Arrange(tile, metadataKey, m => m.SetSort(metadataKey, sort));
     }
@@ -1084,8 +1047,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     public void MoveItems(TileViewModel tile, IReadOnlyList<ItemViewModel> items, ItemViewModel? before)
     {
-        if (tile.MetadataKey is not { } key || items.Count == 0 || (before is not null && items.Contains(before)))
+        if (items.Count == 0 || (before is not null && items.Contains(before)))
             return;
+        var key = tile.MetadataKey;
         var current = tile.Items.Select(item => item.Item.Name).ToList();
         // In the order they have in the tile, wherever they were picked from.
         var moving = tile.Items.Where(items.Contains).Select(item => item.Item.Name).ToList();
@@ -1469,7 +1433,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         if (topic is null)
             return;
-        IsInboxShown = false;
         if (_selectedTopic is not null && !ReferenceEquals(_selectedTopic, topic))
             _selectedTopic.IsSelected = false;
         _selectedTopic = topic;
@@ -1492,41 +1455,6 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SelectedTopic));
     }
 
-    [RelayCommand]
-    private void ShowInbox()
-    {
-        IsInboxShown = true;
-        if (_selectedTopic is not null)
-            _selectedTopic.IsSelected = false;
-        _selectedTopic = null;
-
-        var tiles = _reader.ReadInbox();
-        InboxCount = tiles.Sum(tile => tile.Items.Count);
-        BoardTitle = "Da smistare";
-        BoardPath = "";
-        SubTopics.Clear();
-        Reconciler.Reconcile(Tiles, tiles, tile => TileViewModel.KeyOf(tile.FolderPath, isGeneral: false), tile => tile.Key,
-            tile => new TileViewModel(tile.Title, tile.FolderPath, tile.Items, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
-        EmptyMessage = InboxCount == 0 ? InboxEmptyMessage() : "";
-        OnPropertyChanged(nameof(BoardFolder));
-        OnPropertyChanged(nameof(SelectedTopic));
-    }
-
-    private string InboxEmptyMessage()
-    {
-        var places = _reader.InboxSources
-            .Select(source => source.Title switch
-            {
-                "Desktop" => "sul Desktop",
-                "Download" => "in Download",
-                var title => $"in «{title}»",
-            })
-            .Append("nella radice dell'archivio")
-            .ToList();
-        return $"Niente da smistare. Qui compare quello che arriva {string.Join(", ", places)} " +
-               $"o nella cartella «{ArchiveLayout.InboxFolderName}».";
-    }
-
     partial void OnQueryChanged(string value) => RunSearch();
 
     /// <summary>Reads topics and the current board again, keeping the selection if that topic still exists.</summary>
@@ -1534,7 +1462,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         _reloadPending = false;
         var metadata = LoadMetadata();
-        _reader = new ArchiveReader(_root, metadata, _inboxSources);
+        _reader = new ArchiveReader(_root, metadata);
         var topics = _reader.ReadTopics();
         // A topic of the root seen for the first time gets its color, and keeps it in the archive; a preview only shows it.
         var rootKeys = topics.Select(topic => topic.RelativePath).ToList();
@@ -1550,12 +1478,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             topic => new TopicViewModel(topic, parent: null), (viewModel, topic) => viewModel.Update(topic));
         foreach (var topic in Topics)
             topic.RefreshColors();
-        InboxCount = _reader.ReadInbox().Sum(tile => tile.Items.Count);
+        RootFilesText = _reader.ReadRootFiles().Count switch
+        {
+            0 => null,
+            1 => "1 file sciolto nella radice",
+            var count => $"{count:N0} file sciolti nella radice",
+        };
 
-        if (IsInboxShown)
-            ShowInbox();
-        else if ((FindTopicOrParent(_selectedTopicPath) ?? Topics.FirstOrDefault()) is { } topic)
-            SelectTopic(topic);
+        if ((FindTopicOrParent(_selectedTopicPath) ?? Topics.FirstOrDefault()) is { } shown)
+            SelectTopic(shown);
         else
             ShowEmptyArchive();
         if (IsCanvasShown)
@@ -1569,15 +1500,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Reads the board of every topic for the canvas, «Da smistare» first: the zones, tiles and items still there keep
-    /// their view models, with their selection and the names being typed.
+    /// Reads the board of every topic for the canvas: the zones, tiles and items still there keep their view models, with
+    /// their selection and the names being typed.
     /// </summary>
-    private void ReadCanvas()
-    {
-        List<ZoneModel> zones = [new(ZoneViewModel.InboxKey, "Da smistare", null, _reader.ReadInbox(), [])];
-        zones.AddRange(Topics.Select(ZoneModelOf));
-        ReconcileZones(Canvas.Zones, zones);
-    }
+    private void ReadCanvas() => ReconcileZones(Canvas.Zones, Topics.Select(ZoneModelOf).ToList());
 
     private ZoneModel ZoneModelOf(TopicViewModel topic) =>
         new(topic.Topic.RelativePath, topic.Name, topic, _reader.ReadBoard(topic.Topic).Tiles, topic.Children.Select(ZoneModelOf).ToList());
@@ -1589,20 +1515,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private ZoneViewModel FillZone(ZoneViewModel zone, ZoneModel model)
     {
-        // The tiles of «Da smistare» are folders outside the archive, as on its board.
-        if (model.Topic is null)
-            Reconciler.Reconcile(zone.Tiles, model.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, isGeneral: false), tile => tile.Key,
-                tile => new TileViewModel(tile.Title, tile.FolderPath, tile.Items, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
-        else
-            Reconciler.Reconcile(zone.Tiles, model.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, tile.IsGeneral), tile => tile.Key,
-                tile => new TileViewModel(tile, _root, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
+        Reconciler.Reconcile(zone.Tiles, model.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, tile.IsGeneral), tile => tile.Key,
+            tile => new TileViewModel(tile, _root, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
         ReconcileZones(zone.Children, model.Children, nested: true);
         zone.Update(model.Title, model.Topic);
         return zone;
     }
 
-    /// <summary>A zone as read from the archive: its topic (none for «Da smistare»), its tiles and the zones inside it.</summary>
-    private sealed record ZoneModel(string Key, string Title, TopicViewModel? Topic, IReadOnlyList<Tile> Tiles, IReadOnlyList<ZoneModel> Children);
+    /// <summary>A zone as read from the archive: its topic, its tiles and the zones inside it.</summary>
+    private sealed record ZoneModel(string Key, string Title, TopicViewModel Topic, IReadOnlyList<Tile> Tiles, IReadOnlyList<ZoneModel> Children);
 
     /// <summary>A name being typed in one view is confirmed before the other takes its place.</summary>
     partial void OnIsCanvasShownChanging(bool value) => CommitAllEdits();
@@ -2054,10 +1975,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _indexing?.Cancel();
         var indexing = _indexing = new CancellationTokenSource();
         var root = _root;
-        var sources = _reader.InboxSources;
         try
         {
-            var index = await Task.Run(() => SearchIndex.Build(root, sources, indexing.Token), indexing.Token);
+            var index = await Task.Run(() => SearchIndex.Build(root, indexing.Token), indexing.Token);
             if (indexing.IsCancellationRequested)
                 return;
             _index = index;
@@ -2080,8 +2000,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
-            _watcher = new ArchiveWatcher(_root, TimeSpan.FromMilliseconds(400),
-                _reader.InboxSources.SelectMany(source => source.Folders));
+            _watcher = new ArchiveWatcher(_root, TimeSpan.FromMilliseconds(400));
             _watcher.Changed += OnArchiveChanged;
         }
         catch (Exception e) when (e is ArgumentException or IOException or PlatformNotSupportedException)

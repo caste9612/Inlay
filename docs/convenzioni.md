@@ -27,7 +27,7 @@ Ricorrono i confronti con Explorer e con il desktop («as in Explorer», «as on
 ### Come sono scritti i testi in italiano
 
 - Frasi brevi, parole di tutti i giorni, senza gergo: «Spostare 3 elementi nel Cestino?», «I file sono già lì.».
-- I termini dell'utente, sempre gli stessi: argomento, riquadro, bacheca, tela, zona, elemento, «Da smistare», archivio ([il glossario](README.md#glossario)).
+- I termini dell'utente, sempre gli stessi: argomento, riquadro, bacheca, tela, zona, elemento, «Generale», archivio ([il glossario](README.md#glossario)).
 - I nomi tra caporali: «Documenti». I percorsi con «›»: «Lavoro › Clienti». I puntini di sospensione come carattere unico: «Sposta in…».
 - Un errore dice cosa è successo e cosa fare: «Impossibile rinominare «a.txt»: forse è aperto in un altro programma. Riprova con Ctrl+Z.».
 - I documenti seguono lo stesso stile: le parti dell'interfaccia in grassetto, i tasti tra apici inversi (`Ctrl+Z`).

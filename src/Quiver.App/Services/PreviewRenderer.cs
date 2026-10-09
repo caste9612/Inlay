@@ -30,17 +30,13 @@ internal static class PreviewRenderer
             return;
         }
 
-        // The real Desktop stays out of previews: a folder can stand in for it.
-        IReadOnlyList<InboxSource> sources = options.DesktopStandIn is { } desktop ? [new InboxSource("Desktop", [desktop])] : [];
         // Recent places of the preview only, in a file of its own: the first tile of the board, as the place used last.
         var recent = RecentDestinations.Load(Path.Combine(Path.GetTempPath(), "quiver-preview-recenti.json"));
-        using var viewModel = new MainViewModel(root, live: false, inboxSources: sources, recent: recent, readOnly: true);
+        using var viewModel = new MainViewModel(root, live: false, recent: recent, readOnly: true);
         viewModel.BuildIndexNow();
         if (options.PreviewTopic is { } topic)
             viewModel.SelectTopicByPath(topic);
         viewModel.IsCanvasShown = options.PreviewCanvas;
-        if (options.PreviewInbox)
-            viewModel.ShowInboxCommand.Execute(null);
         if (options.PreviewQuery is { } query)
             viewModel.Query = query;
         // A confirmation over the board: moving its first tile to the Recycle Bin.
@@ -88,7 +84,6 @@ internal static class PreviewRenderer
         var page = section?.ToLowerInvariant() switch
         {
             "hotkey" => SettingsSection.Hotkey,
-            "inbox" => SettingsSection.Inbox,
             "windows" => SettingsSection.Windows,
             _ => SettingsSection.Archives,
         };
@@ -141,10 +136,6 @@ internal static class PreviewRenderer
         }
 
         public bool TryUseHotkey(string shortcut) => true;
-
-        public void InboxChanged()
-        {
-        }
     }
 
     /// <summary>What Windows would say, made up: both switches on.</summary>

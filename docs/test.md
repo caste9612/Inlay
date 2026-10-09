@@ -17,7 +17,7 @@ dotnet test tests/Quiver.Tests
 dotnet test tests/Quiver.App.Tests --filter "FullyQualifiedName~MainViewModelTests"
 ```
 
-Il 10 ottobre 2026 passano tutti: 158 in `Quiver.Tests` (meno di un decimo di secondo) e 136 in `Quiver.App.Tests` (3-4 secondi), 294 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; gli altri 4 sono arrivati con le correzioni del 9 e 10 ottobre. Ogni nota di versione riporta quanti sono i test e che passano tutti.
+Il 10 ottobre 2026 passano tutti: 152 in `Quiver.Tests` (meno di un decimo di secondo) e 135 in `Quiver.App.Tests` (3-4 secondi), 287 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, e togliendo «Da smistare» se ne sono andati quelli che lo provavano. Ogni nota di versione riporta quanti sono i test e che passano tutti.
 
 I test sono scritti con xUnit. I nomi dicono, come frasi, cosa deve succedere: `Undo_LeavesAloneWhatChangedSince`, `ATopicDroppedInsideAnother_TakesItsFolderThere_StillATopic_AndCtrlZBringsItBack`.
 
@@ -27,11 +27,11 @@ Lavora su archivi veri in cartelle temporanee: `TempArchive` crea una cartella i
 
 | File | Cosa controlla |
 |---|---|
-| `ArchiveReaderTests`, `DestinationsTests` | argomenti, riquadri, «Generale», ordini, «Da smistare» con il Desktop, destinazioni di «Sposta in…» |
+| `ArchiveReaderTests`, `DestinationsTests` | argomenti, riquadri, «Generale», ordini, file sciolti nella radice, destinazioni di «Sposta in…» |
 | `MetadataStoreTests`, `MetadataSnapshotTests` | lettura e scrittura di `archive.json`, chiavi senza maiuscole, voci che seguono le cartelle, copie per annullare, file rovinato messo da parte |
 | `TransferRulesTests` | spostare, copiare o collegare, con i tasti e senza |
 | `RecycleBinTests` | il ripristino dal Cestino, su un Cestino finto costruito dal test con i suoi `$I…` e `$R…` |
-| `SearchIndexTests`, `SearchTextTests` | ricerca, punteggi, accenti, nascosti esclusi, Desktop compreso |
+| `SearchIndexTests`, `SearchTextTests` | ricerca, punteggi, accenti, nascosti esclusi |
 | `ArchiveFoldersTests` | quali cartelle possono essere archivi, e il confronto byte per byte di una copia |
 | `ItemArrangementTests`, `NaturalStringComparerTests` | ordinamenti e ordine a mano |
 | `TopicColorTests`, `TileColorTests` | i colori di argomenti e riquadri |
@@ -61,7 +61,7 @@ Gli aiuti comuni:
 - **`StaThread.Run`** esegue un test su un thread STA, come vuole la shell; **`StaThread.RunAsync`** ci mette anche un dispatcher, così le continuazioni tornano su quel thread come nell'app.
 - **`TestLog`** manda il log dei test in `%TEMP%\quiver-app-tests\quiver.log`, una volta sola quando si carica l'assembly dei test, prima di qualunque test (un *module initializer*): il log dell'utente parla solo di Quiver.
 - **`AppResources.Load`** carica i dizionari di Brace e di Quiver in una `Application` WPF qualunque, mai in quella di Quiver: il suo avvio troverebbe il Quiver dell'utente in esecuzione e gli manderebbe un comando. I test che costruiscono le viste stanno nella collezione `AppViews` («Viste dell'app») e girano uno alla volta, perché le risorse sono di una sola applicazione.
-- **Le dipendenze finte**: `MainViewModel` con `live: false` (le operazioni avvengono subito, sul thread del test), `DiskOf` per fingere lo spazio libero, una cartella al posto del Desktop; `ISettingsHost` e `IWindowsIntegration` finti per le impostazioni; `sameDrive` e `diskOf` per spostare un archivio «su un altro disco» senza averne uno.
+- **Le dipendenze finte**: `MainViewModel` con `live: false` (le operazioni avvengono subito, sul thread del test), `DiskOf` per fingere lo spazio libero; `ISettingsHost` e `IWindowsIntegration` finti per le impostazioni; `sameDrive` e `diskOf` per spostare un archivio «su un altro disco» senza averne uno.
 
 ### Scrivere un test nuovo
 
@@ -88,10 +88,10 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --render-previe
 
 ```powershell
 .\scripts\New-DemoArchive.ps1 -Path D:\ArchivioDemo
-dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\DesktopDiProva
+dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo
 ```
 
-Lo script si rifiuta di usare una cartella che esiste già. Crea gli argomenti Lavoro (con i sotto-argomenti Clienti, Rossi, Bianchi e Interni, segnati nei metadati), Personale e Strumenti, con file, cartelle, collegamenti a programmi di Windows e a una cartella, un `.url`, e qualcosa da smistare. `--archive` vale solo per quell'avvio; `--desktop` mostra una cartella di prova al posto del Desktop, così trascinando non si spostano i propri file.
+Lo script si rifiuta di usare una cartella che esiste già. Crea gli argomenti Lavoro (con i sotto-argomenti Clienti, Rossi, Bianchi e Interni, segnati nei metadati), Personale e Strumenti, con file, cartelle, collegamenti a programmi di Windows e a una cartella, un `.url`, e un file sciolto nella radice, che fa comparire il suo avviso nella barra di stato. `--archive` vale solo per quell'avvio.
 
 ### Misurare la tela
 

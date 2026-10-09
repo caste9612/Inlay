@@ -87,35 +87,6 @@
             <Setter Property="AutomationProperties.Name" Value="Vista" />
         </Style>
 
-        <!-- "Da smistare", as a row of the topics. -->
-        <Style x:Key="InboxRow" TargetType="Button">
-            <Setter Property="Foreground" Value="{DynamicResource Brace.TextPrimary}" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="FontSize" Value="{StaticResource NavTextSize}" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource Brace.FocusVisual.Inset}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Height="{StaticResource NavRowHeight}" Padding="10,0,8,0" CornerRadius="4"
-                                Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1">
-                            <ContentPresenter VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.SurfaceHover}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.SurfaceActive}" />
-                            </Trigger>
-                            <DataTrigger Binding="{Binding IsInboxShown}" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
-                            </DataTrigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- A topic of the sidebar: the row of Brace's tree (indent of 16 px for each level, the arrow to open it), at the size
              of the navigation. -->
         <Style x:Key="TopicItem" TargetType="TreeViewItem">
@@ -261,7 +232,7 @@
             </MenuItem>
             <!-- As in Explorer: the items by name, date, type or size, each way. Chosen here, it takes the place of the order
                  given by dragging the items, which the last entry tells about. -->
-            <MenuItem Header="Ordina per" IsEnabled="{Binding CanArrange}">
+            <MenuItem Header="Ordina per">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSort16}" /></MenuItem.Icon>
                 <MenuItem Header="Nome" Tag="Name" Click="TileSort_Click">
                     <MenuItem.Icon>
@@ -505,13 +476,9 @@
                     </MultiDataTrigger.Conditions>
                     <Setter TargetName="Grip" Property="Visibility" Value="Visible" />
                 </MultiDataTrigger>
-                <MultiDataTrigger>
-                    <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
-                        <Condition Binding="{Binding CanArrange}" Value="True" />
-                    </MultiDataTrigger.Conditions>
+                <DataTrigger Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True">
                     <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
-                </MultiDataTrigger>
+                </DataTrigger>
                 <Trigger SourceName="ResizeGrip" Property="IsDragging" Value="True">
                     <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
                 </Trigger>
@@ -547,8 +514,8 @@
             </views:CoverPanel>
         </DataTemplate>
 
-        <!-- A zone of the canvas: a topic with its tiles and, side by side below them, the zones of the topics inside it; or
-             «Da smistare». Its tiles are laid out as on a board, in the columns of the zone. -->
+        <!-- A zone of the canvas: a topic with its tiles and, side by side below them, the zones of the topics inside it.
+             Its tiles are laid out as on a board, in the columns of the zone. -->
         <DataTemplate DataType="{x:Type vm:ZoneViewModel}">
             <Grid>
                 <Border x:Name="ZoneFrame" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
@@ -670,10 +637,6 @@
                 </Canvas>
             </Grid>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding IsInbox}" Value="True">
-                    <Setter TargetName="ZoneIcon" Property="Data" Value="{StaticResource Brace.Icon.ArrowDownload20}" />
-                    <Setter TargetName="ZoneEmpty" Property="Text" Value="Niente da smistare." />
-                </DataTrigger>
                 <!-- The color of the topic: the border, the icon and the name of the zone, close up and from afar. -->
                 <DataTrigger Binding="{Binding HasColor}" Value="True">
                     <Setter TargetName="ZoneFrame" Property="BorderBrush" Value="{Binding ColorBrush}" />
@@ -784,6 +747,15 @@
                                 </StackPanel>
                             </Button>
                             <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Text="{Binding ArchiveSummary}" />
+                            <!-- Files left loose in the root of the archive, which no topic shows: a click opens it in Explorer. -->
+                            <Button Margin="12,0,0,0" Style="{StaticResource Brace.StatusBar.Button}" Click="StatusArchive_Click"
+                                    ToolTip="Non stanno in nessun argomento: un clic apre la radice dell'archivio in Explorer. La ricerca li trova."
+                                    Visibility="{Binding RootFilesText, Converter={StaticResource NullToVisibility}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.Document16}" />
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding RootFilesText}" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </StatusBarItem>
                     <!-- A move, copy or deletion under way, in the background: the LEDs of br-activity, next to what is being done. -->
@@ -876,7 +848,7 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Sidebar: topics and the inbox. Closed, it takes no room. -->
+                    <!-- Sidebar: the topics. Closed, it takes no room. -->
                     <Border x:Name="Sidebar" Width="264" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
                             BorderThickness="0,0,1,0" Visibility="{Binding IsSidebarOpen, Converter={StaticResource Visible}}">
                         <DockPanel>
@@ -888,30 +860,6 @@
                                 <TextBlock VerticalAlignment="Center" Style="{StaticResource Brace.Text.Label}"
                                            Foreground="{DynamicResource Brace.TextTertiary}" Text="Argomenti" />
                             </DockPanel>
-                            <Border DockPanel.Dock="Bottom" Padding="6,6" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,1,0,0">
-                                <Button x:Name="InboxButton" Style="{StaticResource InboxRow}" Command="{Binding ShowInboxCommand}" Click="InboxButton_Click"
-                                        AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
-                                    <DockPanel>
-                                        <ContentControl DockPanel.Dock="Right" Style="{StaticResource Brace.TabCount}" Content="{Binding InboxCount}"
-                                                        Visibility="{Binding HasInboxItems, Converter={StaticResource Visible}}" />
-                                        <Path x:Name="InboxIcon" DockPanel.Dock="Left" Margin="0,0,10,0">
-                                            <Path.Style>
-                                                <Style TargetType="Path" BasedOn="{StaticResource Brace.Icon20}">
-                                                    <Setter Property="Data" Value="{StaticResource Brace.Icon.ArrowDownload20}" />
-                                                    <Setter Property="TextElement.Foreground" Value="{DynamicResource Brace.TextSecondary}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsInboxShown}" Value="True">
-                                                            <Setter Property="Data" Value="{StaticResource Brace.Icon.ArrowDownloadFilled20}" />
-                                                            <Setter Property="TextElement.Foreground" Value="{DynamicResource Brace.Accent}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Path.Style>
-                                        </Path>
-                                        <TextBlock VerticalAlignment="Center" Text="Da smistare" />
-                                    </DockPanel>
-                                </Button>
-                            </Border>
                             <!-- Topics: chosen with a click, dragged above or below another to change place, or into the middle of
                                  another to go inside it; a line or the row lit up shows where it will go. -->
                             <TreeView x:Name="TopicTree" Padding="0,2" Background="Transparent" BorderThickness="0" ItemsSource="{Binding Topics}"

@@ -58,23 +58,6 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
-    public void TheInboxSwitches_AreSaved_AndThePanelHearsOfThem()
-    {
-        var settings = Settings();
-        var viewModel = Open(settings);
-        Assert.True(viewModel.InboxDesktop);
-        Assert.False(viewModel.InboxDownloads);
-
-        viewModel.InboxDesktop = false;
-        viewModel.InboxDownloads = true;
-
-        var saved = AppSettings.Load(settings.SavePath);
-        Assert.False(saved.InboxDesktop);
-        Assert.True(saved.InboxDownloads);
-        Assert.Equal(2, _host.InboxChanges);
-    }
-
-    [Fact]
     public void AutostartAndSendTo_FollowTheSwitches_AndFallBackWhenWindowsRefuses()
     {
         _windows.AutostartEnabled = true;
@@ -122,8 +105,6 @@ public sealed class SettingsViewModelTests : IDisposable
 
         public List<string> Tried { get; } = [];
 
-        public int InboxChanges { get; private set; }
-
         public void Use(string root) => CurrentRoot = root;
 
         public void Release()
@@ -135,8 +116,6 @@ public sealed class SettingsViewModelTests : IDisposable
             Tried.Add(shortcut);
             return Accepts;
         }
-
-        public void InboxChanged() => InboxChanges++;
     }
 
     private sealed class FakeWindows : IWindowsIntegration

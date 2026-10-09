@@ -76,11 +76,7 @@ public partial class App : Application, ISettingsHost
             }
         }
 
-        // A trial with a demo archive can use a stand-in Desktop, so that dragging never moves the user's own files there.
-        IReadOnlyList<InboxSource> inboxSources = options.DesktopStandIn is { } desktop
-            ? [new InboxSource("Desktop", [desktop])]
-            : WindowsFolders.InboxSources(_settings);
-        _viewModel = new MainViewModel(root, inboxSources: inboxSources) { Hotkey = _settings.Hotkey };
+        _viewModel = new MainViewModel(root) { Hotkey = _settings.Hotkey };
         var panel = _panel = new PanelWindow(_viewModel, _settings);
         panel.ArchivesRequested += (_, _) => ShowSettings(SettingsSection.Archives);
         panel.Prepare();
@@ -245,8 +241,6 @@ public partial class App : Application, ISettingsHost
         Log.Write($"Could not register the shortcut {shortcut}, keeping {_settings.Hotkey}");
         return false;
     }
-
-    void ISettingsHost.InboxChanged() => _viewModel?.UseInboxSources(WindowsFolders.InboxSources(_settings));
 
     private static int RenderPreview(CommandLineOptions options)
     {

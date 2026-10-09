@@ -25,10 +25,9 @@ internal static class CanvasBenchmark
     {
         var output = options.BenchmarkOutput ?? throw new ArgumentException("Manca il file dei risultati.");
         var root = options.ArchiveRoot ?? throw new ArgumentException("--benchmark-canvas richiede anche --archive <cartella>.");
-        IReadOnlyList<InboxSource> sources = options.DesktopStandIn is { } desktop ? [new InboxSource("Desktop", [desktop])] : [];
         var recent = RecentDestinations.Load(Path.Combine(Path.GetTempPath(), "quiver-benchmark-recenti.json"));
         var opening = Stopwatch.StartNew();
-        var viewModel = new MainViewModel(root, live: false, inboxSources: sources, recent: recent, readOnly: true) { IsCanvasShown = true };
+        var viewModel = new MainViewModel(root, live: false, recent: recent, readOnly: true) { IsCanvasShown = true };
         var view = new PanelView { DataContext = viewModel };
         var area = SystemParameters.WorkArea;
         var window = new Window

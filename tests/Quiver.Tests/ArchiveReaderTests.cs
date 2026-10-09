@@ -9,17 +9,40 @@ public sealed class ArchiveReaderTests : IDisposable
     public void Dispose() => _archive.Dispose();
 
     [Fact]
-    public void FoldersInTheRootAreTopics_ExceptTheInboxAndHiddenFolders()
+    public void FoldersInTheRootAreTopics_ExceptHiddenOnes()
     {
         _archive.AddFolder("Personale");
         _archive.AddFolder("Lavoro");
-        _archive.AddFolder(ArchiveLayout.InboxFolderName);
         _archive.AddFolder(".git");
         new DirectoryInfo(_archive.AddFolder("Nascosta")).Attributes |= FileAttributes.Hidden;
 
         var topics = _archive.Reader().ReadTopics();
 
         Assert.Equal(new[] { "Lavoro", "Personale" }, topics.Select(t => t.Name));
+    }
+
+    [Fact]
+    public void TheFolderOfTheOldInbox_IsATopicLikeTheOthers()
+    {
+        // Quiver no longer has «Da smistare»: the folder it read, in the archives made before, is an ordinary folder.
+        _archive.AddFile("_Da smistare/scansione.pdf");
+
+        var reader = _archive.Reader();
+        var topic = Assert.Single(reader.ReadTopics());
+
+        Assert.Equal("_Da smistare", topic.Name);
+        Assert.Equal(new[] { "scansione.pdf" }, Assert.Single(reader.ReadBoard(topic).Tiles).Items.Select(i => i.Name));
+    }
+
+    [Fact]
+    public void FilesLooseInTheRoot_AreReadApart_InNaturalOrder_WithoutHiddenOnes()
+    {
+        _archive.AddFile("scaricato 10.pdf");
+        _archive.AddFile("scaricato 2.pdf");
+        _archive.AddFile(".nascosto");
+        _archive.AddFile("Lavoro/nota.txt");
+
+        Assert.Equal(new[] { "scaricato 2.pdf", "scaricato 10.pdf" }, _archive.Reader().ReadRootFiles().Select(i => i.Name));
     }
 
     [Fact]
@@ -151,87 +174,6 @@ public sealed class ArchiveReaderTests : IDisposable
         var item = Assert.Single(Assert.Single(reader.ReadBoard(Assert.Single(reader.ReadTopics())).Tiles).Items);
 
         Assert.Equal(changed, item.Modified);
-    }
-
-    [Fact]
-    public void Inbox_CollectsTheInboxFolderAndLooseFilesInTheRoot()
-    {
-        _archive.AddFile("scaricato.pdf");
-        _archive.AddFile($"{ArchiveLayout.InboxFolderName}/scansione.pdf");
-        _archive.AddFolder("Lavoro");
-
-        var tile = Assert.Single(_archive.Reader().ReadInbox());
-
-        Assert.Equal(ArchiveReader.ArchiveInboxTitle, tile.Title);
-        Assert.Equal(Path.Combine(_archive.Root, ArchiveLayout.InboxFolderName), tile.FolderPath);
-        Assert.Equal(new[] { "scaricato.pdf", "scansione.pdf" }, tile.Items.Select(i => i.Name));
-    }
-
-    [Fact]
-    public void MissingInboxFolder_MeansAnEmptyInbox() => Assert.Empty(_archive.Reader().ReadInbox());
-
-    [Fact]
-    public void TheDesktop_IsATileOfTheInbox_WithTheFilesOfBothItsFolders()
-    {
-        _archive.AddFile($"{ArchiveLayout.InboxFolderName}/scansione.pdf");
-        var desktop = _archive.AddFolder("../Desktop-" + Guid.NewGuid().ToString("N"));
-        var shared = _archive.AddFolder("../Pubblico-" + Guid.NewGuid().ToString("N"));
-        File.WriteAllText(Path.Combine(desktop, "Verbale 10.txt"), "");
-        File.WriteAllText(Path.Combine(shared, "Verbale 2.txt"), "");
-        Directory.CreateDirectory(Path.Combine(desktop, "Progetto"));
-        try
-        {
-            var reader = new ArchiveReader(_archive.Root, new ArchiveMetadata(), [new InboxSource("Desktop", [desktop, shared])]);
-
-            var tiles = reader.ReadInbox();
-
-            Assert.Equal(new[] { ArchiveReader.ArchiveInboxTitle, "Desktop" }, tiles.Select(t => t.Title));
-            // Folders first, then files, in natural order across both folders; dropped files go to the first one.
-            Assert.Equal(new[] { "Progetto", "Verbale 2.txt", "Verbale 10.txt" }, tiles[1].Items.Select(i => i.Name));
-            Assert.Equal(desktop, tiles[1].FolderPath);
-            Assert.True(reader.IsInInbox(Path.Combine(shared, "Verbale 2.txt")));
-        }
-        finally
-        {
-            Directory.Delete(desktop, recursive: true);
-            Directory.Delete(shared, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void TheFolderHoldingTheArchive_IsNotSomethingToSort()
-    {
-        // The archive is a folder on the Desktop.
-        var desktop = _archive.AddFolder("Desktop");
-        var root = _archive.AddFolder("Desktop/Archivio");
-        File.WriteAllText(Path.Combine(desktop, "nota.txt"), "");
-
-        var tile = Assert.Single(new ArchiveReader(root, new ArchiveMetadata(), [new InboxSource("Desktop", [desktop])]).ReadInbox());
-
-        Assert.Equal(new[] { "nota.txt" }, tile.Items.Select(i => i.Name));
-    }
-
-    [Fact]
-    public void ASourceInsideTheArchive_IsLeftOut_ItsFilesAreShownThereAlready()
-    {
-        _archive.AddFile("Lavoro/Scrivania/nota.txt");
-
-        var reader = new ArchiveReader(_archive.Root, new ArchiveMetadata(),
-            [new InboxSource("Desktop", [Path.Combine(_archive.Root, "Lavoro", "Scrivania")])]);
-
-        Assert.Empty(reader.InboxSources);
-        Assert.Empty(reader.ReadInbox());
-    }
-
-    [Fact]
-    public void WhatWaitsToBeSorted_IsInTheInboxFolder_OrLooseInTheRoot()
-    {
-        var reader = _archive.Reader();
-
-        Assert.True(reader.IsInInbox(Path.Combine(_archive.Root, "scaricato.pdf")));
-        Assert.True(reader.IsInInbox(Path.Combine(_archive.Root, ArchiveLayout.InboxFolderName, "scansione.pdf")));
-        Assert.False(reader.IsInInbox(Path.Combine(_archive.Root, "Lavoro", "nota.txt")));
-        Assert.False(reader.IsInInbox(Path.Combine(_archive.Root, "Lavoro", "Documenti", "offerta.docx")));
     }
 
     [Fact]

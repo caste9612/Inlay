@@ -8,23 +8,23 @@ Tutto l'archivio su una superficie da spostare e zoomare, con una zona per argom
 |---|---|---|
 | 0 | `MainViewModel` con tutte le bacheche insieme | fatta (0.3.0) |
 | 1 | la tela da guardare: interruttore, zone, zoom, tre livelli, voli, riquadri veri da vicino, misura delle prestazioni | fatta (0.3.0); i nomi degli elementi a metà strada con la 0.3.2 |
-| 2 | smistare sulla tela: trascinare tra zone diverse e da «Da smistare», appunti, rinomina, `Ctrl+Z`, il rettangolo con `Maiusc` | in parte: vedi sotto |
+| 2 | smistare sulla tela: trascinare tra zone diverse, appunti, rinomina, `Ctrl+Z`, il rettangolo con `Maiusc` | in parte: vedi sotto |
 | 3 | la tua scrivania: zone da spostare e allargare, posti salvati nei metadati (`"canvas"`), vista ricordata per archivio | da fare |
 | 4 | minimappa, tastiera tra le zone, modalità Home per GlazeWM | da fare |
 
 Nel codice di oggi, quindi:
 
 - le zone le dispone sempre Quiver: nessuna ha un posto fissato (`ZoneBox` senza `X` e `Y`), e `FolderMetadata` non ha ancora `"canvas"`;
-- da vicino i riquadri della tela sono quelli della bacheca, quindi buona parte della fase 2 c'è già: file e cartelle trascinati su un riquadro di qualunque zona, anche da «Da smistare», ci arrivano con le solite regole, e appunti, rinomina e `Ctrl+Z` funzionano. Un riquadro lasciato su un riquadro di un'altra zona invece non fa niente (`PlanDrop`): spostarlo in un altro argomento è quello che manca, insieme al rettangolo;
+- da vicino i riquadri della tela sono quelli della bacheca, quindi buona parte della fase 2 c'è già: file e cartelle trascinati su un riquadro di qualunque zona ci arrivano con le solite regole, e appunti, rinomina e `Ctrl+Z` funzionano. Un riquadro lasciato su un riquadro di un'altra zona invece non fa niente (`PlanDrop`): spostarlo in un altro argomento è quello che manca, insieme al rettangolo;
 - `Maiusc` più trascinare sul vuoto non sposta la vista, ma non disegna ancora il rettangolo: la selezione a rettangolo c'è solo sulla bacheca;
 - la vista non si ricorda tra un avvio e l'altro: la prima volta che la tela ha una misura, per ogni archivio, si mostra tutta (`_canvasFitFor` in `PanelView`). Si ricorda solo quale vista era in uso (`AppSettings.View`).
 
 ## I dati: zone e riquadri
 
 - **`MainViewModel.IsCanvasShown`** sceglie la vista. L'interruttore «Bacheca | Tela» è un `ListBox` legato a `ViewIndex`. Passando da una vista all'altra, un nome in modifica viene confermato (`OnIsCanvasShownChanging`).
-- **`ReadCanvas`** legge la bacheca di ogni argomento: prima la zona di «Da smistare» (chiave `ZoneViewModel.InboxKey`), poi una zona per argomento della radice, con dentro le zone dei sotto-argomenti. `Reconciler` tiene i view model di zone, riquadri ed elementi che ci sono ancora, così selezione e nomi in modifica sopravvivono. Si fa a ogni ricarica, ma solo mentre la tela è in vista.
+- **`ReadCanvas`** legge la bacheca di ogni argomento: una zona per argomento della radice, con dentro le zone dei sotto-argomenti. `Reconciler` tiene i view model di zone, riquadri ed elementi che ci sono ancora, così selezione e nomi in modifica sopravvivono. Si fa a ogni ricarica, ma solo mentre la tela è in vista.
 - **Le operazioni lavorano su tutte le bacheche insieme**: `ShownTiles` sono i riquadri della bacheca o quelli di tutte le zone, e da lì passano selezione, appunti, rinomina, `Ctrl+Z` e «Mostra». `SiblingsOf(tile)` dà i riquadri accanto, sulla bacheca o nella zona, per spostare un riquadro.
-- **`CanvasViewModel`**: le zone, la camera e il livello, più le ricerche che servono alla vista (`AllZones`, `AllTiles`, `ZoneOf`, `ZoneWith`, `TileOf`, `Inbox`). Quando cambia la camera, ricalcola il livello.
+- **`CanvasViewModel`**: le zone, la camera e il livello, più le ricerche che servono alla vista (`AllZones`, `AllTiles`, `ZoneOf`, `ZoneWith`, `TileOf`). Quando cambia la camera, ricalcola il livello.
 - **`ZoneViewModel`**: titolo, riepilogo («3 riquadri · 120 elementi», sotto-zone comprese), colore del suo argomento, riquadri, zone dentro, e `Bounds`, il posto che `ZoneCanvasPanel` dà alle zone della radice. Oggi `Bounds` non lo legge nessuno: i voli misurano la cornice della zona con `CanvasSurface.BoundsOf`. Le colonne sono quante ne servono ai riquadri o alle zone dentro, da 1 a 3 (`UsualColumns`), così una zona piccola resta piccola.
 - **`TileViewModel.Preview`**: i nomi dei primi 12 elementi, uno per riga, per la scheda che rappresenta il riquadro a metà strada.
 
@@ -79,7 +79,7 @@ Creare tutte le righe di tutti i riquadri di un archivio grande costava secondi 
 
 ## I gesti in `PanelView`
 
-- Scegliere un argomento nella barra laterale vola alla sua zona (`ShowZone`); un clic su quello già scelto no. Un clic su «Da smistare» vola alla sua zona.
+- Scegliere un argomento nella barra laterale vola alla sua zona (`ShowZone`); un clic su quello già scelto no.
 - Il doppio clic sul nome di una zona la inquadra; quello sulla scheda di un riquadro ci vola sopra (`ShowTile`).
 - Un clic su un risultato della ricerca, appena è chiaro che non è un doppio clic, chiude la ricerca, seleziona l'elemento e vola al suo riquadro; un file dentro una cartella di un riquadro si mostra come quella cartella. Il doppio clic invece apre.
 - **Mostra** su un avviso vola al riquadro dove sono finiti gli elementi.
