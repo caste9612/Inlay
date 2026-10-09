@@ -1,7 +1,7 @@
 # Quiver
 
 Una "scrivania" da richiamare con una scorciatoia, al posto del desktop di Windows.
-Idea, regole dell'archivio e piano delle versioni sono in [PROGETTO.md](PROGETTO.md).
+Idea, regole dell'archivio e piano delle versioni sono in [PROGETTO.md](PROGETTO.md); com'è fatto il codice, per chi ci lavora, è in [docs/](docs/README.md).
 
 ## Installazione
 
