@@ -80,7 +80,7 @@ public partial class App : Application, ISettingsHost
         IReadOnlyList<InboxSource> inboxSources = options.DesktopStandIn is { } desktop
             ? [new InboxSource("Desktop", [desktop])]
             : WindowsFolders.InboxSources(_settings);
-        _viewModel = new MainViewModel(root, inboxSources: inboxSources);
+        _viewModel = new MainViewModel(root, inboxSources: inboxSources) { Hotkey = _settings.Hotkey };
         var panel = _panel = new PanelWindow(_viewModel, _settings);
         panel.ArchivesRequested += (_, _) => ShowSettings(SettingsSection.Archives);
         panel.Prepare();
@@ -127,7 +127,8 @@ public partial class App : Application, ISettingsHost
 
     /// <summary>
     /// «Esci»: the only way the window really closes; otherwise it goes back to the notification area. A move or a copy
-    /// under way finishes first: cut halfway, it would leave a file half copied.
+    /// under way finishes first: cut halfway, it would leave a file half copied. So does the copy of an archive to another
+    /// drive, which would leave half an archive there.
     /// </summary>
     private async void Quit()
     {
@@ -140,6 +141,13 @@ public partial class App : Application, ISettingsHost
             viewModel.Tell(ToastKind.Info, waiting);
             _tray?.ShowInfo(waiting);
             await viewModel.WhenIdle();
+        }
+        if (_settingsWindow?.ViewModel.Archives is { IsCopying: true } archives)
+        {
+            const string copying = "Quiver si chiude appena finisce la copia dell'archivio.";
+            archives.Status = copying;
+            _tray?.ShowInfo(copying);
+            await archives.WhenCopied();
         }
         _panel?.AllowClose();
         Shutdown();
@@ -227,6 +235,8 @@ public partial class App : Application, ISettingsHost
         if (_hotkey.TryRegister(shortcut))
         {
             _tray?.UpdateShortcut(shortcut);
+            if (_viewModel is not null)
+                _viewModel.Hotkey = shortcut;
             Log.Write($"Shortcut changed to {shortcut}");
             return true;
         }

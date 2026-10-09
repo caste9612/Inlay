@@ -47,10 +47,11 @@
 
             <!-- What is going on: the result of the last action, the progress of a check -->
             <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0" MinHeight="28">
+                <!-- While the shell copies, its own window shows the progress and stops the copy. -->
                 <Button DockPanel.Dock="Right" Style="{StaticResource Brace.Button.Small}" Content="Interrompi il controllo"
-                        Click="CancelCheck_Click" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}" />
+                        Click="CancelCheck_Click" Visibility="{Binding IsChecking, Converter={StaticResource Visible}}" />
                 <ProgressBar DockPanel.Dock="Right" Width="160" Margin="12,0" VerticalAlignment="Center" Maximum="1"
-                             Value="{Binding Progress}" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}" />
+                             Value="{Binding Progress}" Visibility="{Binding IsChecking, Converter={StaticResource Visible}}" />
                 <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
                            Text="{Binding Status}" />
             </DockPanel>

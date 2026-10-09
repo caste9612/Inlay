@@ -41,6 +41,7 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 `Alt+E` porta Quiver davanti; se è già la finestra in uso, lo rimette nell'area di notifica (la scorciatoia si cambia in **Impostazioni**). Dentro, si usa come il desktop.
 
 - **La finestra**: è una finestra normale, con in alto la barra del titolo di Quiver, disegnata come quella di Brace. Si sposta trascinando la barra, si ridimensiona dai bordi e un doppio clic sulla barra la ingrandisce. Il pin, accanto ai pulsanti della finestra, la tiene sopra le altre: comodo per trascinarci dentro i file da Explorer. Lo stesso fa **Sempre in primo piano** nel menu della tray. La X la rimette nell'area di notifica, come `Esc` e `Alt+E`; per uscire da Quiver c'è **Esci** nel menu della tray. Posizione, dimensione e pin restano per la volta dopo.
+- **La barra degli argomenti**: il pulsante subito dopo «Quiver», nella barra del titolo, o `Ctrl+B` la chiudono e la riaprono. Chiusa non occupa spazio, così bacheca e tela prendono tutta la larghezza; Quiver ricorda come l'hai lasciata.
 - **Selezionare**: un clic seleziona, `Ctrl`+clic e `Maiusc`+clic aggiungono altri elementi. Con `Ctrl` si sceglie anche da riquadri diversi. Un clic su uno spazio vuoto deseleziona. Trascinando sul vuoto della bacheca si disegna un rettangolo che seleziona quello che tocca, anche in più riquadri; con `Ctrl` si aggiunge alla selezione.
 - **Aprire**: doppio clic o `Invio`. `Ctrl+Invio` mostra l'elemento in Explorer.
 - **Rinominare**: `F2`, oppure un secondo clic, lento, su un elemento già selezionato. Il nome si modifica sul posto e, come in Explorer, i collegamenti non mostrano `.lnk` o `.url`. `Invio` conferma, `Esc` annulla e un clic altrove conferma.
@@ -71,7 +72,7 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
 - **Tela**: con l'interruttore **Bacheca | Tela** in alto a destra, tutto l'archivio insieme, con una zona per argomento e una per **Da smistare**; i sotto-argomenti stanno dentro la zona del loro argomento. Quiver ricorda l'ultima vista usata.
   - La rotella zooma attorno al puntatore, dal 10 % al 200 %; sopra un riquadro che scorre lo fa scorrere, e con `Ctrl` zooma sempre. Anche `Ctrl++` e `Ctrl+-`, o i pulsanti accanto alla percentuale.
   - Trascinando sul vuoto, o con la rotella premuta dovunque, si sposta la vista. Il doppio clic sul vuoto, **Mostra tutto** o `Ctrl+0` mettono in vista tutto l'archivio.
-  - Da lontano le zone mostrano il nome e i riquadri sono blocchi del loro colore; a metà strada i riquadri hanno titolo, numero di elementi e i nomi dei primi, quanti ne entrano; da vicino, dal 70 % circa, sono i riquadri della bacheca, con gli stessi gesti. Le righe dei riquadri arrivano appena la vista si ferma, così spostarsi e zoomare restano fluidi anche con archivi grandi.
+  - Da lontano le zone mostrano il nome e i riquadri sono blocchi, con la striscia del loro colore se ne hanno uno; a metà strada i riquadri hanno titolo, numero di elementi e i nomi dei primi, quanti ne entrano; da vicino, dal 70 % circa, sono i riquadri della bacheca, con gli stessi gesti. Le righe dei riquadri arrivano appena la vista si ferma, così spostarsi e zoomare restano fluidi anche con archivi grandi.
   - Un clic su un argomento nella barra laterale, o su **Da smistare**, vola alla sua zona; il doppio clic sul nome di una zona la inquadra, quello su un riquadro visto da lontano ci vola sopra. Un clic su un risultato della ricerca vola al suo riquadro, con l'elemento selezionato.
 - **Creare**:
   - un argomento: il pulsante + accanto ad **Argomenti**; dentro un altro argomento, tasto destro su quello;
@@ -92,7 +93,7 @@ dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo --desktop D:\De
   - Ogni archivio è una cartella normale; la cartella nascosta `.quiver` lo segna come archivio e ne tiene la disposizione.
   - Puoi crearne uno nuovo, usare come archivio una cartella che hai già, passare dall'uno all'altro, rinominarli e toglierli dall'elenco. Togliere dall'elenco non tocca i file.
   - Sotto il nome di ogni archivio, quanto occupa, tutto compreso, e lo spazio libero sul suo disco. Lo conta in sottofondo, aprendo la pagina.
-  - **Sposta…** porta l'archivio in un'altra cartella. Sullo stesso disco è un attimo. Su un altro disco Quiver lo copia, confronta la copia con l'originale byte per byte, passa alla copia solo se sono identiche e poi chiede se mandare la cartella vecchia nel Cestino.
+  - **Sposta…** porta l'archivio in un'altra cartella. Sullo stesso disco è un attimo. Su un altro disco Quiver lo copia, confronta la copia con l'originale byte per byte, passa alla copia solo se sono identiche e poi chiede se mandare la cartella vecchia nel Cestino. Mentre copia, Quiver resta usabile; la finestra Impostazioni si chiude a copia finita, ed **Esci** aspetta che finisca.
   - Non possono fare da archivio un disco intero, il Desktop, la cartella del tuo utente o quelle di Windows e dei programmi. Un archivio non può stare dentro un altro.
 - **Impostazioni**: dal menu della tray. Le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito.
   - **Scorciatoia**: clicca nel campo e premi la combinazione, con Ctrl, Alt o Win e un tasto. Quiver la prova all'istante: se un altro programma la tiene, resta quella di prima e lo dice.
@@ -129,4 +130,5 @@ L'icona di Quiver è una bacheca: tre riquadri, uno dei quali ambra, come un riq
   - gli archivi: creare, aprire una cartella, rinominare e spostare l'archivio in uso, anche su un altro disco;
   - le impostazioni: la scorciatoia provata subito e tenuta solo se libera, gli interruttori salvati e applicati, su una Windows finta;
   - il collegamento di **Invia a**, fatto in una cartella del test, e il passaggio dei file tra due istanze, senza toccare la pipe vera.
+- Se il file delle impostazioni, `%APPDATA%\Quiver\settings.json`, si rovina, Quiver riparte da quelle predefinite e tiene il file com'era in `settings.json.corrupt`, con l'elenco degli archivi.
 - Il log si trova in `%LOCALAPPDATA%\Quiver\quiver.log`. Registra il tempo di apertura del pannello, perché si chiude e quale finestra gli toglie il focus.

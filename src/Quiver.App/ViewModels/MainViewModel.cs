@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Quiver.App.Interop;
 using Quiver.App.Services;
+using Quiver.App.Views;
 using Quiver.Core;
 
 namespace Quiver.App.ViewModels;
@@ -52,6 +53,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>The topics on the left; closed, the board or the canvas take the whole width (Ctrl+B).</summary>
     [ObservableProperty]
     private bool _isSidebarOpen = true;
+
+    /// <summary>The shortcut that brings Quiver forward and puts it away, as the settings have it now.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Shortcuts))]
+    private string _hotkey = AppSettings.DefaultHotkey;
 
     /// <summary>The canvas instead of the board: the whole archive at once.</summary>
     [ObservableProperty]
@@ -169,6 +175,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>The toasts in the bottom right corner, the newest last: what operations did, and what went wrong.</summary>
     public ObservableCollection<ToastViewModel> Toasts { get; } = [];
+
+    /// <summary>The keys worth knowing, under the «?» of the status bar: the shortcut among them is the one in use.</summary>
+    public IReadOnlyList<ShortcutGroup> Shortcuts => ShortcutGroup.For(Hotkey);
 
     /// <summary>For the tests: how much room the disk of a folder has; that of Windows in the app.</summary>
     internal Func<string, DiskSpace?> DiskOf { get; set; } = DiskSpace.Of;
@@ -527,10 +536,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public void NewFolder(TileViewModel tile)
     {
-        // "Generale" holds the topic's own files: a folder there is a new tile of the topic.
+        // "Generale" holds the topic's own files: a folder there is a new tile of the topic. Its own topic: on the canvas it
+        // need not be the one chosen in the sidebar.
         if (tile.IsGeneral)
         {
-            NewTile();
+            NewTile(FindTopic(tile.MetadataKey));
             return;
         }
         if (CreateFolder(tile.FolderPath, ArchiveNames.Unique(tile.FolderPath, "Nuova cartella")) is not { } path)
@@ -1788,8 +1798,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private IEnumerable<string> ArchiveKeys(IEnumerable<string> paths) => paths.Where(IsInsideArchive).Select(KeyOf);
 
-    /// <summary>The names in a folder, to tell afterwards which ones a copy added.</summary>
-    private static HashSet<string> EntryNames(string folder)
+    /// <summary>The names in a folder, to tell afterwards which ones a copy added; null when they cannot be read.</summary>
+    private static HashSet<string>? EntryNames(string folder)
     {
         try
         {
@@ -1797,7 +1807,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // An empty list would make everything in the folder look new, and Ctrl+Z would take it all to the Recycle Bin.
+            Log.Write($"Could not read the names in {folder}: {e.Message}");
+            return null;
         }
     }
 

@@ -53,6 +53,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
     private readonly Func<string, DiskSpace?> _diskOf;
     private CancellationTokenSource? _checking;
     private CancellationTokenSource? _measuring;
+    private TaskCompletionSource? _copying;
 
     [ObservableProperty]
     private ArchiveEntryViewModel? _selected;
@@ -78,6 +79,17 @@ public sealed partial class ArchivesViewModel : ObservableObject
     /// <summary>From 0 to 1, while a copy is being checked.</summary>
     [ObservableProperty]
     private double _progress;
+
+    /// <summary>
+    /// The shell is copying an archive to another drive. Cut halfway, the copy would leave half an archive there: the window
+    /// does not close meanwhile, and «Esci» waits for it.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isCopying;
+
+    /// <summary>The copy is being compared with the original: this can be stopped, and the archive stays where it was.</summary>
+    [ObservableProperty]
+    private bool _isChecking;
 
     /// <param name="reserved">Folders of Windows that cannot be archives.</param>
     /// <param name="sameDrive">Whether a move is on the same drive; tests can say otherwise.</param>
@@ -129,6 +141,25 @@ public sealed partial class ArchivesViewModel : ObservableObject
 
     /// <summary>The window closes: the archives are not counted any further.</summary>
     public void StopMeasuring() => _measuring?.Cancel();
+
+    /// <summary>
+    /// Whether the window may close now. Not while the shell copies an archive; otherwise a check under way stops, and the
+    /// archive stays where it was, and so does the count of the archives.
+    /// </summary>
+    public bool TryClose()
+    {
+        if (IsCopying)
+        {
+            Status = "La copia dell'archivio è in corso: chiudi la finestra quando è finita. Per fermarla, usa Annulla nella finestra di Windows.";
+            return false;
+        }
+        CancelCheck();
+        StopMeasuring();
+        return true;
+    }
+
+    /// <summary>Done when no archive is being copied: «Esci» waits for it, so that a copy is not cut halfway.</summary>
+    public Task WhenCopied() => _copying?.Task ?? Task.CompletedTask;
 
     /// <summary>
     /// How much each archive takes, everything in it counted, and how much room its disk has left: in the background, one
@@ -320,7 +351,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
                 return;
             }
             Status = $"Copia di «{entry.Name}» in corso…";
-            if (!ShellFileOperations.Copy([entry.Path], Path.GetDirectoryName(target)!, OwnerWindow) || !Directory.Exists(target))
+            if (!await CopyAsync(entry.Path, destinationParent) || !Directory.Exists(target))
             {
                 Status = "La copia non è stata completata: l'archivio resta dov'era.";
                 return;
@@ -328,6 +359,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
             Status = "Controllo della copia, file per file…";
             _checking = new CancellationTokenSource();
             var token = _checking.Token;
+            IsChecking = true;
             var progress = new Progress<CopyCheck.Progress>(step => Progress = step.Total == 0 ? 1 : (double)step.Done / step.Total);
             var differences = await Task.Run(() => CopyCheck.Differences(entry.Path, target, progress, token), token);
             if (differences.Count > 0)
@@ -360,7 +392,30 @@ public sealed partial class ArchivesViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            IsChecking = false;
             _checking = null;
+        }
+    }
+
+    /// <summary>
+    /// The copy by the shell, with its progress and its questions as in Explorer, on a thread of its own as the operations
+    /// of the panel: the windows of Quiver stay usable while it lasts.
+    /// </summary>
+    private async Task<bool> CopyAsync(string folder, string destinationParent)
+    {
+        var owner = OwnerWindow;
+        _copying = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        IsCopying = true;
+        using var shell = new FileOperationQueue();
+        try
+        {
+            return await shell.Run(() => ShellFileOperations.Copy([folder], destinationParent, owner));
+        }
+        finally
+        {
+            IsCopying = false;
+            _copying.TrySetResult();
+            _copying = null;
         }
     }
 

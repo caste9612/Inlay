@@ -1,6 +1,6 @@
 # Quiver — documento di progetto
 
-*Stato: versione 0.2.3, release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano»; con la 0.2.2 il Desktop vero è stato svuotato nell'archivio. Dalla 0.2.3 le operazioni sui file in un thread a parte, la misura e l'ordine dei riquadri, gli argomenti trascinabili. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 8 ottobre 2026.*
+*Stato: versione 0.3.2, release su GitHub. Interfaccia su Brace, gesti del desktop provati dal vivo su un archivio di prova, `Ctrl+Z`, il Desktop in «Da smistare», i collegamenti, gli archivi gestiti come i vault di Obsidian. Dalla 0.2.1 anche «Sposta in…», «Invia a Quiver», le impostazioni nell'app, il colore dei riquadri e la selezione a rettangolo. Dalla 0.2.2 la finestra è normale, con la barra del titolo di Brace e il pin «Sempre in primo piano»; con la 0.2.2 il Desktop vero è stato svuotato nell'archivio. Dalla 0.2.3 le operazioni sui file in un thread a parte, la misura e l'ordine dei riquadri, gli argomenti trascinabili. Dalla 0.3.0 la tela (fasi 0 e 1), i colori degli argomenti, la barra di stato come in Explorer, gli avvisi e il controllo dello spazio su disco; dalla 0.3.1 la barra degli argomenti richiudibile. Da provare nell'uso quotidiano e con GlazeWM. Ultimo aggiornamento: 10 ottobre 2026.*
 
 ## 1. Il problema
 
@@ -118,8 +118,9 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.quiver\archive.
 - `"color"`: il colore di un riquadro o di un argomento. Un argomento della radice lo riceve da Quiver la prima volta che lo vede, il meno usato dagli altri, con `"autoColor": true`; scelto a mano, il segno non c'è. `"none"` è un argomento lasciato senza colore apposta, che non ne riceve più. Un sotto-argomento senza un colore scelto per lui usa quello del suo argomento, e un riquadro non mostra il colore dato da Quiver quando era un argomento. Una versione di Quiver che non conosce `"autoColor"` lo perde al primo salvataggio e tiene il colore, come se fosse scelto.
 - Il riquadro «Generale» usa la voce del suo argomento, perché ne contiene i file.
 - Se una cartella viene rinominata o spostata dall'app, i metadati la seguono subito. Se succede da Explorer, i metadati restano sotto il nome di prima: la cartella perde posizione, misura e colore, mai i file.
+- Un `archive.json` rovinato, che non è più JSON valido, viene messo da parte com'era, in `archive.json.corrupt`, e l'archivio riparte con i metadati vuoti: i file non cambiano.
 
-Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Quiver la prova all'istante e la tiene solo se Windows gliela dà.
+Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, sorgenti dell'inbox) stanno in `%APPDATA%\Quiver\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia, Da smistare e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Quiver la prova all'istante e la tiene solo se Windows gliela dà. Anche un `settings.json` rovinato viene messo da parte, in `settings.json.corrupt`, e Quiver riparte dalle impostazioni predefinite.
 
 ## 5. Interfaccia
 
@@ -144,7 +145,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 ```
 
 - **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre le Impostazioni sulla pagina **Archivi**) e il pulsante per chiudere.
-- **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale.
+- **Barra laterale**: l'albero degli argomenti, con + per crearne uno, e in fondo l'inbox con il numero di file da smistare. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale. Si chiude e si riapre con il pulsante accanto al nome di Quiver, nella barra del titolo, o con `Ctrl+B`: chiusa non occupa spazio, e Quiver ricorda com'era (dalla 0.3.1).
 - **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica. Un riquadro può occupare fino a tre colonne: se non ci sta in quello che resta della riga, va a capo.
 - **Barra di stato**, come in Explorer e come br-statusbar di Brace: a sinistra l'archivio, quanti elementi contiene e quanto occupano, oppure l'operazione in corso con i LED di br-activity; a destra la selezione e quanto pesa, lo spazio libero sul disco dell'archivio (in giallo sotto il 10 % o sotto 5 GB) e **?** con i tasti da sapere.
 - **Avvisi** (br-toast di Brace), in basso a destra: l'esito di un'operazione con **Annulla** e **Mostra**, e i problemi. Gli esiti si chiudono da soli dopo sei secondi, non mentre il puntatore è sopra; i problemi restano finché non si chiudono, e vanno anche nel log.
@@ -155,7 +156,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Icone dei file**: cartelle e tipi comuni hanno l'icona di Brace del loro concetto, dal suo dizionario «un concetto, un'icona». Ci sono PDF, Word, fogli di calcolo, presentazioni, immagini, video, audio, archivi compressi, codice, posta, pagine web e modelli 3D. Le icone sono monocromatiche come tutte quelle di Brace; quelle che mancavano sono state aggiunte a Brace stesso. I file che nessun programma del PC apre hanno il documento di Brace. I programmi, i collegamenti e i file dei programmi installati tengono l'icona di Windows, che per loro è un logo.
 - **Icona**: una bacheca con tre riquadri, uno dei quali ambra come un riquadro selezionato. È disegnata in `scripts/genera-icona.py`; il logo nella barra del titolo è lo stesso disegno, in `Themes/Quiver.xaml`.
 - **Barra del titolo** (dalla 0.2.2): la disegna Quiver, come `br-titlebar` dell'AppShell di Brace, perché Brace per WPF non ha ancora la sua.
-  - Alta `titlebar-height` (32 px), su `surface-base`: il logo e il nome, la ricerca al centro (280 × 24), l'archivio come badge, il pin, poi riduci, ingrandisci e chiudi, larghi 46 px e alti quanto la barra. Chiudi diventa `danger` al passaggio, con l'icona in `text-on-accent`.
+  - Alta `titlebar-height` (32 px), su `surface-base`: il logo e il nome, il pulsante della barra degli argomenti, la ricerca al centro (280 × 24), l'archivio come badge, il pin, poi riduci, ingrandisci e chiudi, larghi 46 px e alti quanto la barra. Chiudi diventa `danger` al passaggio, con l'icona in `text-on-accent`.
   - Si trascina dove non ci sono controlli, e il doppio clic ingrandisce, come chiede Brace.
   - Il pin è quello di Pulse su Brace: un `Brace.IconButton` da 24 px che, attivo, ha l'icona in `accent` su `accent-subtle`, con l'icona `Pin16` normale in tutti e due gli stati. Dice «Sempre in primo piano: attivo» o «disattivato». C'è anche nel menu della tray, come in Hive e Pulse.
   - Il badge dell'archivio è neutro, perché la barra tiene il suo unico ambra per il pin attivo.
@@ -182,6 +183,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | copia, taglia, incolla, anche con Explorer |
 | `Ctrl+A` | seleziona tutto il riquadro |
 | `Ctrl+Maiusc+N` | nuovo riquadro |
+| `Ctrl+B` | chiude o riapre la barra degli argomenti |
 | `Ctrl+Maiusc+C` | copia il percorso |
 | `Alt+Invio` | proprietà |
 | `Ctrl+Z` | annulla l'ultima operazione, anche più volte di seguito |
@@ -309,6 +311,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - Mentre i file arrivano la bacheca non si rilegge e l'indice della ricerca aspetta: tutti e due si aggiornano una volta, alla fine. **Esci** aspetta che finisca l'operazione in corso, per non lasciare un file copiato a metà.
   - A operazione finita la finestra si riprende il focus che le finestre della shell le hanno tolto, ma solo se nel frattempo non si è passati a un altro programma.
   - Fino alla 0.2.2 le operazioni giravano nel thread dell'interfaccia, che restava bloccata finché la shell non finiva.
+  - Anche la copia di un archivio su un altro disco (Impostazioni › Archivi › **Sposta…**) gira su un thread a parte, dopo la 0.3.2: intanto Quiver resta usabile, la finestra Impostazioni non si chiude e **Esci** aspetta la fine della copia.
 - **Ripristino dal Cestino**: il Cestino di ogni disco tiene ogni elemento come due file, `$R…` con il contenuto e `$I…` con il percorso originale e la data.
   - Subito dopo un'eliminazione, Quiver annota quali `$I…` sono i suoi.
   - `Ctrl+Z` rimette al loro posto esattamente quegli elementi, anche se nel frattempo ne sono stati eliminati altri con lo stesso percorso, e toglie i `$I…`, come fa «Ripristina».
@@ -324,7 +327,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Ricarica**: a ogni apertura del pannello e a ogni modifica vista dal watcher, la bacheca viene riletta. I view model di argomenti, riquadri ed elementi ancora presenti restano gli stessi, aggiornati sul posto (`Reconciler`): selezione, nome in modifica, rami aperti e focus sopravvivono, e la vista riceve solo gli inserimenti, gli spostamenti e le rimozioni.
 - **Icone di Windows**: programmi, collegamenti e file senza un'icona di Brace chiedono la loro icona a Windows su un thread dedicato, perché un collegamento a una risorsa di rete che non risponde può bloccare per secondi; nel frattempo mostrano il documento di Brace. Nelle anteprime da riga di comando le icone si leggono subito, sullo stesso thread.
 - **Obiettivi di prestazioni**: pannello visibile in meno di 100 ms dalla scorciatoia (la finestra è già creata e solo nascosta); ricerca su 50.000 file in meno di 50 ms; meno di 100 MB di memoria a riposo.
-- **Convenzioni**: codice e commenti in inglese; interfaccia in italiano, con i testi in file di risorse per eventuali traduzioni.
+- **Convenzioni**: codice e commenti in inglese; interfaccia in italiano. I testi per ora sono scritti nel XAML e nel codice: se servirà tradurli, andranno spostati in file di risorse.
 
 ## 9. Rischi e punti aperti
 
@@ -348,12 +351,14 @@ Fatto:
 - sempre l'8 ottobre: la finestra Impostazioni, che assorbe quella degli archivi, con la scorciatoia registrata premendola e provata subito, gli interruttori di Da smistare e quelli di avvio ed Explorer; poi il colore dei riquadri e la selezione a rettangolo. Tutto pubblicato come pre-release 0.2.1;
 - dopo la prima prova dal vivo della 0.2.1, che non si poteva spostare e si chiudeva a ogni clic fuori: la finestra normale, con la barra del titolo di Brace, il pin e la posizione ricordata. Verificata con i test e le anteprime, pubblicata come pre-release 0.2.2;
 - svuotando il Desktop con la 0.2.2: le operazioni sui file in un thread a parte, perché la finestra si bloccava durante le copie; la barra laterale come navigazione; gli argomenti trascinabili; la misura dei riquadri dall'angolo; l'ordinamento e l'ordine a mano degli elementi. Verificato con i test (anche sul thread a parte, con un dispatcher come quello della finestra), con le anteprime e sull'archivio vero: letto in sola lettura con il codice della 0.2.2 e con il nuovo, dà gli stessi argomenti, riquadri ed elementi nello stesso ordine. Pubblicato come 0.2.3, la prima release normale: da qui niente più pre-release;
-- le fasi 0 e 1 della tela (§11): `MainViewModel` con tutte le bacheche insieme, la vista Tela con una zona per argomento e i sotto-argomenti dentro, lo zoom a tre livelli e i voli dalla barra laterale, dalla ricerca e da «Mostra». Sull'archivio di prova pesante si apre in meno di 2 secondi invece di 14; misurata sul PC vero, va a 55-60 fotogrammi al secondo con l'archivio vero e a 45 con quello pesante. Verificate con i test, con le anteprime e con la misura, non ancora dal vivo.;
-- subito dopo, su richiesta: i colori degli argomenti, dati una volta da Quiver e tenuti nell'archivio, nella barra laterale e sulla tela; la barra di stato come in Explorer, con la selezione, lo spazio libero e i tasti da sapere sotto **?**; esiti e problemi in avvisi in basso a destra; quanto occupa ogni archivio in Impostazioni, e il controllo dello spazio prima di copiare. Verificato con i test e con le anteprime, non ancora dal vivo.
+- le fasi 0 e 1 della tela (§11): `MainViewModel` con tutte le bacheche insieme, la vista Tela con una zona per argomento e i sotto-argomenti dentro, lo zoom a tre livelli e i voli dalla barra laterale, dalla ricerca e da «Mostra». Sull'archivio di prova pesante si apre in meno di 2 secondi invece di 14; misurata sul PC vero, va a 55-60 fotogrammi al secondo con l'archivio vero e a 45 con quello pesante. Verificate con i test, con le anteprime e con la misura, non ancora dal vivo;
+- subito dopo, su richiesta: i colori degli argomenti, dati una volta da Quiver e tenuti nell'archivio, nella barra laterale e sulla tela; la barra di stato come in Explorer, con la selezione, lo spazio libero e i tasti da sapere sotto **?**; esiti e problemi in avvisi in basso a destra; quanto occupa ogni archivio in Impostazioni, e il controllo dello spazio prima di copiare. Verificato con i test e con le anteprime, non ancora dal vivo;
+- l'8 ottobre, dopo la 0.3.0: il tasto destro sugli argomenti di nuovo funzionante e la barra degli argomenti richiudibile con `Ctrl+B` (0.3.1); sulla tela, i nomi degli elementi nei riquadri visti a metà strada (0.3.2);
+- il 9 e il 10 ottobre, le correzioni trovate leggendo tutto il codice. Il **?** dice la scorciatoia in uso, non sempre `Alt+E`; un `settings.json` rovinato viene messo da parte invece di andare perso; la copia di un archivio su un altro disco non blocca più Quiver; una copia fatta in una cartella di cui non si leggono i nomi non si annulla più, perché `Ctrl+Z` avrebbe mandato nel Cestino anche quello che c'era già; sulla tela, una cartella nuova nel «Generale» di una zona va nel suo argomento. Verificato con i test, non ancora dal vivo.
 
 1. Provare dal vivo la 0.2.3: le copie lunghe, gli argomenti trascinati, l'angolo dei riquadri, «Ordina per» e l'ordine a mano.
-2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor.
-3. Provare dal vivo la tela; poi la fase 2, smistare sulla tela.
+2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Quiver con GlazeWM: focus, più monitor. E la copia di un archivio su un altro disco, che ora lascia Quiver usabile.
+3. Provare dal vivo la tela; poi finire la fase 2: buona parte funziona già, mancano lo spostamento di un riquadro in un'altra zona e il rettangolo con `Maiusc`.
 4. Della v0.2 resta il menu completo di Windows; poi la v0.4 con GlazeWM. Gli aggiornamenti automatici restano per dopo.
 
 ## 11. Piano: la tela
@@ -372,7 +377,7 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 - **Zoom**: la rotella zooma attorno al puntatore, dal 10 % al 200 % (al 100 % un riquadro è grande come sulla bacheca). Al livello vicino, sopra un riquadro che scorre la rotella lo fa scorrere; con `Ctrl` zooma sempre. `Ctrl+0` mostra tutto, `+` e `-` zoomano.
 - **Spostare la vista**: trascinando sul vuoto, oppure con la rotella premuta, dovunque. Doppio clic sul vuoto: tutto in vista; sul titolo di una zona: la zona inquadrata.
 - **Tre livelli**, secondo lo zoom:
-  - lontano, sotto il 35 %: le zone con il nome e i numeri, i riquadri come blocchi del loro colore;
+  - lontano, sotto il 35 %: le zone con il nome, i riquadri come blocchi, con la striscia del loro colore se ne hanno uno;
   - medio, fino al 70 %: i riquadri con titolo e numero e, sotto, i nomi dei loro elementi in grande, quanti ne entrano; i nomi dei sotto-argomenti;
   - vicino: i riquadri veri, come sulla bacheca: selezione, doppio clic, tasto destro, rinomina, trascinamenti, `Ctrl+Z`.
 
@@ -417,9 +422,9 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 
 0. **Preparazione**, senza niente di nuovo da vedere: `MainViewModel` con più bacheche insieme, il modello del riquadro condiviso. Tutti i test di oggi devono passare.
 1. **La tela da guardare**: l'interruttore, le zone disposte da Quiver (Da smistare compreso, i sotto-argomenti dentro), zoom e spostamento, i tre livelli, i voli dalla barra laterale e dalla ricerca, aprire e tasto destro al livello vicino. Più la misura delle prestazioni.
-2. **Smistare sulla tela**: trascinare tra riquadri di argomenti diversi e dalla zona Da smistare, il rettangolo con `Maiusc`, gli appunti, la rinomina, `Ctrl+Z`, le righe che mostrano dove va un riquadro o un elemento.
+2. **Smistare sulla tela**: trascinare tra riquadri di argomenti diversi e dalla zona Da smistare, il rettangolo con `Maiusc`, gli appunti, la rinomina, `Ctrl+Z`, le righe che mostrano dove va un riquadro o un elemento. Da vicino buona parte funziona già, perché i riquadri della tela sono quelli della bacheca; mancano lo spostamento di un riquadro in un'altra zona e il rettangolo.
 3. **La tua scrivania**: zone da spostare e allargare, i posti nell'archivio, i nuovi argomenti sistemati da soli, le zone che scendono invece di coprirsi, la vista ricordata.
-4. **Dopo**: la minimappa, la tastiera tra le zone, il colore delle zone, e la modalità Home a schermo intero per il workspace di GlazeWM, con la tela dentro (§7).
+4. **Dopo**: la minimappa, la tastiera tra le zone e la modalità Home a schermo intero per il workspace di GlazeWM, con la tela dentro (§7). Il colore delle zone, previsto qui, è arrivato prima, con la 0.3.0.
 
 Ogni fase si chiude con i test e le anteprime e, prima di pubblicare, con la prova che l'archivio vero si legge come prima.
 

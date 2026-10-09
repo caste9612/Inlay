@@ -1,3 +1,4 @@
+using System.Windows.Threading;
 using Quiver.App.Services;
 using Quiver.App.ViewModels;
 using Quiver.Core;
@@ -119,6 +120,32 @@ public sealed class ArchivesViewModelTests : IDisposable
         Assert.True(Directory.Exists(archive));
         Assert.Equal("Spostare la cartella vecchia nel Cestino?", viewModel.Prompt?.Title);
         Assert.Equal(1, viewModel.Progress);
+    });
+
+    [Fact]
+    public void ToAnotherDrive_TheShellCopiesOnAThreadOfItsOwn_AndTheWindowStaysOpenUntilItIsDone() => StaThread.RunAsync(async () =>
+    {
+        var archive = MakeArchive("Archivio");
+        var destination = Directory.CreateDirectory(Path.Combine(_root, "Altro disco")).FullName;
+        var viewModel = Open(Settings(archive), sameDrive: (_, _) => false);
+        bool? closed = null;
+        Task<bool>? heard = null;
+        viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(ArchivesViewModel.IsCopying) || !viewModel.IsCopying)
+                return;
+            closed = viewModel.TryClose();
+            // Asked of the window now, answered while the copy still runs: the window is free meanwhile.
+            heard = Dispatcher.CurrentDispatcher.InvokeAsync(() => viewModel.IsCopying).Task;
+        };
+
+        await viewModel.MoveToOtherDriveAsync(viewModel.Archives.Single(), Path.Combine(destination, "Archivio"));
+
+        Assert.False(closed);
+        Assert.True(await heard!);
+        Assert.False(viewModel.IsCopying);
+        Assert.True(viewModel.WhenCopied().IsCompleted);
+        Assert.True(viewModel.TryClose());
     });
 
     [Fact]

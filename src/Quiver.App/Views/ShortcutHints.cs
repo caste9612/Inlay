@@ -6,7 +6,8 @@ public sealed record ShortcutHint(string Action, params IReadOnlyList<string> Ke
 /// <summary>The keys worth knowing, by what they act on.</summary>
 public sealed record ShortcutGroup(string Title, IReadOnlyList<ShortcutHint> Hints)
 {
-    public static IReadOnlyList<ShortcutGroup> All { get; } =
+    /// <param name="hotkey">The shortcut that puts Quiver away, as the settings have it now.</param>
+    public static IReadOnlyList<ShortcutGroup> For(string hotkey) =>
     [
         new("Elementi",
         [
@@ -38,7 +39,7 @@ public sealed record ShortcutGroup(string Title, IReadOnlyList<ShortcutHint> Hin
         new("Finestra",
         [
             new("mostra o nascondi gli argomenti", "Ctrl+B"),
-            new("chiudi: Quiver resta nell'area di notifica", "Esc", "Alt+E"),
+            new("chiudi: Quiver resta nell'area di notifica", "Esc", hotkey),
         ]),
     ];
 }

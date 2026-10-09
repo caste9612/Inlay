@@ -831,7 +831,7 @@
                 <Popup x:Name="ShortcutsPopup" PlacementTarget="{Binding ElementName=ShortcutsButton}" Placement="Custom"
                        StaysOpen="False" AllowsTransparency="True" PopupAnimation="None">
                     <ContentControl Style="{StaticResource Brace.PopupFrame}">
-                        <ItemsControl Margin="12,6,12,8" Focusable="False" ItemsSource="{x:Static views:ShortcutGroup.All}" Grid.IsSharedSizeScope="True">
+                        <ItemsControl Margin="12,6,12,8" Focusable="False" ItemsSource="{Binding Shortcuts}" Grid.IsSharedSizeScope="True">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type views:ShortcutGroup}">
                                     <StackPanel Margin="0,6,0,0">

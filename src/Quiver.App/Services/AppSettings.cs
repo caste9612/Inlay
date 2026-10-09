@@ -11,6 +11,9 @@ internal sealed class AppSettings
         WriteIndented = true,
     };
 
+    /// <summary>The shortcut until the user chooses another one.</summary>
+    public const string DefaultHotkey = "Alt+E";
+
     public static string FilePath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Quiver", "settings.json");
 
@@ -21,7 +24,7 @@ internal sealed class AppSettings
     public List<string> Archives { get; set; } = [];
 
     /// <summary>Written like "Alt+E" or "Ctrl+Shift+Space".</summary>
-    public string Hotkey { get; set; } = "Alt+E";
+    public string Hotkey { get; set; } = DefaultHotkey;
 
     /// <summary>The files on the Desktop appear among those to sort.</summary>
     public bool InboxDesktop { get; set; } = true;
@@ -57,6 +60,16 @@ internal sealed class AppSettings
         catch (JsonException e)
         {
             Log.Write($"Settings file is not valid JSON, using defaults: {e.Message}");
+            // Kept aside, as the metadata of an archive are: the next save would write over it, and the list of the archives
+            // would go with it.
+            try
+            {
+                File.Copy(path, path + ".corrupt", overwrite: true);
+            }
+            catch (Exception copy) when (copy is IOException or UnauthorizedAccessException)
+            {
+                Log.Write($"Could not keep the unreadable settings aside: {copy.Message}");
+            }
         }
         settings.SavePath = path;
         // Settings from before the list of archives: the one in use is the first known.

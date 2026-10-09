@@ -28,11 +28,8 @@ public partial class SettingsWindow : Window
         };
         Loaded += (_, _) => View.FocusStart();
         // A check under way must not go on after the window: the archive stays where it was. Nor the count of the archives.
-        Closing += (_, _) =>
-        {
-            ViewModel.Archives.CancelCheck();
-            ViewModel.Archives.StopMeasuring();
-        };
+        // A copy under way, instead, keeps the window open until it is done.
+        Closing += (_, e) => e.Cancel = !ViewModel.Archives.TryClose();
     }
 
     public SettingsViewModel ViewModel { get; }

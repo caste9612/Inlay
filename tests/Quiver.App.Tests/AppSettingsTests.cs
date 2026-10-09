@@ -44,4 +44,20 @@ public sealed class AppSettingsTests : IDisposable
         Assert.True(loaded.Window!.IsUsable());
         Assert.False(new WindowPlacement(0, 0, 40, 30, false).IsUsable());
     }
+
+    [Fact]
+    public void AnUnreadableFile_IsSetAside_AndTheDefaultsAreUsed()
+    {
+        var path = Path.Combine(_folder, "settings.json");
+        const string cutShort = "{ \"archiveRoot\": \"D:\\\\Archivio\", \"archives\": [";
+        File.WriteAllText(path, cutShort);
+
+        var settings = AppSettings.Load(path);
+
+        Assert.Equal(AppSettings.DefaultHotkey, settings.Hotkey);
+        Assert.Null(settings.ArchiveRoot);
+        // The next save writes a new file: the old one, as it was, waits next to it.
+        settings.Save();
+        Assert.Equal(cutShort, File.ReadAllText(path + ".corrupt"));
+    }
 }

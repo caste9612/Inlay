@@ -167,6 +167,23 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
+    public void OnTheCanvas_ANewFolderInGenerale_IsANewTileOfItsZone_NotOfTheTopicInTheSidebar() => StaThread.Run(() =>
+    {
+        AddFile("Personale/Promemoria.txt");
+        using var viewModel = Open();
+        Assert.Equal("Lavoro", viewModel.SelectedTopic?.Name);
+        viewModel.IsCanvasShown = true;
+        var general = viewModel.Canvas.Zones.Single(zone => zone.Key == "Personale").Tiles.Single(tile => tile.IsGeneral);
+
+        viewModel.NewFolder(general);
+
+        var created = Path.Combine(_root, "Personale", "Nuovo riquadro");
+        Assert.True(Directory.Exists(created));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuovo riquadro")));
+        Assert.Equal(created, Assert.Single(viewModel.ShownTiles, tile => tile.IsEditing).FolderPath);
+    });
+
+    [Fact]
     public void ANewTile_ComesWithItsNameReadyToType() => StaThread.Run(() =>
     {
         using var viewModel = Open();
@@ -313,7 +330,7 @@ public sealed class MainViewModelTests : IDisposable
         var desktop = Directory.CreateDirectory(_root + "-desktop").FullName;
         try
         {
-            using var viewModel = new MainViewModel(_root, live: false, inboxSources: [new InboxSource("Desktop", [desktop])]);
+            using var viewModel = new MainViewModel(_root, live: false, inboxSources: [new InboxSource("Desktop", [desktop])], recent: _recent);
             viewModel.PromoteTile(viewModel.Tiles.Single(tile => tile.Title == "Archivio"));
             viewModel.Transfer([Path.Combine(_root, "Lavoro", "Archivio")], desktop, TransferKind.Move);
             Assert.False(MetadataStore.Load(_root).IsTopic("Lavoro/Archivio"));
@@ -445,7 +462,7 @@ public sealed class MainViewModelTests : IDisposable
         try
         {
             File.WriteAllText(Path.Combine(desktop, "foto.jpg"), "");
-            using var viewModel = new MainViewModel(_root, live: false, inboxSources: [new InboxSource("Desktop", [desktop])]);
+            using var viewModel = new MainViewModel(_root, live: false, inboxSources: [new InboxSource("Desktop", [desktop])], recent: _recent);
 
             viewModel.ShowInboxCommand.Execute(null);
 
@@ -496,6 +513,24 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.UpdateSelectionSummary();
 
         Assert.Null(viewModel.SelectionSummary);
+    });
+
+    [Fact]
+    public void TheKeysWorthKnowing_SayTheShortcutInUse() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        Assert.Contains("Alt+E", Keys(viewModel));
+
+        // Changed in the settings: the «?» of the status bar says the new one.
+        viewModel.Hotkey = "Ctrl+Alt+Q";
+
+        Assert.Contains(nameof(MainViewModel.Shortcuts), changed);
+        Assert.Contains("Ctrl+Alt+Q", Keys(viewModel));
+        Assert.DoesNotContain("Alt+E", Keys(viewModel));
+
+        static List<string> Keys(MainViewModel model) => model.Shortcuts.SelectMany(group => group.Hints).SelectMany(hint => hint.Keys).ToList();
     });
 
     [Fact]
