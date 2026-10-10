@@ -4,7 +4,7 @@ namespace Inlay.App.Services;
 
 /// <summary>
 /// Keeps Inlay to one instance per user. A second Inlay.exe hands its command (toggle, show, sort…) to the
-/// running one through a named pipe and exits: this is how a GlazeWM keybinding, or «Invia a Inlay» in Explorer,
+/// running one through a named pipe and exits: this is how a GlazeWM keybinding, or «Send to › Inlay» in Explorer,
 /// can drive Inlay.
 /// </summary>
 internal sealed class SingleInstance : IDisposable

@@ -17,8 +17,8 @@ using Inlay.Core;
 namespace Inlay.App.Views;
 
 /// <summary>
-/// Everything inside the panel, used like the desktop: a click selects (Ctrl and Maiusc for more), a double-click or Invio
-/// opens, files and tiles are dragged where they belong, F2 or a slow second click renames in place, Canc moves to the
+/// Everything inside the panel, used like the desktop: a click selects (Ctrl and Shift for more), a double-click or Enter
+/// opens, files and tiles are dragged where they belong, F2 or a slow second click renames in place, Del moves to the
 /// Recycle Bin, Ctrl+C, Ctrl+X and Ctrl+V work with Explorer too. Typing anywhere searches the whole archive.
 /// </summary>
 public partial class PanelView : UserControl
@@ -340,7 +340,7 @@ public partial class PanelView : UserControl
             PickerList.ScrollIntoView(selected);
     }
 
-    /// <summary>Keeps the first result selected, so Invio in the search box opens it.</summary>
+    /// <summary>Keeps the first result selected, so Enter in the search box opens it.</summary>
     private void OnResultsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
         Dispatcher.BeginInvoke(() =>
         {
@@ -418,7 +418,7 @@ public partial class PanelView : UserControl
     {
         if (sender is not FrameworkElement button)
             return;
-        var kinds = new MenuItem { Header = "Tipo" };
+        var kinds = new MenuItem { Header = "Type" };
         foreach (var filter in ViewModel.KindFilters)
         {
             var item = new MenuItem { Header = filter.Label, IsChecked = filter.IsChecked, InputGestureText = filter.ToolTip };
@@ -429,7 +429,7 @@ public partial class PanelView : UserControl
             };
             kinds.Items.Add(item);
         }
-        var places = new MenuItem { Header = "Dove" };
+        var places = new MenuItem { Header = "Where" };
         AddSearchPlaces(places.Items);
         OpenUnder(new ContextMenu { Items = { kinds, places } }, button);
     }
@@ -437,7 +437,7 @@ public partial class PanelView : UserControl
     /// <summary>Everywhere, then every topic, those inside another one indented under it, as in the sidebar.</summary>
     private void AddSearchPlaces(ItemCollection items)
     {
-        items.Add(SearchPlace("Ovunque", topic: null));
+        items.Add(SearchPlace("Everywhere", topic: null));
         items.Add(new Separator());
         foreach (var topic in ViewModel.Topics.SelectMany(topic => topic.SelfAndDescendants()))
             items.Add(SearchPlace(topic.Name, topic));
@@ -548,7 +548,7 @@ public partial class PanelView : UserControl
         CanvasSurface.WakeInViewNow();
     }
 
-    /// <summary>«Mostra» after an operation, on the canvas: the tile where the items went, with them selected.</summary>
+    /// <summary>«Show» after an operation, on the canvas: the tile where the items went, with them selected.</summary>
     private void OnShowOnCanvasRequested(object? sender, string folder) =>
         Dispatcher.BeginInvoke(() =>
         {
@@ -807,7 +807,7 @@ public partial class PanelView : UserControl
         var paths = selected.Select(row => row.Item.FullPath).ToArray();
         // A plain list of files: Explorer, mail and other programs understand it too.
         var data = new DataObject(DataFormats.FileDrop, paths.Length > 0 ? paths : [item.Item.FullPath]);
-        ShowDragLabel(paths.Length > 1 ? $"{paths.Length} elementi" : item.Name);
+        ShowDragLabel(paths.Length > 1 ? $"{paths.Length} items" : item.Name);
         // Dropped in the same tile, the rows change place there: only those of that tile are in hand.
         _dragSourceTile = list.DataContext as TileViewModel;
         _draggedItems = _dragSourceTile is { } source && selected.All(source.Items.Contains) ? selected : [];
@@ -1203,7 +1203,7 @@ public partial class PanelView : UserControl
 
         public TransferKind Kind { get; init; }
 
-        /// <summary>Folders that land in a topic become rows of its «Generale»; not a tile dragged by its title, which stays a tile.</summary>
+        /// <summary>Folders that land in a topic become rows of its «General»; not a tile dragged by its title, which stays a tile.</summary>
         public bool FoldersAsRows { get; init; } = true;
 
         /// <summary>The tile dragged by its title, or the one whose rows change place.</summary>
@@ -1667,7 +1667,7 @@ public partial class PanelView : UserControl
     /// <summary>The field closed: the focus goes back to the item, the tile or the topic.</summary>
     private void FocusAfterEdit() => Dispatcher.BeginInvoke(RestoreFocusIfLost, DispatcherPriority.Background);
 
-    // ---- Questions over the board: confirmations and «Sposta in…» ----
+    // ---- Questions over the board: confirmations and «Move to…» ----
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -1851,7 +1851,7 @@ public partial class PanelView : UserControl
             ViewModel.OpenFolder(folder);
     }
 
-    /// <summary>"Incolla" is available only when the clipboard holds files.</summary>
+    /// <summary>"Paste" is available only when the clipboard holds files.</summary>
     private void ContextMenu_Opened(object sender, RoutedEventArgs e)
     {
         if (sender is not ContextMenu menu)

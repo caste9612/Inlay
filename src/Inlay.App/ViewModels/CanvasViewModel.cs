@@ -20,8 +20,8 @@ public sealed partial class CanvasViewModel : ObservableObject
     /// <summary>The topics of the root, in the order of the sidebar.</summary>
     public ObservableCollection<ZoneViewModel> Zones { get; } = [];
 
-    /// <summary>Like "45 %".</summary>
-    public string ZoomText => $"{Camera.Zoom * 100:N0} %";
+    /// <summary>Like "45%".</summary>
+    public string ZoomText => $"{Camera.Zoom * 100:N0}%";
 
     public IEnumerable<ZoneViewModel> AllZones() => Zones.SelectMany(zone => zone.SelfAndDescendants());
 

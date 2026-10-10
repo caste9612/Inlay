@@ -38,7 +38,7 @@ public sealed class DiskSpaceTests
         const long gb = 1024L * 1024 * 1024;
         var disk = new DiskSpace("E:", 120 * gb, 465 * gb);
 
-        Assert.Equal("120 GB liberi", disk.FreeText);
-        Assert.Equal("Disco E: 120 GB liberi su 465 GB", disk.Description);
+        Assert.Equal("120 GB free", disk.FreeText);
+        Assert.Equal("Drive E: 120 GB free of 465 GB", disk.Description);
     }
 }

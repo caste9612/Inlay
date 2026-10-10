@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -74,8 +75,11 @@ public sealed partial class ZoneViewModel : ObservableObject
         }
         var items = SelfAndDescendants().SelectMany(zone => zone.Tiles).Sum(tile => tile.Count);
         var tiles = SelfAndDescendants().Sum(zone => zone.Tiles.Count);
-        Summary = $"{Count(tiles, "riquadro", "riquadri")} · {Count(items, "elemento", "elementi")}";
+        Summary = $"{Count(tiles, "tile", "tiles")} · {Count(items, "item", "items")}";
     }
 
-    private static string Count(int count, string one, string many) => count == 1 ? $"1 {one}" : $"{count:N0} {many}";
+    // Numbers as the words around them: "1,204 items", whatever the language of Windows.
+    private static readonly CultureInfo English = CultureInfo.GetCultureInfo("en-US");
+
+    private static string Count(int count, string one, string many) => count == 1 ? $"1 {one}" : string.Create(English, $"{count:N0} {many}");
 }

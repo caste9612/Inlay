@@ -4,9 +4,9 @@ Le regole, scritte e non, che il codice di Inlay segue. Chi ci lavora le rispett
 
 ## Le lingue
 
-- **Inglese**: codice, nomi, commenti, nomi dei test.
-- **Italiano**: tutto quello che legge chi usa Inlay (testi dell'interfaccia, avvisi, errori), i documenti, i messaggi dei commit e le note di versione.
-- I testi dell'interfaccia sono scritti direttamente nel XAML e nel codice: se servirà tradurli, andranno spostati in file di risorse (PROGETTO.md §8).
+- **Inglese**: codice, nomi, commenti, nomi dei test e, dalla 0.3.4, tutto quello che legge chi usa Inlay dentro il programma (testi dell'interfaccia, avvisi, errori). Fino alla 0.3.3 l'interfaccia era in italiano.
+- **Italiano**: i documenti, i messaggi dei commit e le note di versione.
+- I testi dell'interfaccia sono scritti direttamente nel XAML e nel codice: se servirà più di una lingua, andranno spostati in file di risorse (PROGETTO.md §8).
 
 ### Come sono scritti i commenti
 
@@ -24,13 +24,15 @@ public void AskRecycle(IReadOnlyList<string> paths)
 
 Ricorrono i confronti con Explorer e con il desktop («as in Explorer», «as on the desktop»), che sono il modello di comportamento.
 
-### Come sono scritti i testi in italiano
+### Come sono scritti i testi dell'interfaccia
 
-- Frasi brevi, parole di tutti i giorni, senza gergo: «Spostare 3 elementi nel Cestino?», «I file sono già lì.».
-- I termini dell'utente, sempre gli stessi: argomento, riquadro, bacheca, tela, zona, elemento, «Generale», archivio ([il glossario](README.md#glossario)).
-- I nomi tra caporali: «Documenti». I percorsi con «›»: «Lavoro › Clienti». I puntini di sospensione come carattere unico: «Sposta in…».
-- Un errore dice cosa è successo e cosa fare: «Impossibile rinominare «a.txt»: forse è aperto in un altro programma. Riprova con Ctrl+Z.».
-- I documenti seguono lo stesso stile: le parti dell'interfaccia in grassetto, i tasti tra apici inversi (`Ctrl+Z`).
+- Frasi brevi, parole di tutti i giorni, senza gergo: «Move 3 items to the Recycle Bin?», «The files are already there.».
+- Le parole dell'utente, sempre le stesse: vault, space, tile, General, item, Board, Mosaic, e fold e unfold per le cartelle tra le righe di General ([il glossario](README.md#glossario)). I colori hanno i nomi delle pietre di un intarsio: Amber, Lapis, Amethyst, Rose, Jade, Citrine, Coral, Pearl.
+- I nomi tra virgolette curve: “Documents”. I percorsi con «›»: “Lavoro › Clienti”. I puntini di sospensione come carattere unico: “Move to…”. Voci di menu e pulsanti con la sola iniziale maiuscola, come in Windows 11: “Copy path”, “Move to Recycle Bin”.
+- I tasti con i nomi inglesi: `Enter`, `Del`, `Shift`, `Ctrl+Shift+N`.
+- Un errore dice cosa è successo e cosa fare: «Couldn't rename “a.txt”: it may be open in another program. Try again with Ctrl+Z.».
+- Numeri, dimensioni e date in inglese, qualunque sia la lingua di Windows: «18,481 items», «12.4 MB», «5 Oct». La cultura "en-US" è scritta dove servono (`ByteSize`, `DateLabel`, i conteggi di `MainViewModel` e `ZoneViewModel`).
+- I documenti, in italiano, chiamano le parti di Inlay con le loro parole italiane (archivio, argomento, riquadro, bacheca, tela) e scrivono in grassetto le voci dell'interfaccia come le mostra Inlay (**Move to…**); i tasti tra apici inversi (`Ctrl+Z`).
 
 ## Il codice C#
 
@@ -38,7 +40,7 @@ Ricorrono i confronti con Explorer e con il desktop («as in Explorer», «as on
 - **Costrutti moderni**: espressioni di collezione (`[]`, `[.. a, .. b]`), costruttori primari, `record` per i dati, pattern matching, `Lock`.
 - **Visibilità stretta**: classi `sealed`, `internal` dove si può (i test le vedono con `InternalsVisibleTo`), classi `static` per le regole senza stato.
 - **Chiamate a Windows** scritte a mano, in `NativeMethods` o vicino a chi le usa, di solito con `[LibraryImport]`. `[DllImport]` dove `[LibraryImport]` non arriva (strutture con stringhe, `StringBuilder`, interfacce COM) e, in `VirtualFiles`, anche per qualche funzione semplice ([windows.md](windows.md#la-shell-di-windows-interop)). CsWin32 resta un'idea per quando le chiamate cresceranno.
-- **Gli errori**: si prendono solo quelli attesi (`catch (Exception e) when (e is IOException or UnauthorizedAccessException)`), si scrivono nel log e si dicono all'utente in italiano. Inlay non deve mai chiudersi per un errore; quelli imprevisti finiscono nel gestore di `App`.
+- **Gli errori**: si prendono solo quelli attesi (`catch (Exception e) when (e is IOException or UnauthorizedAccessException)`), si scrivono nel log e si dicono all'utente, in inglese. Inlay non deve mai chiudersi per un errore; quelli imprevisti finiscono nel gestore di `App`.
 - **I file di Inlay** (metadati, impostazioni, recenti) si salvano scrivendo prima un `.tmp` e poi spostandolo sopra il file vero.
 - **Fuori dal thread dell'interfaccia** quello che può durare: spostamenti, copie ed eliminazioni della shell, anche la copia di un archivio (`ShellThread`), le icone di Windows (`ShellIcons`), l'indice della ricerca, i conteggi e i confronti (`Task.Run`). I risultati tornano attraverso il dispatcher. Sul thread dell'interfaccia restano le cose brevi: la lettura delle cartelle a ogni ricarica, le rinomine, lo spostamento di un archivio sullo stesso disco.
 - **Nomi che dicono l'intenzione**: `AskRecycle`, `ReloadUnlessEditing`, `KeepForRetry`, `CommitAfterInput`.

@@ -28,7 +28,7 @@ internal static class ShellLinks
         return path;
     }
 
-    /// <param name="arguments">What the target is started with, like "--sort" for the shortcut of «Invia a».</param>
+    /// <param name="arguments">What the target is started with, like "--sort" for the shortcut of «Send to».</param>
     /// <param name="description">The tooltip Explorer shows for the shortcut.</param>
     public static void Create(string linkPath, string target, string? arguments = null, string? description = null)
     {
@@ -100,7 +100,7 @@ internal static class ShellLinks
                 ? program
                 : Path.GetFileNameWithoutExtension(target);
         // Whatever the target is called, the shortcut lands in the folder, never elsewhere.
-        return ArchiveNames.Validate(name) is null ? name : "Collegamento";
+        return ArchiveNames.Validate(name) is null ? name : "Shortcut";
     }
 
     private static string? ProgramName(string program)
@@ -116,23 +116,23 @@ internal static class ShellLinks
         }
     }
 
-    /// <summary>"Dati (D)" for a drive, as Explorer calls it but without the colon; "commesse su server" for a share.</summary>
+    /// <summary>"Data (D)" for a drive, as Explorer calls it but without the colon; "projects on server" for a share.</summary>
     private static string RootName(string root)
     {
         if (root.StartsWith(@"\\", StringComparison.Ordinal))
         {
             var parts = root.Split('\\', StringSplitOptions.RemoveEmptyEntries);
-            return parts.Length >= 2 ? $"{parts[1]} su {parts[0]}" : "Rete";
+            return parts.Length >= 2 ? $"{parts[1]} on {parts[0]}" : "Network";
         }
         var letter = root.TrimEnd('\\', ':');
         try
         {
             var label = new DriveInfo(root).VolumeLabel;
-            return string.IsNullOrWhiteSpace(label) ? $"Disco ({letter})" : $"{label} ({letter})";
+            return string.IsNullOrWhiteSpace(label) ? $"Drive ({letter})" : $"{label} ({letter})";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            return $"Disco ({letter})";
+            return $"Drive ({letter})";
         }
     }
 

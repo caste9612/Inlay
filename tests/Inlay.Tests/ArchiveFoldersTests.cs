@@ -65,7 +65,7 @@ public sealed class ArchiveFoldersTests : IDisposable
 
     [Fact]
     public void AWholeDrive_CannotBeAnArchive() =>
-        Assert.Contains("disco intero", ArchiveFolders.Check(Path.GetPathRoot(_temp.Root)!, Reserved, []));
+        Assert.Contains("whole drive", ArchiveFolders.Check(Path.GetPathRoot(_temp.Root)!, Reserved, []));
 
     [Fact]
     public void TheReservedFolders_TheirInsides_AndWhatHoldsThem_CannotBe()
@@ -82,8 +82,8 @@ public sealed class ArchiveFoldersTests : IDisposable
     {
         var known = Path.Combine(_temp.Root, "Utente", "Archivio");
 
-        Assert.Contains("dentro l'archivio «Archivio»", ArchiveFolders.Check(Path.Combine(known, "Lavoro"), Reserved, [known]));
-        Assert.Contains("contiene l'archivio «Archivio»", ArchiveFolders.Check(Path.Combine(_temp.Root, "Utente", "Documenti"), Reserved,
+        Assert.Contains("inside the vault “Archivio”", ArchiveFolders.Check(Path.Combine(known, "Lavoro"), Reserved, [known]));
+        Assert.Contains("contains the vault “Archivio”", ArchiveFolders.Check(Path.Combine(_temp.Root, "Utente", "Documenti"), Reserved,
             [Path.Combine(_temp.Root, "Utente", "Documenti", "Archivio")]));
         Assert.Null(ArchiveFolders.Check(known, Reserved, [known]));
     }

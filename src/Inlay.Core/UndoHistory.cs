@@ -69,7 +69,7 @@ public sealed record MoveStep(IReadOnlyList<MovedItem> Items, MetadataSnapshot F
 /// <param name="From">Where the item was.</param>
 /// <param name="To">Where it went.</param>
 /// <param name="BecameRow">
-/// A folder that arrived in a topic and became a row of its «Generale»: put back, it is what it was before, like a tile.
+/// A folder that arrived in a topic and became a row of its «General»: put back, it is what it was before, like a tile.
 /// </param>
 public sealed record MovedItem(string From, string To, bool BecameRow = false);
 
@@ -113,7 +113,7 @@ public sealed record SizeStep(string Key, string Name, TileSize? Previous) : Und
 /// <summary>A tile promoted to topic, or a topic made a tile again: undoing turns it back.</summary>
 public sealed record TopicStep(string Key, string Name, bool WasTopic) : UndoStep;
 
-/// <summary>A row of «Generale» promoted to tile, or a tile put in «Generale» as a row: undoing turns it back.</summary>
+/// <summary>A row of «General» promoted to tile, or a tile put in «General» as a row: undoing turns it back.</summary>
 public sealed record ItemStep(string Key, string Name, bool WasItem) : UndoStep;
 
 /// <summary>A tile given a color, or none: undoing gives it back the color it had.</summary>

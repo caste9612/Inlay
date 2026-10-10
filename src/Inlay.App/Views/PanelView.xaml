@@ -76,15 +76,15 @@
         <sys:Double x:Key="NavRowHeight">32</sys:Double>
         <sys:Double x:Key="NavTextSize">14</sys:Double>
 
-        <!-- «Bacheca | Tela», as a segmented control of Brace: the same in the header of both views. -->
+        <!-- «Board | Mosaic», as a segmented control of Brace: the same in the header of both views. -->
         <x:Array x:Key="ViewNames" Type="sys:String">
-            <sys:String>Bacheca</sys:String>
-            <sys:String>Tela</sys:String>
+            <sys:String>Board</sys:String>
+            <sys:String>Mosaic</sys:String>
         </x:Array>
         <Style x:Key="ViewSwitch" TargetType="ListBox" BasedOn="{StaticResource Brace.SegmentedControl}">
             <Setter Property="ItemsSource" Value="{StaticResource ViewNames}" />
-            <Setter Property="ToolTip" Value="La bacheca di un argomento, o la tela con tutto l'archivio" />
-            <Setter Property="AutomationProperties.Name" Value="Vista" />
+            <Setter Property="ToolTip" Value="The board of a space, or the mosaic of the whole vault" />
+            <Setter Property="AutomationProperties.Name" Value="View" />
         </Style>
 
         <!-- The filters above the search results: small buttons of Brace, in the accent while they are in use. -->
@@ -167,136 +167,136 @@
 
         <!-- Items: the same commands as the desktop's right-click menu. -->
         <ContextMenu x:Key="ItemMenu" x:Shared="False">
-            <MenuItem Header="Apri" FontWeight="SemiBold" InputGestureText="Invio" Click="ItemOpen_Click">
+            <MenuItem Header="Open" FontWeight="SemiBold" InputGestureText="Enter" Click="ItemOpen_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Open16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Apri con…" Click="ItemOpenWith_Click">
+            <MenuItem Header="Open with…" Click="ItemOpenWith_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Apps16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Mostra in Explorer" InputGestureText="Ctrl+Invio" Click="ItemReveal_Click">
+            <MenuItem Header="Show in Explorer" InputGestureText="Ctrl+Enter" Click="ItemReveal_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
             <!-- Where the selection goes: a tile or a topic, chosen by name, the recent ones first. -->
-            <MenuItem Header="Sposta in…" Click="ItemMoveTo_Click">
+            <MenuItem Header="Move to…" Click="ItemMoveTo_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowRight16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Taglia" InputGestureText="Ctrl+X" Click="ItemCut_Click">
+            <MenuItem Header="Cut" InputGestureText="Ctrl+X" Click="ItemCut_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Cut16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Copia" InputGestureText="Ctrl+C" Click="ItemCopy_Click">
+            <MenuItem Header="Copy" InputGestureText="Ctrl+C" Click="ItemCopy_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Copy16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Copia percorso" InputGestureText="Ctrl+Maiusc+C" Click="ItemCopyPath_Click">
+            <MenuItem Header="Copy path" InputGestureText="Ctrl+Shift+C" Click="ItemCopyPath_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Rinomina" InputGestureText="F2" Click="ItemRename_Click">
+            <MenuItem Header="Rename" InputGestureText="F2" Click="ItemRename_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
             </MenuItem>
-            <!-- A folder among the rows of «Generale», like one dropped on the topic, can have a tile of its own. -->
-            <MenuItem Header="Promuovi a riquadro" Click="ItemPromote_Click" Visibility="{Binding CanBecomeTile, Converter={StaticResource Visible}}" />
-            <MenuItem Header="Proprietà" InputGestureText="Alt+Invio" Click="ItemProperties_Click">
+            <!-- A folder among the rows of «General», like one dropped on the topic, can have a tile of its own. -->
+            <MenuItem Header="Unfold as tile" Click="ItemPromote_Click" Visibility="{Binding CanBecomeTile, Converter={StaticResource Visible}}" />
+            <MenuItem Header="Properties" InputGestureText="Alt+Enter" Click="ItemProperties_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Info16}" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Sposta nel Cestino" InputGestureText="Canc" Style="{StaticResource Brace.MenuItem.Danger}" Click="ItemRecycle_Click">
+            <MenuItem Header="Move to Recycle Bin" InputGestureText="Del" Style="{StaticResource Brace.MenuItem.Danger}" Click="ItemRecycle_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
             </MenuItem>
         </ContextMenu>
 
         <ContextMenu x:Key="TileMenu" x:Shared="False" Opened="ContextMenu_Opened">
-            <MenuItem Header="Incolla" InputGestureText="Ctrl+V" Tag="paste" Click="TilePaste_Click" />
-            <MenuItem Header="Incolla collegamento" Tag="paste" Click="TilePasteLink_Click">
+            <MenuItem Header="Paste" InputGestureText="Ctrl+V" Tag="paste" Click="TilePaste_Click" />
+            <MenuItem Header="Paste shortcut" Tag="paste" Click="TilePasteLink_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Nuova cartella" Click="TileNewFolder_Click">
+            <MenuItem Header="New folder" Click="TileNewFolder_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Folder16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Nuovo collegamento…" Click="TileNewLink_Click" />
-            <MenuItem Header="Apri in Explorer" Click="TileOpenFolder_Click">
+            <MenuItem Header="New shortcut…" Click="TileNewLink_Click" />
+            <MenuItem Header="Open in Explorer" Click="TileOpenFolder_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Rinomina riquadro" Click="TileRename_Click" IsEnabled="{Binding IsOwnFolder}">
+            <MenuItem Header="Rename tile" Click="TileRename_Click" IsEnabled="{Binding IsOwnFolder}">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Promuovi ad argomento" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
-            <MenuItem Header="Metti in Generale" Click="TileDemote_Click" IsEnabled="{Binding IsOwnFolder}" />
+            <MenuItem Header="Make it a space" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
+            <MenuItem Header="Fold into General" Click="TileDemote_Click" IsEnabled="{Binding IsOwnFolder}" />
             <!-- The palette of Brace: a stripe on the title, kept with the archive. -->
-            <MenuItem Header="Colore" IsEnabled="{Binding IsOwnFolder}">
-                <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}}">
+            <MenuItem Header="Color" IsEnabled="{Binding IsOwnFolder}">
+                <MenuItem Header="None" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}}">
                     <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Ambra" Tag="#FFA133" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                <MenuItem Header="Amber" Tag="#FFA133" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                <MenuItem Header="Lapis" Tag="#5DA9FF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Viola" Tag="#B48CFF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                <MenuItem Header="Amethyst" Tag="#B48CFF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                <MenuItem Header="Rose" Tag="#FF7EB6" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Verde" Tag="#36CFB0" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                <MenuItem Header="Jade" Tag="#36CFB0" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                <MenuItem Header="Citrine" Tag="#F2D24B" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosso" Tag="#FF7272" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                <MenuItem Header="Coral" Tag="#FF7272" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                <MenuItem Header="Pearl" Tag="#C3CAD3" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
             <!-- As in Explorer: the items by name, date, type or size, each way. Chosen here, it takes the place of the order
                  given by dragging the items, which the last entry tells about. -->
-            <MenuItem Header="Ordina per">
+            <MenuItem Header="Sort by">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSort16}" /></MenuItem.Icon>
-                <MenuItem Header="Nome" Tag="Name" Click="TileSort_Click">
+                <MenuItem Header="Name" Tag="Name" Click="TileSort_Click">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
                               Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Name}" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Data di modifica" Tag="Modified" Click="TileSort_Click">
+                <MenuItem Header="Date modified" Tag="Modified" Click="TileSort_Click">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
                               Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Modified}" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Tipo" Tag="Type" Click="TileSort_Click">
+                <MenuItem Header="Type" Tag="Type" Click="TileSort_Click">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
                               Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Type}" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Dimensione" Tag="Size" Click="TileSort_Click">
+                <MenuItem Header="Size" Tag="Size" Click="TileSort_Click">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
                               Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Size}" />
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Crescente" Tag="ascending" Click="TileSortDirection_Click">
+                <MenuItem Header="Ascending" Tag="ascending" Click="TileSortDirection_Click">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
                               Visibility="{Binding Direction, Converter={StaticResource EqualsVisible}, ConverterParameter=ascending}" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Decrescente" Tag="descending" Click="TileSortDirection_Click">
+                <MenuItem Header="Descending" Tag="descending" Click="TileSortDirection_Click">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
                               Visibility="{Binding Direction, Converter={StaticResource EqualsVisible}, ConverterParameter=descending}" />
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="A mano: trascina gli elementi nel riquadro" IsEnabled="False">
+                <MenuItem Header="By hand: drag the items within the tile" IsEnabled="False">
                     <MenuItem.Icon>
                         <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
                               Visibility="{Binding ByHand, Converter={StaticResource EqualsVisible}, ConverterParameter=True}" />
@@ -304,70 +304,70 @@
                 </MenuItem>
             </MenuItem>
             <!-- The size given with the corner of the tile goes; the tile follows its items again. -->
-            <MenuItem Header="Misura automatica" Click="TileAutoSize_Click" IsEnabled="{Binding HasSize}" />
+            <MenuItem Header="Auto size" Click="TileAutoSize_Click" IsEnabled="{Binding HasSize}" />
             <Separator />
-            <MenuItem Header="Sposta il riquadro nel Cestino" Style="{StaticResource Brace.MenuItem.Danger}" Click="TileRecycle_Click" IsEnabled="{Binding IsOwnFolder}">
+            <MenuItem Header="Move tile to Recycle Bin" Style="{StaticResource Brace.MenuItem.Danger}" Click="TileRecycle_Click" IsEnabled="{Binding IsOwnFolder}">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
             </MenuItem>
         </ContextMenu>
 
         <ContextMenu x:Key="TopicMenu" x:Shared="False" Opened="ContextMenu_Opened">
-            <MenuItem Header="Apri in Explorer" Click="TopicOpenFolder_Click">
+            <MenuItem Header="Open in Explorer" Click="TopicOpenFolder_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Incolla qui" InputGestureText="Ctrl+V" Tag="paste" Click="TopicPaste_Click" />
-            <MenuItem Header="Incolla collegamento qui" Tag="paste" Click="TopicPasteLink_Click">
+            <MenuItem Header="Paste here" InputGestureText="Ctrl+V" Tag="paste" Click="TopicPaste_Click" />
+            <MenuItem Header="Paste shortcut here" Tag="paste" Click="TopicPasteLink_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Nuovo riquadro" Click="TopicNewTile_Click">
+            <MenuItem Header="New tile" Click="TopicNewTile_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Add16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Nuovo argomento qui dentro" Click="TopicNewTopic_Click" />
+            <MenuItem Header="New space inside" Click="TopicNewTopic_Click" />
             <Separator />
-            <MenuItem Header="Rinomina" InputGestureText="F2" Click="TopicRename_Click">
+            <MenuItem Header="Rename" InputGestureText="F2" Click="TopicRename_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Riporta a riquadro" Click="TopicDemote_Click" IsEnabled="{Binding CanDemote}" />
-            <!-- The color of the topic, in the sidebar and on the canvas. «Automatico» is the one Inlay gives, or for a topic
+            <MenuItem Header="Back to tile" Click="TopicDemote_Click" IsEnabled="{Binding CanDemote}" />
+            <!-- The color of the topic, in the sidebar and on the canvas. «Auto» is the one Inlay gives, or for a topic
                  inside another that of its topic. -->
-            <MenuItem Header="Colore">
-                <MenuItem Header="Automatico" Tag="auto" Click="TopicColor_Click"
+            <MenuItem Header="Color">
+                <MenuItem Header="Auto" Tag="auto" Click="TopicColor_Click"
                           IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=auto}">
                     <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSync16}" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Nessuno" Tag="none" Click="TopicColor_Click"
+                <MenuItem Header="None" Tag="none" Click="TopicColor_Click"
                           IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=none}">
                     <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Ambra" Tag="#FFA133" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                <MenuItem Header="Amber" Tag="#FFA133" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                <MenuItem Header="Lapis" Tag="#5DA9FF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Viola" Tag="#B48CFF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                <MenuItem Header="Amethyst" Tag="#B48CFF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                <MenuItem Header="Rose" Tag="#FF7EB6" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Verde" Tag="#36CFB0" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                <MenuItem Header="Jade" Tag="#36CFB0" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                <MenuItem Header="Citrine" Tag="#F2D24B" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Rosso" Tag="#FF7272" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                <MenuItem Header="Coral" Tag="#FF7272" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                <MenuItem Header="Pearl" Tag="#C3CAD3" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
                     <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Sposta nel Cestino" InputGestureText="Canc" Style="{StaticResource Brace.MenuItem.Danger}" Click="TopicRecycle_Click">
+            <MenuItem Header="Move to Recycle Bin" InputGestureText="Del" Style="{StaticResource Brace.MenuItem.Danger}" Click="TopicRecycle_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
             </MenuItem>
         </ContextMenu>
@@ -378,15 +378,15 @@
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowUndo16}" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Nuovo riquadro" InputGestureText="Ctrl+Maiusc+N" Click="NewTile_Click">
+            <MenuItem Header="New tile" InputGestureText="Ctrl+Shift+N" Click="NewTile_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Add16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Nuovo collegamento…" Click="BoardNewLink_Click" />
-            <MenuItem Header="Incolla" InputGestureText="Ctrl+V" Tag="paste" Click="BoardPaste_Click" />
-            <MenuItem Header="Incolla collegamento" Tag="paste" Click="BoardPasteLink_Click">
+            <MenuItem Header="New shortcut…" Click="BoardNewLink_Click" />
+            <MenuItem Header="Paste" InputGestureText="Ctrl+V" Tag="paste" Click="BoardPaste_Click" />
+            <MenuItem Header="Paste shortcut" Tag="paste" Click="BoardPasteLink_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Apri in Explorer" Click="BoardOpenFolder_Click">
+            <MenuItem Header="Open in Explorer" Click="BoardOpenFolder_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
         </ContextMenu>
@@ -440,7 +440,7 @@
                 <GroupBox Style="{StaticResource Brace.Panel}" Padding="0" ContextMenu="{DynamicResource TileMenu}"
                           AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
                     <GroupBox.Header>
-                        <DockPanel Background="Transparent" ToolTip="Trascina il titolo per spostare il riquadro"
+                        <DockPanel Background="Transparent" ToolTip="Drag the title to move the tile"
                                    PreviewMouseLeftButtonDown="TileHeader_PreviewMouseLeftButtonDown"
                                    PreviewMouseMove="TileHeader_PreviewMouseMove">
                             <!-- The handle, under the pointer, in the margin before the title: where a tile is taken. -->
@@ -451,7 +451,7 @@
                             <Border DockPanel.Dock="Left" Width="4" Margin="0,3,8,3" CornerRadius="2" Background="{Binding ColorBrush}"
                                     Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
                             <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}"
-                                    ToolTip="Azioni sul riquadro" AutomationProperties.Name="Azioni sul riquadro" Click="TileActions_Click">
+                                    ToolTip="Tile actions" AutomationProperties.Name="Tile actions" Click="TileActions_Click">
                                 <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
                             </Button>
                             <ContentControl DockPanel.Dock="Right" Margin="6,0" VerticalAlignment="Center"
@@ -469,7 +469,7 @@
                     </GroupBox.Header>
                     <Grid>
                         <TextBlock Margin="12,10" Foreground="{DynamicResource Brace.TextTertiary}" TextWrapping="Wrap"
-                                   Text="Vuoto. Trascina qui dei file, o incollali con Ctrl+V."
+                                   Text="Empty. Drop files here, or paste them with Ctrl+V."
                                    Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
                         <!-- About ten rows, then it scrolls; as many as the corner says, when given a height. The
                              style of Brace for lists does not reach a subclass by itself. -->
@@ -518,7 +518,7 @@
                     <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource TileTemplate}" views:CanvasSurface.Level="Near" />
                 </Border>
                 <Border CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource Brace.BorderDefault}" Background="{DynamicResource Brace.SurfaceRaised}"
-                        Style="{StaticResource AfarOnly}" ToolTip="Doppio clic per avvicinarti" MouseLeftButtonDown="TileSummary_MouseLeftButtonDown">
+                        Style="{StaticResource AfarOnly}" ToolTip="Double-click to zoom in" MouseLeftButtonDown="TileSummary_MouseLeftButtonDown">
                     <Grid>
                         <!-- The color of the tile, along its left edge. -->
                         <Border Width="8" HorizontalAlignment="Left" CornerRadius="6,0,0,6" Background="{Binding ColorBrush}"
@@ -605,7 +605,7 @@
                             </ItemsControl.ItemContainerStyle>
                         </ItemsControl>
                         <TextBlock x:Name="ZoneEmpty" Margin="2,0" Foreground="{DynamicResource Brace.TextTertiary}" Visibility="Collapsed"
-                                   Text="Vuoto. Trascina qui dei file, o crea un riquadro." />
+                                   Text="Empty. Drop files here, or create a tile." />
                     </StackPanel>
                 </Border>
                 <!-- From afar the zone is lightly tinted with the color of its topic: the archive reads like a map. -->
@@ -644,7 +644,7 @@
                     <Border x:Name="ZoneLabel" Canvas.Left="0" Canvas.Bottom="8" Padding="10,5" CornerRadius="6" Background="{DynamicResource Brace.SurfaceOverlay}"
                             BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1" RenderTransformOrigin="0,1"
                             RenderTransform="{Binding (views:CanvasSurface.LabelScale), RelativeSource={RelativeSource Self}}"
-                            ToolTip="Doppio clic per vedere tutta la zona" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
+                            ToolTip="Double-click to see the whole space" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
                         <Border.MaxWidth>
                             <MultiBinding Converter="{StaticResource Quotient}">
                                 <Binding ElementName="ZoneFrame" Path="ActualWidth" />
@@ -696,14 +696,14 @@
                                    Style="{StaticResource Brace.Text.Heading}" Text="Inlay" />
                         <!-- The topics on the left, closed and opened again (Ctrl+B). A plain button: the bar keeps its one amber
                              for the pin. -->
-                        <Button DockPanel.Dock="Left" Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="Barra degli argomenti"
+                        <Button DockPanel.Dock="Left" Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="Spaces sidebar"
                                 WindowChrome.IsHitTestVisibleInChrome="True" Click="SidebarToggle_Click">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource Brace.IconButton.Small}">
-                                    <Setter Property="ToolTip" Value="Nascondi gli argomenti (Ctrl+B)" />
+                                    <Setter Property="ToolTip" Value="Hide the spaces (Ctrl+B)" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsSidebarOpen}" Value="False">
-                                            <Setter Property="ToolTip" Value="Mostra gli argomenti (Ctrl+B)" />
+                                            <Setter Property="ToolTip" Value="Show the spaces (Ctrl+B)" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -712,26 +712,30 @@
                         </Button>
                         <!-- The buttons of the window, from the right edge inwards. -->
                         <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarCloseButton}"
-                                ToolTip="Chiudi: Inlay resta nell'area di notifica (Esc)" AutomationProperties.Name="Chiudi" Click="Close_Click">
+                                ToolTip="Close: Inlay stays in the tray (Esc)" AutomationProperties.Name="Close" Click="Close_Click">
                             <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
                         </Button>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.MaximizeButton}" AutomationProperties.Name="Ingrandisci"
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.MaximizeButton}" AutomationProperties.Name="Maximize"
                                 Click="Maximize_Click">
                             <Path Style="{StaticResource Inlay.MaximizeIcon}" />
                         </Button>
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarButton}" ToolTip="Riduci a icona"
-                                AutomationProperties.Name="Riduci a icona" Click="Minimize_Click">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarButton}" ToolTip="Minimize"
+                                AutomationProperties.Name="Minimize" Click="Minimize_Click">
                             <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Subtract16}" />
                         </Button>
-                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Inlay.PinButton}" AutomationProperties.Name="Sempre in primo piano"
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Inlay.PinButton}" AutomationProperties.Name="Always on top"
                                       IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
                             <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Pin16}" />
                         </ToggleButton>
-                        <!-- The archive in use, as the vault in Obsidian: a click opens the window of the archives. -->
+                        <!-- The archive in use, the vault as in Obsidian: its icon, the same as in the status bar, says what the
+                             name is. A click opens the window of the vaults. -->
                         <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.ProjectBadge}"
-                                ToolTip="Archivi: cambia, crea, rinomina o sposta l'archivio" AutomationProperties.Name="Archivi"
+                                ToolTip="The vault in use: click to switch, create, rename or move vaults" AutomationProperties.Name="Vault"
                                 Click="Archives_Click">
-                            <TextBlock MaxWidth="200" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal">
+                                <Path Margin="-2,0,4,0" Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Database16}" />
+                                <TextBlock MaxWidth="200" VerticalAlignment="Center" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
                         </Button>
                         <!-- The search in the middle of the bar, 280 wide and control-sm tall as in br-titlebar; narrower when the
                              window is. Either side of it the bar is free to drag the window by. -->
@@ -742,17 +746,17 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="SearchBox" Grid.Column="1" MinHeight="0" Height="{StaticResource Brace.ControlSm}" Padding="26,0,24,0"
-                                     VerticalAlignment="Center" Tag="Cerca in tutto l'archivio" AutomationProperties.Name="Cerca in tutto l'archivio"
+                                     VerticalAlignment="Center" Tag="Search the vault" AutomationProperties.Name="Search the vault"
                                      WindowChrome.IsHitTestVisibleInChrome="True"
                                      Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
                                      PreviewKeyDown="SearchBox_PreviewKeyDown" />
                             <Path Grid.Column="1" Margin="8,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"
                                   Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Search16}"
                                   TextElement.Foreground="{DynamicResource Brace.TextTertiary}" />
-                            <!-- The filters in a menu, also with nothing typed yet: kinds and places, written as "tipo:…" and "in:…". -->
+                            <!-- The filters in a menu, also with nothing typed yet: kinds and places, written as "type:…" and "in:…". -->
                             <Button Grid.Column="1" Width="20" Height="20" Margin="0,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                    Style="{StaticResource Brace.IconButton.Small}" ToolTip="Filtri: per tipo e per argomento"
-                                    AutomationProperties.Name="Filtri della ricerca" WindowChrome.IsHitTestVisibleInChrome="True"
+                                    Style="{StaticResource Brace.IconButton.Small}" ToolTip="Filters: by type and by space"
+                                    AutomationProperties.Name="Search filters" WindowChrome.IsHitTestVisibleInChrome="True"
                                     Click="SearchFilters_Click">
                                 <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Filter16}" />
                             </Button>
@@ -760,9 +764,9 @@
                     </DockPanel>
                 </Border>
 
-                <!-- Status bar, as br-statusbar and as in Explorer. On the left the archive, with how many items it has and what
-                     they take, or the operation under way; on the right the selection, the free space of the disk and the keys
-                     worth knowing. What an operation did, with Annulla and Mostra, comes in a toast instead. -->
+                <!-- Status bar, as br-statusbar and as in Explorer. On the left how many items the archive has and what they
+                     take, or the operation under way; on the right the selection, the free space of the disk and the keys worth
+                     knowing. What an operation did, with Undo and Show, comes in a toast instead. -->
                 <StatusBar DockPanel.Dock="Bottom">
                     <StatusBar.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -771,16 +775,17 @@
                     </StatusBar.ItemsPanel>
                     <StatusBarItem Visibility="{Binding IsBusy, Converter={StaticResource Hidden}}">
                         <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource Brace.StatusBar.Button}" ToolTip="{Binding ArchiveToolTip}" Click="StatusArchive_Click">
+                            <!-- The archive with its icon, as in the title bar, which says its name: a click opens it in Explorer. -->
+                            <Button Style="{StaticResource Brace.StatusBar.Button}" ToolTip="{Binding ArchiveToolTip}"
+                                    AutomationProperties.Name="Open the vault in Explorer" Click="StatusArchive_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.Database16}" />
-                                    <TextBlock VerticalAlignment="Center" Text="{Binding ArchiveName}" />
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding ArchiveSummary}" />
                                 </StackPanel>
                             </Button>
-                            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Text="{Binding ArchiveSummary}" />
                             <!-- Files left loose in the root of the archive, which no topic shows: a click opens it in Explorer. -->
                             <Button Margin="12,0,0,0" Style="{StaticResource Brace.StatusBar.Button}" Click="StatusArchive_Click"
-                                    ToolTip="Non stanno in nessun argomento: un clic apre la radice dell'archivio in Explorer. La ricerca li trova."
+                                    ToolTip="They are in no space: click to open the folder of the vault in Explorer. Search finds them."
                                     Visibility="{Binding RootFilesText, Converter={StaticResource NullToVisibility}}">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.Document16}" />
@@ -800,8 +805,8 @@
                     </StatusBarItem>
                     <!-- From the right edge inwards. -->
                     <StatusBarItem DockPanel.Dock="Right">
-                        <Button x:Name="ShortcutsButton" Style="{StaticResource Brace.StatusBar.Button}" ToolTip="I tasti da sapere"
-                                AutomationProperties.Name="Scorciatoie da tastiera" Click="ShortcutsButton_Click">
+                        <Button x:Name="ShortcutsButton" Style="{StaticResource Brace.StatusBar.Button}" ToolTip="Keyboard shortcuts"
+                                AutomationProperties.Name="Keyboard shortcuts" Click="ShortcutsButton_Click">
                             <Path Style="{StaticResource Brace.StatusIcon}" Margin="0" Data="{StaticResource Brace.Icon.QuestionCircle16}" />
                         </Button>
                     </StatusBarItem>
@@ -809,7 +814,7 @@
                     <StatusBarItem DockPanel.Dock="Right" Margin="0,0,8,0" Visibility="{Binding UpdateText, Converter={StaticResource NullToVisibility}}">
                         <Button Style="{StaticResource Brace.StatusBar.Button}" Click="RestartToUpdate_Click"
                                 AutomationProperties.Name="{Binding UpdateText}"
-                                ToolTip="Un clic riavvia Inlay aggiornato, appena finiscono le operazioni sui file in corso. Altrimenti si aggiorna quando esci.">
+                                ToolTip="Click to restart Inlay on the new version, as soon as the file operations under way finish. Otherwise it updates when you quit.">
                             <StackPanel Orientation="Horizontal">
                                 <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.ArrowDownload16}" />
                                 <TextBlock VerticalAlignment="Center" Text="{Binding UpdateText}" />
@@ -897,11 +902,11 @@
                         <DockPanel>
                             <DockPanel DockPanel.Dock="Top" Height="40" Margin="16,4,8,0">
                                 <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}" VerticalAlignment="Center"
-                                        ToolTip="Nuovo argomento" AutomationProperties.Name="Nuovo argomento" Click="NewTopic_Click">
+                                        ToolTip="New space" AutomationProperties.Name="New space" Click="NewTopic_Click">
                                     <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Add16}" />
                                 </Button>
                                 <TextBlock VerticalAlignment="Center" Style="{StaticResource Brace.Text.Label}"
-                                           Foreground="{DynamicResource Brace.TextTertiary}" Text="Argomenti" />
+                                           Foreground="{DynamicResource Brace.TextTertiary}" Text="Spaces" />
                             </DockPanel>
                             <!-- Topics: chosen with a click, dragged above or below another to change place, or into the middle of
                                  another to go inside it; a line or the row lit up shows where it will go. -->
@@ -950,11 +955,11 @@
                         <DockPanel Visibility="{Binding IsBoardVisible, Converter={StaticResource Visible}}">
                             <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
                                 <Button DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Primary}"
-                                        ToolTip="Nuovo riquadro (Ctrl+Maiusc+N)" Click="NewTile_Click"
+                                        ToolTip="New tile (Ctrl+Shift+N)" Click="NewTile_Click"
                                         Visibility="{Binding SelectedTopic, Converter={StaticResource NullToVisibility}}">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Add16}" />
-                                        <TextBlock VerticalAlignment="Center" Text="Nuovo riquadro" />
+                                        <TextBlock VerticalAlignment="Center" Text="New tile" />
                                     </StackPanel>
                                 </Button>
                                 <ListBox DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
@@ -1019,24 +1024,24 @@
                                 <ListBox DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
                                          SelectedIndex="{Binding ViewIndex, Mode=TwoWay}" />
                                 <Button DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Ghost}"
-                                        Content="Mostra tutto" ToolTip="Tutto l'archivio in vista (Ctrl+0, o doppio clic sul vuoto)" Click="CanvasFitAll_Click" />
+                                        Content="Show all" ToolTip="The whole vault in view (Ctrl+0, or double-click an empty spot)" Click="CanvasFitAll_Click" />
                                 <!-- The zoom, also from the mouse alone: the wheel zooms where it points, these around the middle. -->
                                 <StackPanel DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Orientation="Horizontal">
-                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Allontana (Ctrl+-)" AutomationProperties.Name="Allontana"
+                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Zoom out (Ctrl+-)" AutomationProperties.Name="Zoom out"
                                             Click="CanvasZoomOut_Click">
                                         <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ZoomOut16}" />
                                     </Button>
                                     <TextBlock MinWidth="48" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource Brace.TextSecondary}"
-                                               Text="{Binding Canvas.ZoomText}" ToolTip="La rotella zooma dove punti; trascina sul vuoto per spostarti" />
-                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Avvicina (Ctrl++)" AutomationProperties.Name="Avvicina"
+                                               Text="{Binding Canvas.ZoomText}" ToolTip="The wheel zooms where you point; drag an empty spot to move around" />
+                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Zoom in (Ctrl++)" AutomationProperties.Name="Zoom in"
                                             Click="CanvasZoomIn_Click">
                                         <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ZoomIn16}" />
                                     </Button>
                                 </StackPanel>
                                 <StackPanel VerticalAlignment="Bottom">
                                     <TextBlock Style="{StaticResource Brace.Text.Caption}" Foreground="{DynamicResource Brace.TextTertiary}"
-                                               Text="Tutto l'archivio" />
-                                    <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Tela" />
+                                               Text="Whole vault" />
+                                    <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Mosaic" />
                                 </StackPanel>
                             </DockPanel>
                             <views:CanvasSurface x:Name="CanvasSurface" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,1,0,0"
@@ -1057,18 +1062,18 @@
 
                         <!-- Search results -->
                         <DockPanel Margin="20,16,20,10" Visibility="{Binding IsSearching, Converter={StaticResource Visible}}">
-                            <!-- The filters: where to look, and the kinds. They write "in:…" and "tipo:…" in the search box,
+                            <!-- The filters: where to look, and the kinds. They write "in:…" and "type:…" in the search box,
                                  which can be typed there as well. -->
                             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                                 <Button DockPanel.Dock="Left" Margin="0,0,12,6" VerticalAlignment="Top" Style="{StaticResource SearchPlaceFilter}"
-                                        ToolTip="Dove cercare: in tutto l'archivio, o in un argomento (in:…)" Click="SearchPlace_Click">
+                                        ToolTip="Where to search: the whole vault, or one space (in:…)" Click="SearchPlace_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" />
                                         <TextBlock MaxWidth="260" VerticalAlignment="Center" Text="{Binding PlaceFilterText}" TextTrimming="CharacterEllipsis" />
                                         <Path Margin="4,0,0,0" Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.ChevronDown16}" />
                                     </StackPanel>
                                 </Button>
-                                <ItemsControl Focusable="False" ItemsSource="{Binding KindFilters}" AutomationProperties.Name="Filtri per tipo">
+                                <ItemsControl Focusable="False" ItemsSource="{Binding KindFilters}" AutomationProperties.Name="Type filters">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <WrapPanel />
@@ -1115,7 +1120,7 @@
                         <!-- Toasts (br-toasts): what just happened, in the bottom right corner over the board, the canvas and the
                              results; the newest at the bottom, at most three. -->
                         <ItemsControl Width="360" Margin="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Focusable="False"
-                                      ItemsSource="{Binding Toasts}" AutomationProperties.Name="Notifiche">
+                                      ItemsSource="{Binding Toasts}" AutomationProperties.Name="Notifications">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:ToastViewModel}">
                                     <Border Margin="0,8,0,0" Padding="12,8,4,8" Background="{DynamicResource Brace.SurfaceOverlay}"
@@ -1125,7 +1130,7 @@
                                             <Path x:Name="ToastIcon" DockPanel.Dock="Left" Margin="0,2,8,0" VerticalAlignment="Top" Style="{StaticResource Brace.Icon}"
                                                   Data="{StaticResource Brace.Icon.CheckmarkCircle16}" TextElement.Foreground="{DynamicResource Brace.Success}" />
                                             <Button DockPanel.Dock="Right" Margin="8,-2,0,0" VerticalAlignment="Top" Style="{StaticResource Brace.IconButton.Small}"
-                                                    ToolTip="Chiudi" AutomationProperties.Name="Chiudi notifica" Click="ToastDismiss_Click">
+                                                    ToolTip="Dismiss" AutomationProperties.Name="Dismiss notification" Click="ToastDismiss_Click">
                                                 <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
                                             </Button>
                                             <StackPanel>
@@ -1133,10 +1138,10 @@
                                                 <TextBlock Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding Body}" TextWrapping="Wrap"
                                                            Visibility="{Binding Body, Converter={StaticResource NullToVisibility}}" />
                                                 <StackPanel Margin="0,6,0,0" Orientation="Horizontal" Visibility="{Binding HasActions, Converter={StaticResource Visible}}">
-                                                    <Button Margin="0,0,4,0" Style="{StaticResource Brace.Button.Small}" Content="Annulla"
-                                                            ToolTip="Rimetti tutto com'era (Ctrl+Z)" Click="ToastUndo_Click"
+                                                    <Button Margin="0,0,4,0" Style="{StaticResource Brace.Button.Small}" Content="Undo"
+                                                            ToolTip="Put everything back as it was (Ctrl+Z)" Click="ToastUndo_Click"
                                                             Visibility="{Binding CanUndo, Converter={StaticResource Visible}}" />
-                                                    <Button Style="{StaticResource Brace.Button.Small}" Content="Mostra" ToolTip="Vai dove sono finiti, con gli elementi selezionati"
+                                                    <Button Style="{StaticResource Brace.Button.Small}" Content="Show" ToolTip="Go where they ended up, with the items selected"
                                                             Click="ToastShow_Click" Visibility="{Binding CanShow, Converter={StaticResource Visible}}" />
                                                 </StackPanel>
                                             </StackPanel>
@@ -1177,19 +1182,19 @@
                                  Visibility="{Binding HasInput, Converter={StaticResource Visible}}" />
                         <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource Brace.Danger}" Text="{Binding Error}" TextWrapping="Wrap"
                                    Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
-                        <!-- In the order of Windows, as in Brace: the action first, then Annulla. -->
+                        <!-- In the order of Windows, as in Brace: the action first, then Cancel. -->
                         <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
                             <Button x:Name="PromptConfirm" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}" Content="{Binding ConfirmLabel}"
                                     Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Hidden}}" />
                             <Button x:Name="PromptConfirmDanger" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Danger}" Content="{Binding ConfirmLabel}"
                                     Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Visible}}" />
-                            <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
+                            <Button Style="{StaticResource Brace.Button}" Content="Cancel" Command="{Binding CancelCommand}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- «Sposta in…»: where the chosen files go, the recent places first, narrowed down by what is typed -->
+            <!-- «Move to…»: where the chosen files go, the recent places first, narrowed down by what is typed -->
             <Grid Background="{DynamicResource Brace.Scrim}" Visibility="{Binding Picker, Converter={StaticResource NullToVisibility}}">
                 <Border x:Name="PickerBox" Width="520" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
                         Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
@@ -1197,7 +1202,7 @@
                         DataContext="{Binding Picker}" KeyboardNavigation.TabNavigation="Cycle">
                     <StackPanel>
                         <TextBlock Margin="0,0,0,10" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}" TextWrapping="Wrap" />
-                        <TextBox x:Name="PickerFilter" Tag="Scrivi il nome di un riquadro o di un argomento" AutomationProperties.Name="Destinazione"
+                        <TextBox x:Name="PickerFilter" Tag="Type the name of a tile or a space" AutomationProperties.Name="Destination"
                                  Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" />
                         <Grid Margin="0,8,0,0" MinHeight="60" MaxHeight="296">
                             <TextBlock Margin="8,10" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding EmptyMessage}"
@@ -1210,7 +1215,7 @@
                                     <DataTemplate DataType="{x:Type vm:DestinationViewModel}">
                                         <DockPanel Margin="0,4" Background="Transparent" ToolTip="{Binding Destination.FullPath}">
                                             <ContentControl DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.Badge.Plain}"
-                                                            Content="recente" Visibility="{Binding IsRecent, Converter={StaticResource Visible}}" />
+                                                            Content="recent" Visibility="{Binding IsRecent, Converter={StaticResource Visible}}" />
                                             <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,1,10,0" VerticalAlignment="Top">
                                                 <Path Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Folder16}"
                                                       Visibility="{Binding IsTopic, Converter={StaticResource Hidden}}" />
@@ -1232,7 +1237,7 @@
                         <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
                             <Button x:Name="PickerConfirm" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}" Content="{Binding ConfirmLabel}"
                                     Command="{Binding ConfirmCommand}" />
-                            <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
+                            <Button Style="{StaticResource Brace.Button}" Content="Cancel" Command="{Binding CancelCommand}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

@@ -10,7 +10,7 @@ namespace Inlay.App.ViewModels;
 /// <summary>A topic in the sidebar tree.</summary>
 public sealed partial class TopicViewModel : RenameableViewModel
 {
-    /// <summary>For «Colore»: the color Inlay gives, or for a topic inside another the one of its topic.</summary>
+    /// <summary>For «Color»: the color Inlay gives, or for a topic inside another the one of its topic.</summary>
     public const string AutomaticChoice = "auto";
 
     private string? _shownColor;
@@ -57,7 +57,7 @@ public sealed partial class TopicViewModel : RenameableViewModel
 
     public bool HasColor => ColorBrush is not null;
 
-    /// <summary>What «Colore» has checked: <see cref="AutomaticChoice"/>, <see cref="TopicColors.None"/>, or the color chosen.</summary>
+    /// <summary>What «Color» has checked: <see cref="AutomaticChoice"/>, <see cref="TopicColors.None"/>, or the color chosen.</summary>
     public string ColorChoice => Topic.Color is { } own && (own == TopicColors.None || !Topic.ColorIsAutomatic) ? own : AutomaticChoice;
 
     protected override bool RenamesFolder => true;

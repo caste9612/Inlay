@@ -48,7 +48,7 @@ public sealed class CanvasWakeTests : IDisposable
         var lists = Descendants<TileList>(view).ToList();
         Assert.NotEmpty(lists);
         Assert.All(lists, list => Assert.False(list.IsAsleep,
-            $"«{(list.DataContext as TileViewModel)?.Title}» senza righe: zoom {viewModel.Canvas.Camera.Zoom:P0}, livello {viewModel.Canvas.Level}"));
+            $"“{(list.DataContext as TileViewModel)?.Title}” without rows: zoom {viewModel.Canvas.Camera.Zoom:P0}, level {viewModel.Canvas.Level}"));
         var report = lists.Single(list => (list.DataContext as TileViewModel)?.Title == "Report");
         Assert.Equal(5, report.Items.Count);
     });

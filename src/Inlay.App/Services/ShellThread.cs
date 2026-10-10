@@ -24,7 +24,7 @@ internal static class ShellThread
             }
         })
         {
-            // In the background: on «Esci» Inlay waits for the operations itself, while Windows signing out cannot wait.
+            // In the background: on «Quit» Inlay waits for the operations itself, while Windows signing out cannot wait.
             IsBackground = true,
             Name = "Inlay file operation",
         };

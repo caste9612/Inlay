@@ -11,7 +11,7 @@ public interface ISettingsHost : IArchiveHost
     bool TryUseHotkey(string shortcut);
 }
 
-/// <summary>The two things Inlay sets in Windows: its start with the session, and its place in the «Invia a» menu.</summary>
+/// <summary>The two things Inlay sets in Windows: its start with the session, and its place in the «Send to» menu.</summary>
 public interface IWindowsIntegration
 {
     bool AutostartEnabled { get; }
@@ -84,7 +84,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public bool IsWelcome => Archives.IsWelcome;
 
     /// <summary>What the title bar of the window says.</summary>
-    public string Heading => IsWelcome ? "Benvenuto in Inlay" : "Impostazioni";
+    public string Heading => IsWelcome ? "Welcome to Inlay" : "Settings";
 
     public bool HasHotkeyProblem => HotkeyProblem is not null;
 
@@ -94,14 +94,14 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         shortcut = shortcut.Trim();
         if (shortcut.Length == 0)
-            return HotkeyProblem = "Premi una combinazione con Ctrl, Alt o Win e un tasto.";
+            return HotkeyProblem = "Press a combination with Ctrl, Alt or Win and a key.";
         if (string.Equals(shortcut, _settings.Hotkey, StringComparison.OrdinalIgnoreCase))
         {
             HotkeyProblem = null;
             return null;
         }
         if (!_host.TryUseHotkey(shortcut))
-            return HotkeyProblem = $"{shortcut} non è disponibile: forse la usa un altro programma. Resta {_settings.Hotkey}.";
+            return HotkeyProblem = $"{shortcut} isn't available: another program may be using it. {_settings.Hotkey} stays.";
         _settings.Hotkey = shortcut;
         Save();
         Hotkey = shortcut;
@@ -118,7 +118,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             WindowsProblem = "";
             return;
         }
-        WindowsProblem = "Windows non ha permesso di cambiare l'avvio automatico.";
+        WindowsProblem = "Windows didn't allow changing the startup.";
         Revert(() => Autostart = _windows.AutostartEnabled);
     }
 
@@ -131,7 +131,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             WindowsProblem = "";
             return;
         }
-        WindowsProblem = "Non sono riuscito a cambiare il menu «Invia a» di Explorer.";
+        WindowsProblem = "Couldn't change the Send to menu of Explorer.";
         Revert(() => SendTo = _windows.SendToInstalled);
     }
 
@@ -158,7 +158,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Write($"Could not save the settings: {e.Message}");
-            WindowsProblem = $"Impossibile salvare le impostazioni: {e.Message}";
+            WindowsProblem = $"Couldn't save the settings: {e.Message}";
         }
     }
 }

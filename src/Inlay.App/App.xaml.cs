@@ -8,7 +8,7 @@ namespace Inlay.App;
 
 /// <summary>
 /// Inlay lives in the notification area: the panel is created at startup and shown with the global shortcut,
-/// the tray icon, or a command from a second Inlay.exe (Inlay.exe --toggle, or --sort from «Invia a Inlay»).
+/// the tray icon, or a command from a second Inlay.exe (Inlay.exe --toggle, or --sort from «Send to › Inlay»).
 /// </summary>
 public partial class App : Application, ISettingsHost
 {
@@ -54,7 +54,7 @@ public partial class App : Application, ISettingsHost
         _singleInstance = new SingleInstance();
         if (!_singleInstance.IsFirstInstance)
         {
-            // Files from «Invia a Inlay» go to the running Inlay, which asks where to put them.
+            // Files from «Send to › Inlay» go to the running Inlay, which asks where to put them.
             var command = options.Command ?? (options.SortPaths.Count > 0 ? Commands.Sort : Commands.Toggle);
             SingleInstance.Send(command, options.SortPaths);
             Shutdown();
@@ -99,8 +99,8 @@ public partial class App : Application, ISettingsHost
         {
             Log.Write($"Could not register the shortcut {_settings.Hotkey}");
             _tray.ShowWarning(
-                $"La scorciatoia {_settings.Hotkey} non è disponibile: forse la usa un altro programma. " +
-                "Puoi cambiarla in Impostazioni, dal menu dell'icona.");
+                $"The shortcut {_settings.Hotkey} isn't available: another program may be using it. " +
+                "You can change it in Settings, from the menu of the icon.");
         }
 
         _singleInstance.CommandReceived += (command, arguments) => Dispatcher.InvokeAsync(() => Execute(command, arguments));
@@ -109,7 +109,7 @@ public partial class App : Application, ISettingsHost
         if (Program.UpdatedTo is { } updated)
         {
             Log.Write($"Updated to {updated}");
-            _tray.ShowInfo($"Inlay è aggiornato alla versione {updated}. Le novità sono nelle release su GitHub.");
+            _tray.ShowInfo($"Inlay is updated to version {updated}. What's new is in the releases on GitHub.");
         }
         StartUpdates();
 
@@ -143,10 +143,10 @@ public partial class App : Application, ISettingsHost
         base.OnSessionEnding(e);
     }
 
-    /// <summary>«Esci». A new version downloaded and not applied yet is applied once Inlay has exited.</summary>
+    /// <summary>«Quit». A new version downloaded and not applied yet is applied once Inlay has exited.</summary>
     private async void Quit()
     {
-        if (!await BeginLeaving("Inlay si chiude"))
+        if (!await BeginLeaving("Inlay will quit"))
             return;
         if (_viewModel?.UpdateReady is not null)
             _updater.ApplyOnExit();
@@ -154,12 +154,12 @@ public partial class App : Application, ISettingsHost
     }
 
     /// <summary>
-    /// «Riavvia e aggiorna», from the menu of the tray or from the status bar: Inlay closes, the new version is applied and
+    /// «Restart to update», from the menu of the tray or from the status bar: Inlay closes, the new version is applied and
     /// Inlay starts again.
     /// </summary>
     private async void RestartToUpdate()
     {
-        if (!await BeginLeaving("Inlay si aggiorna"))
+        if (!await BeginLeaving("Inlay will update"))
             return;
         // Velopack ends the process at once: what Shutdown would do is done first, the place of the window saved with it.
         _panel?.Close();
@@ -172,16 +172,16 @@ public partial class App : Application, ISettingsHost
         {
             Log.Write($"Could not apply the update: {e}");
         }
-        // Still here: the update could not start. Inlay closes as with «Esci», and the version downloaded is offered again next time.
+        // Still here: the update could not start. Inlay closes as with «Quit», and the version downloaded is offered again next time.
         Shutdown();
     }
 
     /// <summary>
-    /// The way out, for «Esci» and for an update: the only ways the window really closes; otherwise it goes back to the
+    /// The way out, for «Quit» and for an update: the only ways the window really closes; otherwise it goes back to the
     /// notification area. A move or a copy under way finishes first: cut halfway, it would leave a file half copied. So
     /// does the copy of an archive to another drive, which would leave half an archive there.
     /// </summary>
-    /// <param name="leaving">"Inlay si chiude" or "Inlay si aggiorna": what the notices say waits for the work under way.</param>
+    /// <param name="leaving">"Inlay will quit" or "Inlay will update": what the notices say waits for the work under way.</param>
     /// <returns>False when the way out had begun already.</returns>
     private async Task<bool> BeginLeaving(string leaving)
     {
@@ -190,14 +190,14 @@ public partial class App : Application, ISettingsHost
         _quitting = true;
         if (_viewModel is { IsBusy: true } viewModel)
         {
-            var waiting = $"{leaving} appena finisce l'operazione sui file in corso.";
+            var waiting = $"{leaving} as soon as the file operation under way is done.";
             viewModel.Tell(ToastKind.Info, waiting);
             _tray?.ShowInfo(waiting);
             await viewModel.WhenIdle();
         }
         if (_settingsWindow?.ViewModel.Archives is { IsCopying: true } archives)
         {
-            var copying = $"{leaving} appena finisce la copia dell'archivio.";
+            var copying = $"{leaving} as soon as the copy of the vault is done.";
             archives.Status = copying;
             _tray?.ShowInfo(copying);
             await archives.WhenCopied();
@@ -226,7 +226,7 @@ public partial class App : Application, ISettingsHost
     /// Looks for a new version and downloads it in the background; once ready, the status bar and the menu of the tray
     /// offer to restart into it, and the tray tells about it once.
     /// </summary>
-    /// <param name="asked">From «Cerca aggiornamenti»: the answer is told also when there is nothing new, or a problem.</param>
+    /// <param name="asked">From «Check for updates»: the answer is told also when there is nothing new, or a problem.</param>
     private async void CheckForUpdates(bool asked)
     {
         if (_checkingUpdates || _quitting)
@@ -238,7 +238,7 @@ public partial class App : Application, ISettingsHost
             if (version is null)
             {
                 if (asked)
-                    _tray?.ShowInfo($"Inlay è aggiornato: questa è la versione {_updater.CurrentVersion}.");
+                    _tray?.ShowInfo($"Inlay is up to date: this is version {_updater.CurrentVersion}.");
                 return;
             }
             Log.Write($"Update ready: {version}");
@@ -248,7 +248,7 @@ public partial class App : Application, ISettingsHost
             if (asked || _toldVersion != version)
             {
                 _toldVersion = version;
-                _tray?.ShowInfo($"Inlay {version} è pronto: si aggiorna quando esci, o subito con «Riavvia e aggiorna» dal menu dell'icona.");
+                _tray?.ShowInfo($"Inlay {version} is ready: it updates when you quit, or right away with “Restart to update” in the menu of the icon.");
             }
         }
         catch (OperationCanceledException)
@@ -260,7 +260,7 @@ public partial class App : Application, ISettingsHost
         {
             Log.Write($"Could not look for updates: {e}");
             if (asked)
-                _tray?.ShowWarning("Non riesco a controllare gli aggiornamenti: forse manca la connessione. Riprova più tardi.");
+                _tray?.ShowWarning("Couldn't check for updates: the connection may be down. Try again later.");
         }
         finally
         {
@@ -281,7 +281,7 @@ public partial class App : Application, ISettingsHost
         }
     }
 
-    /// <summary>«Invia a Inlay» from Explorer: the panel opens, asking where the files go.</summary>
+    /// <summary>«Send to › Inlay» from Explorer: the panel opens, asking where the files go.</summary>
     private void SortFiles(IReadOnlyList<string> paths)
     {
         if (_panel is null || _viewModel is null)
@@ -291,7 +291,7 @@ public partial class App : Application, ISettingsHost
         _panel.ShowPanel();
         if (existing.Count == 0)
         {
-            _viewModel.Tell(ToastKind.Info, "I file da mandare nell'archivio non ci sono più.");
+            _viewModel.Tell(ToastKind.Info, "The files to send to the vault are gone.");
             return;
         }
         _viewModel.AskDestination(existing);
@@ -379,7 +379,7 @@ public partial class App : Application, ISettingsHost
     {
         Log.Write($"Unexpected error: {e.Exception}");
         MessageBox.Show(
-            $"Si è verificato un errore imprevisto:\n\n{e.Exception.Message}\n\nI dettagli sono nel log: {Log.FilePath}",
+            $"Something unexpected went wrong:\n\n{e.Exception.Message}\n\nThe details are in the log: {Log.FilePath}",
             "Inlay", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
     }

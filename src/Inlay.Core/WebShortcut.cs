@@ -27,7 +27,7 @@ public static class WebShortcut
     public static string Create(string folder, Uri address)
     {
         var host = address.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? address.Host[4..] : address.Host;
-        var name = ArchiveNames.Validate(host) is null ? host : "Sito";
+        var name = ArchiveNames.Validate(host) is null ? host : "Website";
         var path = Path.Combine(folder, ArchiveNames.Unique(folder, name, ".url"));
         // AbsoluteUri is plain ASCII: accented addresses become percent-encoded, as every reader of .url files expects.
         File.WriteAllText(path, $"[InternetShortcut]\r\nURL={address.AbsoluteUri}\r\n", Encoding.ASCII);

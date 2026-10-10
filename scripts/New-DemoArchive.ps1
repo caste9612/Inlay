@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Crea un archivio di prova per Inlay: argomenti annidati, riquadri, una cartella tra le righe di «Generale»,
+    Crea un archivio di prova per Inlay: argomenti annidati, riquadri, una cartella tra le righe di «General»,
     programmi, siti e un file sciolto nella radice.
 
 .EXAMPLE
@@ -61,7 +61,7 @@ New-DemoWebLink 'Strumenti\Siti\GlazeWM.url' 'https://github.com/glzr-io/glazewm
 New-DemoFile 'documento scaricato.txt'
 
 # Clienti, Rossi, Bianchi e Interni sono sotto-argomenti: compaiono nel menu laterale invece che come riquadri.
-# «Foto delle vacanze» è una riga di «Generale» in Personale, come una cartella trascinata sull'argomento.
+# «Foto delle vacanze» è una riga di «General» in Personale, come una cartella trascinata sull'argomento.
 $metadata = New-Item -ItemType Directory -Force -Path (Join-Path $Path '.inlay')
 $metadata.Attributes = $metadata.Attributes -bor [IO.FileAttributes]::Hidden
 @'

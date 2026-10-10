@@ -22,7 +22,7 @@ public sealed partial class TileViewModel : RenameableViewModel
         IsGeneral = tile.IsGeneral;
         Items = new ObservableCollection<ItemViewModel>(tile.Items.Select(NewItem));
         RelativePath = tile.IsGeneral ? null : ArchiveLayout.ToRelativeKey(root, tile.FolderPath);
-        // "Generale" keeps its size and order under its topic's key: it holds the files of the topic's folder.
+        // "General" keeps its size and order under its topic's key: it holds the files of the topic's folder.
         MetadataKey = ArchiveLayout.ToRelativeKey(root, tile.FolderPath);
         Color = tile.Color;
         _size = tile.Size;
@@ -37,10 +37,10 @@ public sealed partial class TileViewModel : RenameableViewModel
 
     public bool IsGeneral { get; }
 
-    /// <summary>Metadata key of the tile's own folder; null for «Generale», whose folder is that of its topic.</summary>
+    /// <summary>Metadata key of the tile's own folder; null for «General», whose folder is that of its topic.</summary>
     public string? RelativePath { get; }
 
-    /// <summary>Where its size and the order of its items are kept: the key of its folder, that of its topic for «Generale».</summary>
+    /// <summary>Where its size and the order of its items are kept: the key of its folder, that of its topic for «General».</summary>
     public string MetadataKey { get; }
 
     public ObservableCollection<ItemViewModel> Items { get; }
@@ -83,7 +83,7 @@ public sealed partial class TileViewModel : RenameableViewModel
         }
     }
 
-    /// <summary>It was given a size of its own, which «Misura automatica» takes away.</summary>
+    /// <summary>It was given a size of its own, which «Auto size» takes away.</summary>
     public bool HasSize => Size is not null;
 
     /// <summary>The columns of the board it takes.</summary>
@@ -106,7 +106,7 @@ public sealed partial class TileViewModel : RenameableViewModel
 
     public bool IsDescending => !ByHand && (Sort?.Descending ?? false);
 
-    /// <summary>"ascending" or "descending", for the check in «Ordina per»; empty when the items are in order by hand.</summary>
+    /// <summary>"ascending" or "descending", for the check in «Sort by»; empty when the items are in order by hand.</summary>
     public string Direction => ByHand ? "" : IsDescending ? "descending" : "ascending";
 
     /// <summary>What tells a tile from the others on its board: its folder, and whether it is the topic's own.</summary>
@@ -158,7 +158,7 @@ public sealed partial class TileViewModel : RenameableViewModel
         OnPropertyChanged(nameof(Preview));
     }
 
-    // The folders of «Generale» are those shown as its rows: the others of the topic's folder are tiles or topics.
+    // The folders of «General» are those shown as its rows: the others of the topic's folder are tiles or topics.
     private ItemViewModel NewItem(ArchiveItem item) =>
         new(item) { IsCut = _cutPaths.Contains(item.FullPath), CanBecomeTile = IsGeneral && item.IsFolder };
 

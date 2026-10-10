@@ -2,7 +2,7 @@ using Inlay.App.ViewModels;
 
 namespace Inlay.App.Services;
 
-/// <summary>What Inlay sets in Windows for real: the Run key of the user and the shortcut in the «Invia a» menu.</summary>
+/// <summary>What Inlay sets in Windows for real: the Run key of the user and the shortcut in the «Send to» menu.</summary>
 internal sealed class WindowsIntegration : IWindowsIntegration
 {
     public bool AutostartEnabled => Autostart.IsEnabled;

@@ -20,8 +20,8 @@ internal static class PreviewRenderer
 
     public static void Render(CommandLineOptions options)
     {
-        var output = options.PreviewOutput ?? throw new ArgumentException("Manca il file di destinazione.");
-        var root = options.ArchiveRoot ?? throw new ArgumentException("--render-preview richiede anche --archive <cartella>.");
+        var output = options.PreviewOutput ?? throw new ArgumentException("The file to draw into is missing.");
+        var root = options.ArchiveRoot ?? throw new ArgumentException("--render-preview also needs --archive <folder>.");
         // No window drives the dispatcher here: the icons of Windows are read at once, on this thread.
         ShellIcons.Synchronous = true;
         if (options.PreviewSettings)
@@ -46,10 +46,10 @@ internal static class PreviewRenderer
         if (options.PreviewLinkPrompt && viewModel.BoardFolder is { } folder)
         {
             viewModel.AskNewLink(folder);
-            viewModel.Prompt!.Text = "rossi";
+            viewModel.Prompt!.Text = "smith";
             viewModel.Prompt.ConfirmCommand.Execute(null);
         }
-        // «Sposta in…» for the first item of the board.
+        // «Move to…» for the first item of the board.
         if (options.PreviewPicker && viewModel.Tiles.SelectMany(candidate => candidate.Items).FirstOrDefault() is { } first)
         {
             if (viewModel.Tiles.FirstOrDefault(candidate => candidate.IsOwnFolder) is { RelativePath: { } key })
@@ -59,9 +59,9 @@ internal static class PreviewRenderer
         // The toast of a move, with its buttons; nothing is moved.
         if (options.PreviewNotice && viewModel.Tiles.FirstOrDefault(candidate => candidate.IsOwnFolder) is { } destination)
         {
-            viewModel.Tell(new ToastViewModel(ToastKind.Success, $"3 elementi spostati in «{destination.Title}».",
+            viewModel.Tell(new ToastViewModel(ToastKind.Success, $"3 items moved to “{destination.Title}”.",
                 notice: new StatusNotice(destination.FolderPath, []), undoStep: new CopyStep([])));
-            viewModel.Tell(ToastKind.Danger, "Impossibile aprire «Preventivo.pdf»", "Il file è usato da un altro processo.");
+            viewModel.Tell(ToastKind.Danger, "Couldn't open “Quote.pdf”", "The file is being used by another process.");
         }
 
         var view = new PanelView { DataContext = viewModel };
@@ -78,7 +78,7 @@ internal static class PreviewRenderer
         var settings = new AppSettings { SavePath = Path.Combine(Path.GetTempPath(), "inlay-preview-settings.json") };
         if (!welcome)
         {
-            settings.Archives.Add(Path.Combine(Path.GetPathRoot(root)!, "Archivio vecchio"));
+            settings.Archives.Add(Path.Combine(Path.GetPathRoot(root)!, "Old vault"));
             settings.UseArchive(root);
         }
         var page = section?.ToLowerInvariant() switch

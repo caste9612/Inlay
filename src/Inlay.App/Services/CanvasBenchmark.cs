@@ -19,12 +19,12 @@ internal static class CanvasBenchmark
 {
     // Each part of the path lasts this long.
     private const double PartSeconds = 2;
-    private static readonly string[] Parts = ["avvicinamento", "spostamento da vicino", "allontanamento", "zoom avanti e indietro"];
+    private static readonly string[] Parts = ["zooming in", "moving close up", "zooming out", "zooming in and out"];
 
     public static void Start(CommandLineOptions options, Action<int> done)
     {
-        var output = options.BenchmarkOutput ?? throw new ArgumentException("Manca il file dei risultati.");
-        var root = options.ArchiveRoot ?? throw new ArgumentException("--benchmark-canvas richiede anche --archive <cartella>.");
+        var output = options.BenchmarkOutput ?? throw new ArgumentException("The file for the results is missing.");
+        var root = options.ArchiveRoot ?? throw new ArgumentException("--benchmark-canvas also needs --archive <folder>.");
         var recent = RecentDestinations.Load(Path.Combine(Path.GetTempPath(), "inlay-benchmark-recenti.json"));
         var opening = Stopwatch.StartNew();
         var viewModel = new MainViewModel(root, live: false, recent: recent, readOnly: true) { IsCanvasShown = true };
@@ -32,7 +32,7 @@ internal static class CanvasBenchmark
         var area = SystemParameters.WorkArea;
         var window = new Window
         {
-            Title = "Inlay: prova della tela",
+            Title = "Inlay: mosaic benchmark",
             Content = view,
             WindowStyle = WindowStyle.ToolWindow,
             ShowInTaskbar = false,
@@ -127,43 +127,43 @@ internal static class CanvasBenchmark
             var text = new StringBuilder();
             var dpi = VisualTreeHelper.GetDpi(window);
             var pixels = new Size(_view.Width * dpi.DpiScaleX, _view.Height * dpi.DpiScaleY);
-            text.AppendLine(CultureInfo.InvariantCulture, $"Inlay: prova della tela, {DateTime.Now:dd/MM/yyyy HH:mm}");
+            text.AppendLine(CultureInfo.InvariantCulture, $"Inlay: mosaic benchmark, {DateTime.Now:dd/MM/yyyy HH:mm}");
             text.AppendLine(CultureInfo.InvariantCulture,
-                $"Tela {pixels.Width:N0} x {pixels.Height:N0} pixel, scala {dpi.DpiScaleX * 100:N0} %, livello della scheda grafica per WPF {RenderCapability.Tier >> 16}");
+                $"Mosaic {pixels.Width:N0} x {pixels.Height:N0} pixels, scale {dpi.DpiScaleX * 100:N0}%, WPF rendering tier {RenderCapability.Tier >> 16}");
             var zones = viewModel.Canvas.AllZones().Count();
             var tiles = viewModel.Canvas.AllTiles().ToList();
             text.AppendLine(CultureInfo.InvariantCulture,
-                $"Archivio {root}: {zones} zone, {tiles.Count} riquadri, {tiles.Sum(tile => tile.Count)} elementi");
-            text.AppendLine(CultureInfo.InvariantCulture, $"Apertura della tela, letta e disegnata: {_opened.TotalSeconds:N2} s");
+                $"Vault {root}: {zones} spaces, {tiles.Count} tiles, {tiles.Sum(tile => tile.Count)} items");
+            text.AppendLine(CultureInfo.InvariantCulture, $"Opening of the mosaic, read and drawn: {_opened.TotalSeconds:N2} s");
             for (var part = 0; part < Parts.Length; part++)
                 text.AppendLine(Line(Parts[part], _frames.Where(frame => frame.Part == part).Select(frame => frame.Milliseconds).ToList()));
-            text.AppendLine(Line("in tutto", _frames.Select(frame => frame.Milliseconds).ToList()));
-            text.AppendLine(CultureInfo.InvariantCulture, $"Righe ancora da creare alla fine: {view.CanvasSurface.SleepingCount} liste su {tiles.Count}");
+            text.AppendLine(Line("overall", _frames.Select(frame => frame.Milliseconds).ToList()));
+            text.AppendLine(CultureInfo.InvariantCulture, $"Rows still to create at the end: {view.CanvasSurface.SleepingCount} lists of {tiles.Count}");
             foreach (var slow in _slow)
                 text.AppendLine(slow);
             text.AppendLine(CultureInfo.InvariantCulture,
-                $"Memoria: {_memoryBefore / 1048576.0:N0} MB all'inizio, {Process.GetCurrentProcess().WorkingSet64 / 1048576.0:N0} MB alla fine");
+                $"Memory: {_memoryBefore / 1048576.0:N0} MB at the start, {Process.GetCurrentProcess().WorkingSet64 / 1048576.0:N0} MB at the end");
             File.WriteAllText(output, text.ToString());
             window.Close();
             viewModel.Dispose();
             done(0);
         }
 
-        /// <summary>"Fotogramma lento: 120 ms, allontanamento, zoom 64 %, da vicino a medio, 3 liste svegliate, raccolte 1/0/0".</summary>
+        /// <summary>"Slow frame: 120 ms, zooming out, zoom 64%, from near to middle, 3 lists woken, collections 1/0/0".</summary>
         private string SlowLine(int part, double milliseconds)
         {
             var level = viewModel.Canvas.Level;
             var collections = Collections();
-            var changes = level == _lastLevel ? $"livello {Name(level)}" : $"da {Name(_lastLevel)} a {Name(level)}";
+            var changes = level == _lastLevel ? $"level {Name(level)}" : $"from {Name(_lastLevel)} to {Name(level)}";
             return string.Create(CultureInfo.InvariantCulture,
-                $"Fotogramma lento: {milliseconds:N0} ms, {Parts[part]}, zoom {viewModel.Canvas.Camera.Zoom * 100:N0} %, {changes}, " +
-                $"{_lastSleeping - view.CanvasSurface.SleepingCount} liste svegliate, raccolte della memoria {collections[0] - _lastCollections[0]}/{collections[1] - _lastCollections[1]}/{collections[2] - _lastCollections[2]}");
+                $"Slow frame: {milliseconds:N0} ms, {Parts[part]}, zoom {viewModel.Canvas.Camera.Zoom * 100:N0}%, {changes}, " +
+                $"{_lastSleeping - view.CanvasSurface.SleepingCount} lists woken, collections {collections[0] - _lastCollections[0]}/{collections[1] - _lastCollections[1]}/{collections[2] - _lastCollections[2]}");
 
             static string Name(CanvasLevel level) => level switch
             {
-                CanvasLevel.Far => "lontano",
-                CanvasLevel.Middle => "medio",
-                _ => "vicino",
+                CanvasLevel.Far => "far",
+                CanvasLevel.Middle => "middle",
+                _ => "near",
             };
         }
 
@@ -176,16 +176,16 @@ internal static class CanvasBenchmark
 
         private static int[] Collections() => [GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2)];
 
-        /// <summary>"avvicinamento: 58 fotogrammi al secondo, metà entro 16,7 ms, il 95 % entro 18,2 ms, 0 oltre 33 ms".</summary>
+        /// <summary>"zooming in: 58 frames per second, half within 16.7 ms, 95% within 18.2 ms, 0 over 33 ms".</summary>
         private static string Line(string name, List<double> milliseconds)
         {
             if (milliseconds.Count == 0)
-                return $"{name}: nessun fotogramma";
+                return $"{name}: no frames";
             milliseconds.Sort();
             double At(double share) => milliseconds[Math.Min(milliseconds.Count - 1, (int)(share * milliseconds.Count))];
             var perSecond = 1000 / milliseconds.Average();
             return string.Create(CultureInfo.InvariantCulture,
-                $"{name}: {perSecond:N0} fotogrammi al secondo, metà entro {At(0.5):N1} ms, il 95 % entro {At(0.95):N1} ms, il peggiore {milliseconds[^1]:N1} ms, {milliseconds.Count(ms => ms > 33.4)} oltre 33 ms");
+                $"{name}: {perSecond:N0} frames per second, half within {At(0.5):N1} ms, 95% within {At(0.95):N1} ms, the worst {milliseconds[^1]:N1} ms, {milliseconds.Count(ms => ms > 33.4)} over 33 ms");
         }
     }
 }

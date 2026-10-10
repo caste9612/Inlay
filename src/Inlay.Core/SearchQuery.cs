@@ -1,8 +1,8 @@
 namespace Inlay.Core;
 
 /// <summary>
-/// A kind of item the search can be narrowed to: written "tipo:pdf" in the search box, or chosen among the filters above
-/// the results. The start of its name, or of another way to say it, is enough: "tipo:imm", "tipo:foto".
+/// A kind of item the search can be narrowed to: written "type:pdf" in the search box, or chosen among the filters above
+/// the results. The start of its name, or of another way to say it, is enough: "type:ima", "type:photos".
 /// </summary>
 public sealed class SearchKind
 {
@@ -16,37 +16,37 @@ public sealed class SearchKind
         _matches = matches;
     }
 
-    /// <summary>What follows "tipo:", as "pdf".</summary>
+    /// <summary>What follows "type:", as "pdf".</summary>
     public string Name { get; }
 
     /// <summary>As the filters above the results show it, as "PDF".</summary>
     public string Label { get; }
 
-    /// <summary>Other ways to write it, as "foto" for the images.</summary>
+    /// <summary>Other ways to write it, as "photos" for the images.</summary>
     public IReadOnlyList<string> Aliases { get; }
 
     /// <summary>In the order of the filters above the results: the most common first.</summary>
     public static IReadOnlyList<SearchKind> All { get; } =
     [
-        new("cartelle", "Cartelle", ["cartella"], (item, _) => item.IsFolder),
-        new("documenti", "Documenti", ["documento", "testi", "testo", "word"], Of(FileKind.Word, FileKind.Text)),
+        new("folders", "Folders", ["folder"], (item, _) => item.IsFolder),
+        new("documents", "Documents", ["document", "docs", "texts", "text", "word"], Of(FileKind.Word, FileKind.Text)),
         new("pdf", "PDF", [], Of(FileKind.Pdf)),
-        new("fogli", "Fogli di calcolo", ["foglio", "calcolo", "excel"], Of(FileKind.Spreadsheet)),
-        new("presentazioni", "Presentazioni", ["presentazione", "powerpoint"], Of(FileKind.Presentation)),
-        new("immagini", "Immagini", ["immagine", "foto"], Of(FileKind.Image)),
-        new("video", "Video", ["filmati"], Of(FileKind.Video)),
-        new("audio", "Audio", ["musica"], Of(FileKind.Audio)),
-        new("collegamenti", "Collegamenti", ["collegamento", "link", "programmi"], (item, _) => !item.IsFolder && ArchiveItem.IsShortcut(item.Name)),
-        new("compressi", "Compressi", ["zip"], Of(FileKind.Archive)),
-        new("posta", "Posta", ["mail", "email"], Of(FileKind.Mail)),
-        new("codice", "Codice", [], Of(FileKind.Code)),
-        new("3d", "Modelli 3D", ["modelli"], Of(FileKind.Model3D)),
+        new("spreadsheets", "Spreadsheets", ["spreadsheet", "sheets", "excel"], Of(FileKind.Spreadsheet)),
+        new("presentations", "Presentations", ["presentation", "slides", "powerpoint"], Of(FileKind.Presentation)),
+        new("images", "Images", ["image", "photos", "pictures"], Of(FileKind.Image)),
+        new("video", "Video", ["videos", "movies"], Of(FileKind.Video)),
+        new("audio", "Audio", ["music"], Of(FileKind.Audio)),
+        new("shortcuts", "Shortcuts", ["shortcut", "links", "programs"], (item, _) => !item.IsFolder && ArchiveItem.IsShortcut(item.Name)),
+        new("compressed", "Compressed", ["zip", "archives"], Of(FileKind.Archive)),
+        new("mail", "Mail", ["email"], Of(FileKind.Mail)),
+        new("code", "Code", [], Of(FileKind.Code)),
+        new("3d", "3D models", ["models"], Of(FileKind.Model3D)),
     ];
 
     /// <param name="kind">Its kind, for its icon: <see cref="FileKinds.Of"/>.</param>
     public bool Matches(ArchiveItem item, FileKind kind) => _matches(item, kind);
 
-    /// <summary>The kinds a value after "tipo:" stands for: those whose name, or another way to say it, starts with it.</summary>
+    /// <summary>The kinds a value after "type:" stands for: those whose name, or another way to say it, starts with it.</summary>
     public static IReadOnlyList<SearchKind> For(string value)
     {
         var key = SearchText.Normalize(value.Trim());
@@ -64,13 +64,13 @@ public sealed class SearchKind
 
 /// <summary>
 /// What is typed in the search box: words to find in the names or in the folders around them, and filters written
-/// "tipo:pdf" or "in:Lavoro", in quotes when the value has spaces: in:"Foto vacanze". Keys and values go without case or
+/// "type:pdf" or "in:Work", in quotes when the value has spaces: in:"Holiday photos". Keys and values go without case or
 /// accents, as the words. Of several filters of the same sort one is enough; the words, the kinds and the places must
 /// all hold.
 /// </summary>
 public sealed class SearchQuery
 {
-    public const string KindKey = "tipo";
+    public const string KindKey = "type";
     public const string PlaceKey = "in";
 
     private static readonly char[] PlaceSeparators = ['/', '\\', '›'];
@@ -92,13 +92,13 @@ public sealed class SearchQuery
 
     public IReadOnlyList<SearchKind> Kinds { get; }
 
-    /// <summary>What followed "tipo:" without being a kind: an extension, without its dot, as "dwg".</summary>
+    /// <summary>What followed "type:" without being a kind: an extension, without its dot, as "dwg".</summary>
     public IReadOnlyList<string> Extensions { get; }
 
-    /// <summary>What followed "in:", as written: "Lavoro", "Lavoro/Clienti".</summary>
+    /// <summary>What followed "in:", as written: "Work", "Work/Clients".</summary>
     public IReadOnlyList<string> Places { get; }
 
-    /// <summary>The places as the paths of the search have them: "lavoro\clienti".</summary>
+    /// <summary>The places as the paths of the search have them: "work\clients".</summary>
     public IReadOnlyList<string> PlaceKeys { get; }
 
     public bool HasFilters => Kinds.Count > 0 || Extensions.Count > 0 || PlaceKeys.Count > 0;
@@ -152,7 +152,7 @@ public sealed class SearchQuery
         var filtering = tokens.Where(token => token.Key == KindKey && SearchKind.For(token.Value).Contains(kind)).ToList();
         if (filtering.Count == 0)
             return With(text, tokens, $"{KindKey}:{kind.Name}");
-        // A value that stood for several kinds, as "tipo:p" while it is written, leaves the others written out.
+        // A value that stood for several kinds, as "type:p" while it is written, leaves the others written out.
         return Rebuilt(text, tokens, token => filtering.Contains(token)
             ? string.Join(' ', SearchKind.For(token.Value).Where(other => other != kind).Select(other => $"{KindKey}:{other.Name}"))
             : null);
@@ -160,7 +160,7 @@ public sealed class SearchQuery
 
     /// <summary>The text looking only in this place, or everywhere with null: the places written before go.</summary>
     /// <param name="place">
-    /// A folder, or a path of folders, as "Lavoro/Clienti"; starting with "/", from the root of the archive only, as the
+    /// A folder, or a path of folders, as "Work/Clients"; starting with "/", from the root of the archive only, as the
     /// topics chosen from the menu.
     /// </param>
     public static string WithPlace(string text, string? place)
@@ -170,10 +170,10 @@ public sealed class SearchQuery
         return place is null ? rest : With(rest, Tokens(rest), $"{PlaceKey}:{(place.Any(char.IsWhiteSpace) ? $"\"{place}\"" : place)}");
     }
 
-    /// <summary>Whether two places are the same, however written: "Lavoro/Clienti" and "lavoro › clienti", but not "/Lavoro".</summary>
+    /// <summary>Whether two places are the same, however written: "Work/Clients" and "work › clients", but not "/Work".</summary>
     public static bool SamePlace(string a, string b) => KeyOfPlace(a) == KeyOfPlace(b);
 
-    /// <summary>A place as the user reads it: "Lavoro › Clienti".</summary>
+    /// <summary>A place as the user reads it: "Work › Clients".</summary>
     public static string Display(string place) =>
         string.Join(ArchiveReader.PathSeparator, place.Split(PlaceSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
@@ -199,7 +199,7 @@ public sealed class SearchQuery
         return false;
     }
 
-    /// <summary>"lavoro\clienti" for "Lavoro › Clienti"; "\lavoro" for "/Lavoro", from the root; empty for no folder at all.</summary>
+    /// <summary>"work\clients" for "Work › Clients"; "\work" for "/Work", from the root; empty for no folder at all.</summary>
     private static string KeyOfPlace(string place)
     {
         var names = SearchText.Normalize(place).Split(PlaceSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -277,7 +277,7 @@ public sealed class SearchQuery
         return tokens;
     }
 
-    /// <summary>"tipo" or "in", however written; null for the rest, which makes a word.</summary>
+    /// <summary>"type" or "in", however written; null for the rest, which makes a word.</summary>
     private static string? KeyOf(string text) => SearchText.Normalize(text) switch
     {
         KindKey => KindKey,

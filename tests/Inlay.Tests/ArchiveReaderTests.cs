@@ -88,7 +88,7 @@ public sealed class ArchiveReaderTests : IDisposable
     }
 
     [Fact]
-    public void FoldersMarkedAsItems_AreRowsOfGenerale_BeforeItsFiles_NotTiles()
+    public void FoldersMarkedAsItems_AreRowsOfGeneral_BeforeItsFiles_NotTiles()
     {
         _archive.AddFile("Rossi/Note.md");
         _archive.AddFile("Rossi/Foto/mare.jpg");
@@ -99,13 +99,13 @@ public sealed class ArchiveReaderTests : IDisposable
         var reader = _archive.Reader(metadata);
         var board = reader.ReadBoard(Assert.Single(reader.ReadTopics()));
 
-        Assert.Equal(["Generale", "Documenti"], board.Tiles.Select(t => t.Title));
+        Assert.Equal(["General", "Documenti"], board.Tiles.Select(t => t.Title));
         Assert.Equal(["Foto", "Note.md"], board.Tiles[0].Items.Select(i => i.Name));
         Assert.True(board.Tiles[0].Items[0].IsFolder);
     }
 
     [Fact]
-    public void ARowOfGenerale_IsEnoughForGenerale()
+    public void ARowOfGeneral_IsEnoughForGeneral()
     {
         _archive.AddFile("Rossi/Foto/mare.jpg");
         var metadata = new ArchiveMetadata();
@@ -167,7 +167,7 @@ public sealed class ArchiveReaderTests : IDisposable
     }
 
     [Fact]
-    public void ATile_ShowsItsItemsInItsOrder_WithItsSize_AndGeneraleGoesByTheTopic()
+    public void ATile_ShowsItsItemsInItsOrder_WithItsSize_AndGeneralGoesByTheTopic()
     {
         _archive.AddFile("Rossi/a.txt", "aaa");
         _archive.AddFile("Rossi/b.txt", "b");

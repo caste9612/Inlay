@@ -70,7 +70,7 @@ public static class ArchiveFolders
     {
         folder = Normalize(folder);
         if (string.Equals(Path.GetPathRoot(folder)?.TrimEnd('\\'), folder.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
-            return "Un disco intero non può fare da archivio: crea una cartella dentro, per esempio «Archivio».";
+            return "A whole drive can't be a vault: create a folder in it, for example “Vault”.";
         foreach (var place in reserved)
         {
             var path = Normalize(place.Path);
@@ -83,9 +83,9 @@ public static class ArchiveFolders
             if (string.Equals(other, folder, StringComparison.OrdinalIgnoreCase))
                 continue;
             if (TransferRules.IsSameOrInside(folder, other))
-                return $"Questa cartella è dentro l'archivio «{Path.GetFileName(other)}»: un archivio non sta dentro un altro.";
+                return $"This folder is inside the vault “{Path.GetFileName(other)}”: a vault can't be inside another.";
             if (TransferRules.IsSameOrInside(other, folder))
-                return $"Questa cartella contiene l'archivio «{Path.GetFileName(other)}»: un archivio non ne contiene un altro.";
+                return $"This folder contains the vault “{Path.GetFileName(other)}”: a vault can't contain another.";
         }
         return null;
     }
@@ -109,7 +109,7 @@ public static class ArchiveFolders
     {
         var folder = Path.Combine(parent, name);
         if (Path.Exists(folder))
-            throw new IOException($"In «{parent}» c'è già «{name}».");
+            throw new IOException($"“{parent}” already has a “{name}”.");
         Adopt(folder);
         return folder;
     }

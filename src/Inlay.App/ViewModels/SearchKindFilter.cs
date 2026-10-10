@@ -3,7 +3,7 @@ using Inlay.Core;
 
 namespace Inlay.App.ViewModels;
 
-/// <summary>A kind the search can be narrowed to, as a filter above the results: a click adds or takes away "tipo:…".</summary>
+/// <summary>A kind the search can be narrowed to, as a filter above the results: a click adds or takes away "type:…".</summary>
 public sealed partial class SearchKindFilter(SearchKind kind) : ObservableObject
 {
     /// <summary>Written in the search box: the filter shows it.</summary>

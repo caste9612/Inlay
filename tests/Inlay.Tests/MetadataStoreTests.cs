@@ -69,7 +69,7 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void AFolderIsATopicOrARowOfGenerale_NeverBoth_AndEachMarkGoesOnlyByItsOwnName()
+    public void AFolderIsATopicOrARowOfGeneral_NeverBoth_AndEachMarkGoesOnlyByItsOwnName()
     {
         var metadata = new ArchiveMetadata();
 
@@ -89,7 +89,7 @@ public sealed class MetadataStoreTests : IDisposable
     }
 
     [Fact]
-    public void ARowOfGenerale_IsSavedAsAnItem()
+    public void ARowOfGeneral_IsSavedAsAnItem()
     {
         var metadata = new ArchiveMetadata();
         metadata.SetItem("Lavoro/Foto", true);

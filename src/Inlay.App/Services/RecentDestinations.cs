@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace Inlay.App.Services;
 
 /// <summary>
-/// Where files were sent last, by archive, newest first: the first choices «Sposta in…» offers. Kept on this PC, outside
+/// Where files were sent last, by archive, newest first: the first choices «Move to…» offers. Kept on this PC, outside
 /// the archive, so that sorting a file never makes the archive itself change.
 /// </summary>
 internal sealed class RecentDestinations

@@ -6,7 +6,7 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 
 1. **Il passo**, in `src/Inlay.Core/UndoHistory.cs`: un `sealed record XxxStep(…) : UndoStep` con tutto quello che serve per tornare indietro: i percorsi di prima e di dopo, i valori di prima, un `MetadataSnapshot` se delle cartelle escono dall'archivio.
 2. **L'operazione**, in `MainViewModel`:
-   - se tocca i file: `using var turn = await BeginFileWork("Faccio questo…", touches)`, con quello che l'operazione cambia (`FileTouches`, per sapere quali altre possono andare insieme), la shell con `RunShell(…)`, i metadati che seguono (`FollowFolder`, `ForgetFolder`), poi `Remember(step, turn)`, che mette il passo al posto dell'operazione nel registro, `Report(…)` per l'avviso con **Annulla** e **Mostra**, `SelectAfterReload(…)` e `ReloadUnlessEditing()`;
+   - se tocca i file: `using var turn = await BeginFileWork("Doing this…", touches)`, con quello che l'operazione cambia (`FileTouches`, per sapere quali altre possono andare insieme), la shell con `RunShell(…)`, i metadati che seguono (`FollowFolder`, `ForgetFolder`), poi `Remember(step, turn)`, che mette il passo al posto dell'operazione nel registro, `Report(…)` per l'avviso con **Undo** e **Show**, `SelectAfterReload(…)` e `ReloadUnlessEditing()`;
    - se tocca solo i metadati: `ChangeMetadata(m => m.SetXxx(…), new XxxStep(…))`.
 3. **L'annullamento**, sempre in `MainViewModel`:
    - un caso nello `switch` di `Undo()`: un passo che non è lì fa partire un'eccezione («Unknown undo step»);
@@ -38,7 +38,7 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 1. **In `PanelView.OnPreviewKeyDown`**, rispettando l'ordine che c'è: prima le domande aperte, poi il campo di una rinomina (che gestisce i suoi tasti), poi la ricerca.
 2. **In `Views/ShortcutHints.cs`** (`ShortcutGroup.For`), se è un tasto da sapere: compare sotto **?** nella barra di stato, attraverso `MainViewModel.Shortcuts`. E nel tooltip del pulsante che fa la stessa cosa, se c'è.
 3. **I documenti**: la parte **Uso** del README e la tabella dei tasti di PROGETTO.md §5.
-4. Attenzione ai tasti di GlazeWM: nel config attuale `Alt+Invio` è suo (PROGETTO.md §7).
+4. Attenzione ai tasti di GlazeWM: nel config attuale `Alt+Enter` è suo (PROGETTO.md §7).
 
 ## Un'impostazione
 
@@ -46,7 +46,7 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 2. **`ViewModels/SettingsViewModel.cs`**: un `[ObservableProperty]` e il suo `partial void OnXxxChanged`, che scrive nelle impostazioni e chiama `Save()`. Se l'app deve reagire, un metodo nuovo in `ISettingsHost`, da fare in `App`, nel `PreviewHost` di `PreviewRenderer` e nei finti dei test. Se deve saperlo il pannello, `App` lo passa a `MainViewModel` all'avvio e quando cambia, come fa con la scorciatoia (`Hotkey`).
 3. **`Views/SettingsView.xaml`**: nella pagina giusta. Per una pagina nuova: un valore in `SettingsSection`, la sua riga nella barra a sinistra, la pagina con `SectionVisibilityConverter` e il nome della sezione, e il nome in `PreviewRenderer` per `--section`.
 4. **I test** in `SettingsViewModelTests`, e l'anteprima con `--settings --section …`.
-5. **I documenti**: **Impostazioni** nel README, e le impostazioni del PC in PROGETTO.md §4.
+5. **I documenti**: **Settings** nel README, e le impostazioni del PC in PROGETTO.md §4.
 
 ## Un'opzione della riga di comando
 

@@ -2,7 +2,7 @@ using Inlay.Core;
 
 namespace Inlay.Tests;
 
-/// <summary>Where «Sposta in…» can send files: the topics, for their loose files, and the tiles, in the order of the sidebar.</summary>
+/// <summary>Where «Move to…» can send files: the topics, for their loose files, and the tiles, in the order of the sidebar.</summary>
 public sealed class DestinationsTests : IDisposable
 {
     private readonly TempArchive _archive = new();
@@ -32,7 +32,7 @@ public sealed class DestinationsTests : IDisposable
     }
 
     [Fact]
-    public void ARowOfGenerale_IsNoPlaceToSendThingsTo()
+    public void ARowOfGeneral_IsNoPlaceToSendThingsTo()
     {
         _archive.AddFolder("Lavoro/Foto");
         _archive.AddFolder("Lavoro/Interni");

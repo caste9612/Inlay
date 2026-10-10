@@ -288,7 +288,7 @@ public sealed class CanvasSurface : Border
             e.Handled = true;
             return;
         }
-        // With Maiusc the drag draws a rectangle that selects: the canvas stays still.
+        // With Shift the drag draws a rectangle that selects: the canvas stays still.
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
             return;
         if (StartPan(e.GetPosition(this)))

@@ -35,7 +35,7 @@ public sealed partial class ArchiveEntryViewModel(string path, bool isCurrent) :
     /// <summary>Its folder is gone: moved or renamed from Explorer, or on a drive not connected now.</summary>
     public bool IsMissing { get; } = !Directory.Exists(path);
 
-    public string Badge => IsCurrent ? "In uso" : IsMissing ? "Non trovato" : "";
+    public string Badge => IsCurrent ? "In use" : IsMissing ? "Not found" : "";
 }
 
 /// <summary>
@@ -60,7 +60,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NewPath))]
-    private string _newName = "Archivio";
+    private string _newName = "Vault";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NewPath))]
@@ -82,7 +82,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
 
     /// <summary>
     /// The shell is copying an archive to another drive. Cut halfway, the copy would leave half an archive there: the window
-    /// does not close meanwhile, and «Esci» waits for it.
+    /// does not close meanwhile, and «Quit» waits for it.
     /// </summary>
     [ObservableProperty]
     private bool _isCopying;
@@ -150,7 +150,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
     {
         if (IsCopying)
         {
-            Status = "La copia dell'archivio è in corso: chiudi la finestra quando è finita. Per fermarla, usa Annulla nella finestra di Windows.";
+            Status = "The vault is being copied: close the window when it is done. To stop the copy, use Cancel in the window of Windows.";
             return false;
         }
         CancelCheck();
@@ -158,7 +158,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>Done when no archive is being copied: «Esci» waits for it, so that a copy is not cut halfway.</summary>
+    /// <summary>Done when no archive is being copied: «Quit» waits for it, so that a copy is not cut halfway.</summary>
     public Task WhenCopied() => _copying?.Task ?? Task.CompletedTask;
 
     /// <summary>
@@ -176,7 +176,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
             {
                 var bytes = await Task.Run(() => FolderSize.Of([entry.Path], token), token);
                 entry.Details = _diskOf(entry.Path) is { } disk
-                    ? $"{ByteSize.Format(bytes)} · disco {disk.Name} {disk.Room}{(disk.IsLow ? ": poco spazio" : "")}"
+                    ? $"{ByteSize.Format(bytes)} · drive {disk.Name} {disk.Room}{(disk.IsLow ? ": low on space" : "")}"
                     : ByteSize.Format(bytes);
             }
         }
@@ -195,7 +195,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         if (ArchiveNames.Validate(name) is { } problem)
             return Fail(problem);
         if (!Directory.Exists(NewParent))
-            return Fail($"La cartella «{NewParent}» non c'è: scegline un'altra.");
+            return Fail($"The folder “{NewParent}” doesn't exist: choose another one.");
         var folder = Path.Combine(NewParent, name);
         if (Check(folder) is { } reason)
             return Fail(reason);
@@ -205,7 +205,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return Fail($"Impossibile creare l'archivio: {e.Message}");
+            return Fail($"Couldn't create the vault: {e.Message}");
         }
         Use(folder);
         return null;
@@ -222,7 +222,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return Fail($"Impossibile usare «{folder}» come archivio: {e.Message}");
+            return Fail($"Couldn't use “{folder}” as a vault: {e.Message}");
         }
         Use(folder);
         return null;
@@ -234,8 +234,8 @@ public sealed partial class ArchivesViewModel : ObservableObject
     {
         if (entry.IsMissing)
         {
-            Status = $"«{entry.Path}» non c'è più: forse è stato spostato o rinominato da Explorer. " +
-                     "Riaprilo con «Apri una cartella», oppure toglilo dall'elenco.";
+            Status = $"“{entry.Path}” is gone: it may have been moved or renamed in Explorer. " +
+                     "Open it again with “Open a folder as a vault”, or remove it from the list.";
             return;
         }
         Use(entry.Path);
@@ -249,7 +249,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         }
         catch (Exception e) when (e is Win32Exception or InvalidOperationException or IOException)
         {
-            Status = $"Impossibile aprire «{entry.Path}»: {e.Message}";
+            Status = $"Couldn't open “{entry.Path}”: {e.Message}";
         }
     }
 
@@ -258,13 +258,13 @@ public sealed partial class ArchivesViewModel : ObservableObject
     {
         if (entry.IsCurrent)
         {
-            Status = "È l'archivio in uso: per toglierlo dall'elenco, prima aprine un altro.";
+            Status = "It is the vault in use: to remove it from the list, open another one first.";
             return;
         }
         _settings.ForgetArchive(entry.Path);
         Save();
         Refresh();
-        Status = $"«{entry.Name}» non è più nell'elenco. La sua cartella è rimasta dov'era: {entry.Path}";
+        Status = $"“{entry.Name}” is no longer in the list. Its folder stayed where it was: {entry.Path}";
     }
 
     public void AskRename(ArchiveEntryViewModel entry)
@@ -274,8 +274,8 @@ public sealed partial class ArchivesViewModel : ObservableObject
             Open(entry);
             return;
         }
-        Ask(new PromptViewModel($"Rinominare «{entry.Name}»?", "Rinomina", name => Rename(entry, name), initialText: entry.Name,
-            message: "Cambia il nome della cartella dell'archivio, anche in Explorer."));
+        Ask(new PromptViewModel($"Rename “{entry.Name}”?", "Rename", name => Rename(entry, name), initialText: entry.Name,
+            message: "Changes the name of the folder of the vault, in Explorer too."));
     }
 
     /// <returns>Why the name cannot be used, or null when done.</returns>
@@ -289,8 +289,8 @@ public sealed partial class ArchivesViewModel : ObservableObject
         var parent = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(entry.Path))!;
         var target = Path.Combine(parent, newName);
         if (!newName.Equals(entry.Name, StringComparison.OrdinalIgnoreCase) && Path.Exists(target))
-            return $"In «{parent}» c'è già «{newName}».";
-        return Relocate(entry, target, $"L'archivio ora si chiama «{newName}».");
+            return $"“{parent}” already has a “{newName}”.";
+        return Relocate(entry, target, $"The vault is now called “{newName}”.");
     }
 
     /// <summary>After the user has chosen where: a question that says what is going to happen, then the move.</summary>
@@ -304,7 +304,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         var target = Path.Combine(destinationParent, entry.Name);
         if (Path.Exists(target))
         {
-            Status = $"In «{destinationParent}» c'è già «{entry.Name}»: scegli un'altra cartella, o rinomina prima l'archivio.";
+            Status = $"“{destinationParent}” already has a “{entry.Name}”: choose another folder, or rename the vault first.";
             return;
         }
         if (Check(target, except: entry.Path) is { } reason)
@@ -314,13 +314,13 @@ public sealed partial class ArchivesViewModel : ObservableObject
         }
         var sameDrive = _sameDrive(entry.Path, destinationParent);
         var message = sameDrive
-            ? "Sullo stesso disco è un attimo: cambia solo il percorso della cartella, i file restano dove sono sul disco."
-            : "È un altro disco: Inlay copia l'archivio, confronta la copia con l'originale file per file e passa alla copia " +
-              "solo se sono identiche. La cartella vecchia resta, finché non decidi tu.";
-        Ask(new PromptViewModel($"Spostare «{entry.Name}» in «{destinationParent}»?", "Sposta", confirmed =>
+            ? "On the same drive it takes a moment: only the path of the folder changes, the files stay where they are on the disk."
+            : "It is another drive: Inlay copies the vault, compares the copy with the original file by file and switches to the copy " +
+              "only if they are identical. The old folder stays until you decide.";
+        Ask(new PromptViewModel($"Move “{entry.Name}” to “{destinationParent}”?", "Move", confirmed =>
         {
             if (sameDrive)
-                return Relocate(entry, target, $"L'archivio ora è in «{destinationParent}».");
+                return Relocate(entry, target, $"The vault is now in “{destinationParent}”.");
             // It goes on in the background, with its progress in the window; this question closes.
             _ = MoveToOtherDriveAsync(entry, target);
             return null;
@@ -341,22 +341,22 @@ public sealed partial class ArchivesViewModel : ObservableObject
         try
         {
             // Better said now than a copy stopped halfway, with the archive in two pieces.
-            Status = $"Conto quanto occupa «{entry.Name}»…";
+            Status = $"Measuring “{entry.Name}”…";
             var destinationParent = Path.GetDirectoryName(target)!;
             var needed = await Task.Run(() => FolderSize.Of([entry.Path]));
             if (_diskOf(destinationParent) is { } disk && needed > disk.Free)
             {
-                Status = $"Su {disk.Name} non c'è abbastanza spazio per l'archivio: servono {ByteSize.Format(needed)} e ne restano " +
-                         $"{ByteSize.Format(disk.Free)}. L'archivio resta dov'era.";
+                Status = $"There isn't enough space on {disk.Name} for the vault: it needs {ByteSize.Format(needed)}, and " +
+                         $"{ByteSize.Format(disk.Free)} is left. The vault stays where it was.";
                 return;
             }
-            Status = $"Copia di «{entry.Name}» in corso…";
+            Status = $"Copying “{entry.Name}”…";
             if (!await CopyAsync(entry.Path, destinationParent) || !Directory.Exists(target))
             {
-                Status = "La copia non è stata completata: l'archivio resta dov'era.";
+                Status = "The copy wasn't completed: the vault stays where it was.";
                 return;
             }
-            Status = "Controllo della copia, file per file…";
+            Status = "Checking the copy, file by file…";
             _checking = new CancellationTokenSource();
             var token = _checking.Token;
             IsChecking = true;
@@ -364,8 +364,8 @@ public sealed partial class ArchivesViewModel : ObservableObject
             var differences = await Task.Run(() => CopyCheck.Differences(entry.Path, target, progress, token), token);
             if (differences.Count > 0)
             {
-                Status = $"La copia non è uguale all'originale: {differences.Count} file diversi, per esempio «{differences[0]}». " +
-                         $"L'archivio resta in «{entry.Path}»; la copia è in «{target}».";
+                Status = $"The copy isn't the same as the original: {differences.Count} different files, for example “{differences[0]}”. " +
+                         $"The vault stays in “{entry.Path}”; the copy is in “{target}”.";
                 return;
             }
             var wasCurrent = entry.IsCurrent;
@@ -374,20 +374,20 @@ public sealed partial class ArchivesViewModel : ObservableObject
             if (wasCurrent)
                 _host.Use(target);
             Refresh();
-            Status = $"L'archivio ora è in «{Path.GetDirectoryName(target)}». La copia è identica all'originale.";
-            Ask(new PromptViewModel("Spostare la cartella vecchia nel Cestino?", "Sposta nel Cestino",
-                _ => ShellFileOperations.Recycle([entry.Path], OwnerWindow) ? null : "Lo spostamento nel Cestino non è riuscito.",
-                message: $"Inlay ora usa «{target}», controllata file per file. La cartella vecchia, «{entry.Path}», " +
-                         "se la tieni resta come copia in più.",
+            Status = $"The vault is now in “{Path.GetDirectoryName(target)}”. The copy is identical to the original.";
+            Ask(new PromptViewModel("Move the old folder to the Recycle Bin?", "Move to Recycle Bin",
+                _ => ShellFileOperations.Recycle([entry.Path], OwnerWindow) ? null : "Moving to the Recycle Bin didn't work.",
+                message: $"Inlay now uses “{target}”, checked file by file. The old folder, “{entry.Path}”, " +
+                         "stays as an extra copy if you keep it.",
                 isDanger: true));
         }
         catch (OperationCanceledException)
         {
-            Status = $"Controllo interrotto: l'archivio resta in «{entry.Path}»; la copia è in «{target}».";
+            Status = $"Check stopped: the vault stays in “{entry.Path}”; the copy is in “{target}”.";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Status = $"Il controllo della copia non è riuscito: {e.Message} L'archivio resta in «{entry.Path}».";
+            Status = $"The check of the copy didn't work: {e.Message} The vault stays in “{entry.Path}”.";
         }
         finally
         {
@@ -435,7 +435,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         {
             if (wasCurrent)
                 _host.Use(entry.Path);
-            return $"Impossibile spostare «{entry.Name}»: forse un suo file è aperto in un altro programma. ({e.Message})";
+            return $"Couldn't move “{entry.Name}”: one of its files may be open in another program. ({e.Message})";
         }
         _settings.ReplaceArchive(entry.Path, target);
         Save();
@@ -452,7 +452,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         Save();
         _host.Use(folder);
         Refresh();
-        Status = $"Ora usi «{Path.GetFileName(folder)}».";
+        Status = $"Now using “{Path.GetFileName(folder)}”.";
         ArchiveOpened?.Invoke(this, EventArgs.Empty);
     }
 
@@ -484,7 +484,7 @@ public sealed partial class ArchivesViewModel : ObservableObject
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Write($"Could not save the settings: {e.Message}");
-            Status = $"Impossibile salvare le impostazioni: {e.Message}";
+            Status = $"Couldn't save the settings: {e.Message}";
         }
     }
 

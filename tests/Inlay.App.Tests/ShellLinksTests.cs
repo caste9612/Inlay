@@ -49,7 +49,7 @@ public sealed class ShellLinksTests : IDisposable
 
         Assert.Equal(folder, Path.GetDirectoryName(link));
         Assert.EndsWith($"({drive[0]}).lnk", Path.GetFileName(link));
-        Assert.Equal("commesse su server", ShellLinks.NameFor(@"\\server\commesse\"));
+        Assert.Equal("commesse on server", ShellLinks.NameFor(@"\\server\commesse\"));
     });
 
     [Fact]

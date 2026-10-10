@@ -8,7 +8,7 @@ internal static class Commands
     public const string Hide = "hide";
     public const string Exit = "exit";
 
-    /// <summary>Files to send into the archive, from «Invia a Inlay» in Explorer: the panel opens asking where.</summary>
+    /// <summary>Files to send into the archive, from «Send to › Inlay» in Explorer: the panel opens asking where.</summary>
     public const string Sort = "sort";
 }
 
@@ -17,14 +17,14 @@ internal static class Commands
 /// <param name="PreviewLinkPrompt">Diagnostics: draw the panel asking for a new shortcut, with a name it cannot use.</param>
 /// <param name="PreviewSettings">Diagnostics: draw the window of the settings; with <paramref name="PreviewWelcome"/>, as the first time.</param>
 /// <param name="PreviewPicker">Diagnostics: draw the panel asking where the first item of the board goes.</param>
-/// <param name="PreviewNotice">Diagnostics: draw the toasts as after a move, with «Annulla» and «Mostra», and after an error.</param>
+/// <param name="PreviewNotice">Diagnostics: draw the toasts as after a move, with «Undo» and «Show», and after an error.</param>
 /// <param name="PreviewSection">Diagnostics: the page of the settings to draw: archives, hotkey or windows.</param>
 internal sealed record CommandLineOptions(
     string? Command, string? ArchiveRoot, string? PreviewOutput, string? PreviewTopic, string? PreviewQuery, bool PreviewPrompt,
     bool PreviewLinkPrompt, bool PreviewSettings = false, bool PreviewWelcome = false,
     bool PreviewPicker = false, bool PreviewNotice = false, string? PreviewSection = null)
 {
-    /// <summary>The files handed over by «Invia a Inlay» in Explorer: everything after --sort.</summary>
+    /// <summary>The files handed over by «Send to › Inlay» in Explorer: everything after --sort.</summary>
     public IReadOnlyList<string> SortPaths { get; init; } = [];
 
     /// <summary>Diagnostics: draw the canvas instead of the board, shown whole unless <see cref="PreviewZoom"/> says how close.</summary>

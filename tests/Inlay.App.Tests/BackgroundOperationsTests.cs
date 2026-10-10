@@ -51,7 +51,7 @@ public sealed class BackgroundOperationsTests : IDisposable
         Assert.False(move.IsCompleted);
         Assert.False(undo.IsCompleted);
         Assert.True(viewModel.IsBusy);
-        Assert.StartsWith("Sposto 2 elementi", viewModel.Status);
+        Assert.StartsWith("Moving 2 items", viewModel.Status);
         // Meanwhile the window gets its messages.
         var heard = await Dispatcher.CurrentDispatcher.InvokeAsync(() => viewModel.IsBusy);
         Assert.True(heard);
@@ -63,7 +63,7 @@ public sealed class BackgroundOperationsTests : IDisposable
         Assert.True(File.Exists(Path.Combine(documents, "a.txt")));
         Assert.True(File.Exists(Path.Combine(documents, "b.txt")));
         Assert.Empty(Directory.GetFileSystemEntries(archive));
-        Assert.StartsWith("Spostamento annullato", viewModel.Status);
+        Assert.StartsWith("Move undone", viewModel.Status);
         Assert.False(viewModel.IsBusy);
         Assert.Equal([true, false], busy);
         Assert.False(viewModel.CanUndo);
@@ -107,8 +107,8 @@ public sealed class BackgroundOperationsTests : IDisposable
 
         // The first two touch other files: they are with the shell at the same time.
         Assert.Equal(2, shell.Count);
-        Assert.Equal("Sposto «b.txt» in «Casa»… · un'altra in corso · 1 in attesa", viewModel.Activity);
-        Assert.Equal(["Sposto «a.txt» in «Archivio»…", "Sposto «b.txt» in «Casa»…", "In attesa: Sposto «a.txt» in «Casa»…"],
+        Assert.Equal("Moving “b.txt” to “Casa”… · 1 more running · 1 waiting", viewModel.Activity);
+        Assert.Equal(["Moving “a.txt” to “Archivio”…", "Moving “b.txt” to “Casa”…", "Waiting: Moving “a.txt” to “Casa”…"],
             viewModel.ActivityDetails.Split(Environment.NewLine));
 
         shell.Release(0);
@@ -117,7 +117,7 @@ public sealed class BackgroundOperationsTests : IDisposable
         shell.Release(1);
         await second;
         await shell.WaitFor(3);
-        Assert.Equal("Sposto «a.txt» in «Casa»…", viewModel.Activity);
+        Assert.Equal("Moving “a.txt” to “Casa”…", viewModel.Activity);
         shell.Release(2);
         await third;
         await viewModel.WhenIdle();
@@ -143,13 +143,13 @@ public sealed class BackgroundOperationsTests : IDisposable
         var after = viewModel.Transfer([Path.Combine(documents, "b.txt")], casa, TransferKind.Move);
 
         Assert.Equal(1, shell.Count);
-        Assert.Equal("Sposto «a.txt» in «Archivio»… · 2 in attesa", viewModel.Activity);
+        Assert.Equal("Moving “a.txt” to “Archivio”… · 2 waiting", viewModel.Activity);
 
         shell.Release(0);
         await move;
         // Ctrl+Z puts the file back through the shell too, while the move asked after it still waits.
         await shell.WaitFor(2);
-        Assert.Equal("Rimetto «a.txt» dov'era… · 1 in attesa", viewModel.Activity);
+        Assert.Equal("Putting “a.txt” back… · 1 waiting", viewModel.Activity);
         shell.Release(1);
         await undo;
         await shell.WaitFor(3);
@@ -159,7 +159,7 @@ public sealed class BackgroundOperationsTests : IDisposable
         Assert.True(File.Exists(Path.Combine(documents, "a.txt")));
         Assert.False(File.Exists(Path.Combine(archive, "a.txt")));
         Assert.True(File.Exists(Path.Combine(casa, "b.txt")));
-        Assert.Equal("Annulla lo spostamento", viewModel.UndoLabel);
+        Assert.Equal("Undo move", viewModel.UndoLabel);
     });
 
     [Fact]
@@ -179,7 +179,7 @@ public sealed class BackgroundOperationsTests : IDisposable
         await shell.WaitFor(2);
         shell.Release(1);
         await move;
-        Assert.Equal("Annulla lo spostamento", viewModel.UndoLabel);
+        Assert.Equal("Undo move", viewModel.UndoLabel);
 
         // Ctrl+Z while the copy still runs: it waits for it, and then takes back the move all the same.
         var undo = viewModel.Undo();
@@ -192,7 +192,7 @@ public sealed class BackgroundOperationsTests : IDisposable
         Assert.True(File.Exists(Path.Combine(documents, "b.txt")));
         Assert.False(File.Exists(Path.Combine(casa, "b.txt")));
         Assert.True(File.Exists(Path.Combine(archive, "a.txt")));
-        Assert.Equal("Annulla la copia", viewModel.UndoLabel);
+        Assert.Equal("Undo copy", viewModel.UndoLabel);
     });
 
     [Fact]
@@ -217,8 +217,8 @@ public sealed class BackgroundOperationsTests : IDisposable
 
             Assert.Equal(1, shell.Count);
             var toast = Assert.Single(viewModel.Toasts);
-            Assert.Equal("Su Z: non c'è abbastanza spazio", toast.Title);
-            Assert.StartsWith("Servono 64,0 KB e, tolto quello che serve alle copie in corso, ne restano 36,0 KB.", toast.Body);
+            Assert.Equal("Not enough space on Z:", toast.Title);
+            Assert.StartsWith("The files need 64.0 KB, and once the copies under way are counted 36.0 KB is left.", toast.Body);
             shell.Release(0);
             await first;
             Assert.True(File.Exists(Path.Combine(archive, "uno.bin")));

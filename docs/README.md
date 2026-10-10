@@ -2,7 +2,7 @@
 
 Questi documenti spiegano com'è fatto il codice di Inlay e come ci si lavora. Cosa fa Inlay e come si usa è nel [README](../README.md); perché esiste, le sue regole e dove sta andando sono in [PROGETTO.md](../PROGETTO.md); cosa porta ogni versione è in [novita/](../novita).
 
-Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2, poi controllati contro il codice e aggiornati con le correzioni e le novità di quei giorni, uscite con la 0.3.3 ([PROGETTO.md §10](../PROGETTO.md#10-prossimi-passi)).
+Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2, poi controllati contro il codice e aggiornati con le correzioni e le novità di quei giorni, uscite con la 0.3.3, e con l'interfaccia in inglese della 0.3.4 ([PROGETTO.md §10](../PROGETTO.md#10-prossimi-passi)).
 
 ## Da dove cominciare
 
@@ -36,34 +36,34 @@ dotnet run --project src/Inlay.App -- --archive D:\ArchivioDemo
 
 ## Glossario
 
-L'interfaccia e i documenti parlano italiano, il codice inglese. Le parole sono sempre le stesse:
+Il codice e, dalla 0.3.4, l'interfaccia parlano inglese, i documenti italiano. L'interfaccia ha parole sue, legate all'intarsio, diverse da quelle del codice, che sono di prima. Le parole sono sempre le stesse:
 
-| Nell'interfaccia | Nel codice | Cos'è |
-|---|---|---|
-| archivio | archive, `Root` | la cartella che Inlay gestisce, segnata dalla cartella nascosta `.inlay` |
-| argomento | `Topic`, `TopicViewModel` | una cartella nella barra laterale: quelle della radice, e quelle segnate `"kind": "topic"` |
-| sotto-argomento | `Topic.Children` | un argomento dentro un altro |
-| riquadro | `Tile`, `TileViewModel` | una sottocartella di un argomento, sulla sua bacheca |
-| «Generale» | `Tile.IsGeneral` | il riquadro con i file sciolti dell'argomento e le cartelle che ci stanno come righe |
-| riga di «Generale» | `"kind": "item"`, `IsItem`, `CanBecomeTile` | una cartella di un argomento mostrata in «Generale» invece che come riquadro, come una lasciata sull'argomento |
-| elemento | `ArchiveItem`, `ItemViewModel` | un file, una cartella o un collegamento dentro un riquadro |
-| bacheca | `Board`, `MainViewModel.Tiles` | i riquadri di un argomento |
-| tela | canvas, `CanvasViewModel`, `CanvasSurface` | tutto l'archivio su una superficie da zoomare |
-| zona | zone, `ZoneViewModel` | un argomento sulla tela |
-| livello (lontano, medio, vicino) | `CanvasLevel` (`Far`, `Middle`, `Near`) | cosa mostra la tela secondo lo zoom |
-| file sciolti nella radice | `ReadRootFiles`, `RootFilesText` | i file lasciati nella cartella dell'archivio, fuori da ogni argomento: li conta la barra di stato |
-| metadati | `ArchiveMetadata`, `FolderMetadata`, `archive.json` | quello che le cartelle non sanno dire: argomenti, ordine, colori, misure |
-| chiave | relative key | il percorso di una cartella relativo alla radice, con le `/` |
-| collegamento | shortcut, `.lnk`, `.url`, `TransferKind.Link` | quello con cui entra ciò che ha già un suo posto |
-| «Sposta in…» | `DestinationPickerViewModel`, `Destination` | l'elenco dei posti dove mandare la selezione |
-| filtri della ricerca | `SearchQuery`, `SearchKind`, `tipo:`, `in:` | il tipo degli elementi e il posto dove cercarli, come pulsanti sopra i risultati o scritti nella casella |
-| «Invia a Inlay» | `SendToShortcut`, `--sort` | la voce nel menu «Invia a» di Explorer |
-| annullare, passo | undo, `UndoStep`, `UndoHistory` | `Ctrl+Z` e quello che ricorda |
-| avviso | toast, `ToastViewModel` | il messaggio in basso a destra |
-| domanda | prompt, `PromptViewModel` | una conferma o un nome da scrivere, sopra la bacheca |
-| ordinamento, ordine a mano | `ItemSort`, `ByHand`, `Items` | come sono messi gli elementi di un riquadro |
-| misura | `TileSize` | le colonne e le righe di un riquadro |
-| promuovere, riportare a riquadro | promote, demote | far diventare una sottocartella un argomento, e viceversa |
-| scorciatoia | hotkey, `GlobalHotkey` | il tasto che porta Inlay davanti (`Alt+E`) |
-| area di notifica, tray | `TrayIcon` | dove Inlay aspetta |
-| finestra, pannello | `PanelWindow`, `PanelView` | la finestra di Inlay; «pannello» è il nome di quando compariva e spariva |
+| Nei documenti | Nell'interfaccia | Nel codice | Cos'è |
+|---|---|---|---|
+| archivio | vault, **Vaults** | archive, `Root` | la cartella che Inlay gestisce, segnata dalla cartella nascosta `.inlay` |
+| argomento | space, **Spaces** | `Topic`, `TopicViewModel` | una cartella nella barra laterale: quelle della radice, e quelle segnate `"kind": "topic"` |
+| sotto-argomento | space inside, **New space inside** | `Topic.Children` | un argomento dentro un altro |
+| riquadro | tile | `Tile`, `TileViewModel` | una sottocartella di un argomento, sulla sua bacheca |
+| «General» | General | `Tile.IsGeneral`, `GeneralTileTitle` | il riquadro con i file sciolti dell'argomento e le cartelle che ci stanno come righe |
+| riga di «General» | **Fold into General**, **Unfold as tile** | `"kind": "item"`, `IsItem`, `CanBecomeTile` | una cartella di un argomento mostrata in «General» invece che come riquadro, come una lasciata sull'argomento |
+| elemento | item | `ArchiveItem`, `ItemViewModel` | un file, una cartella o un collegamento dentro un riquadro |
+| bacheca | **Board** | `Board`, `MainViewModel.Tiles` | i riquadri di un argomento |
+| tela, mosaico | **Mosaic** | canvas, `CanvasViewModel`, `CanvasSurface` | tutto l'archivio su una superficie da zoomare; fino alla 0.3.3 «Tela» anche nell'interfaccia |
+| zona | space | zone, `ZoneViewModel` | un argomento sulla tela |
+| livello (lontano, medio, vicino) | | `CanvasLevel` (`Far`, `Middle`, `Near`) | cosa mostra la tela secondo lo zoom |
+| file sciolti nella radice | loose files in the vault | `ReadRootFiles`, `RootFilesText` | i file lasciati nella cartella dell'archivio, fuori da ogni argomento: li conta la barra di stato |
+| metadati | | `ArchiveMetadata`, `FolderMetadata`, `archive.json` | quello che le cartelle non sanno dire: argomenti, ordine, colori, misure |
+| chiave | | relative key | il percorso di una cartella relativo alla radice, con le `/` |
+| collegamento | shortcut | shortcut, `.lnk`, `.url`, `TransferKind.Link` | quello con cui entra ciò che ha già un suo posto |
+| «Move to…» | **Move to…** | `DestinationPickerViewModel`, `Destination` | l'elenco dei posti dove mandare la selezione; fino alla 0.3.3 «Sposta in…» |
+| filtri della ricerca | `type:`, `in:` | `SearchQuery`, `SearchKind` | il tipo degli elementi e il posto dove cercarli, come pulsanti sopra i risultati o scritti nella casella; fino alla 0.3.3 `tipo:` |
+| «Invia a Inlay» | **Invia a** › **Inlay**, il menu di Windows | `SendToShortcut`, `--sort` | la voce nel menu «Invia a» di Explorer |
+| annullare, passo | **Undo** | undo, `UndoStep`, `UndoHistory` | `Ctrl+Z` e quello che ricorda |
+| avviso | | toast, `ToastViewModel` | il messaggio in basso a destra |
+| domanda | | prompt, `PromptViewModel` | una conferma o un nome da scrivere, sopra la bacheca |
+| ordinamento, ordine a mano | **Sort by**, by hand | `ItemSort`, `ByHand`, `Items` | come sono messi gli elementi di un riquadro |
+| misura | size, **Auto size** | `TileSize` | le colonne e le righe di un riquadro |
+| promuovere, riportare a riquadro | **Make it a space**, **Back to tile** | promote, demote | far diventare una sottocartella un argomento, e viceversa |
+| scorciatoia | hotkey, **Hotkey** | hotkey, `GlobalHotkey` | il tasto che porta Inlay davanti (`Alt+E`) |
+| area di notifica, tray | tray | `TrayIcon` | dove Inlay aspetta |
+| finestra, pannello | | `PanelWindow`, `PanelView` | la finestra di Inlay; «pannello» è il nome di quando compariva e spariva |

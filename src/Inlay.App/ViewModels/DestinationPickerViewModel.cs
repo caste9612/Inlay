@@ -6,7 +6,7 @@ using Inlay.Core;
 namespace Inlay.App.ViewModels;
 
 /// <summary>
-/// «Sposta in…»: the places where the chosen files can go, the recent ones first, narrowed down by what is typed.
+/// «Move to…»: the places where the chosen files can go, the recent ones first, narrowed down by what is typed.
 /// Asked inside the panel, like a confirmation, because the panel hides as soon as it loses the focus.
 /// </summary>
 public sealed partial class DestinationPickerViewModel : ObservableObject
@@ -57,8 +57,8 @@ public sealed partial class DestinationPickerViewModel : ObservableObject
 
     /// <summary>Why the list is empty.</summary>
     public string EmptyMessage => _all.Count == 0
-        ? "Non c'è nessun posto dove mandarli: crea prima un riquadro o un argomento."
-        : "Nessun riquadro o argomento con questo nome.";
+        ? "There is nowhere to send them: create a tile or a space first."
+        : "No tile or space with this name.";
 
     partial void OnFilterChanged(string value) => Refresh();
 
@@ -111,9 +111,9 @@ public sealed class DestinationViewModel(Destination destination, int order, int
 
     public string Title => Destination.Title;
 
-    /// <summary>"Lavoro › Clienti" for a tile; "Argomento", or "Argomento in Lavoro", for a topic, which gets the files among its loose ones.</summary>
+    /// <summary>"Work › Clients" for a tile; "Space", or "Space in Work", for a topic, which gets the files among its loose ones.</summary>
     public string Detail => Destination.IsTopic
-        ? Destination.Location.Length == 0 ? "Argomento" : $"Argomento in {Destination.Location}"
+        ? Destination.Location.Length == 0 ? "Space" : $"Space in {Destination.Location}"
         : Destination.Location;
 
     public bool IsTopic => Destination.IsTopic;

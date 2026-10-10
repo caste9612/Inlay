@@ -27,13 +27,13 @@ Lavora su archivi veri in cartelle temporanee: `TempArchive` crea una cartella i
 
 | File | Cosa controlla |
 |---|---|
-| `ArchiveReaderTests`, `DestinationsTests` | argomenti, riquadri, «Generale» e le sue righe, ordini, file sciolti nella radice, destinazioni di «Sposta in…» |
+| `ArchiveReaderTests`, `DestinationsTests` | argomenti, riquadri, «General» e le sue righe, ordini, file sciolti nella radice, destinazioni di «Move to…» |
 | `MetadataStoreTests`, `MetadataSnapshotTests` | lettura e scrittura di `archive.json`, chiavi senza maiuscole, voci che seguono le cartelle, copie per annullare, file rovinato messo da parte |
 | `TransferRulesTests` | spostare, copiare o collegare, con i tasti e senza |
 | `FileTouchesTests` | quali operazioni sui file vanno insieme e quali aspettano quella prima |
 | `UndoHistoryTests` | il registro in ordine di richiesta, e i passi trovati per identità |
 | `RecycleBinTests` | il ripristino dal Cestino, su un Cestino finto costruito dal test con i suoi `$I…` e `$R…` |
-| `SearchIndexTests`, `SearchTextTests`, `SearchQueryTests` | ricerca, punteggi, accenti, nascosti esclusi; i filtri `tipo:` e `in:`, scritti e tolti, e i più recenti con i soli filtri |
+| `SearchIndexTests`, `SearchTextTests`, `SearchQueryTests` | ricerca, punteggi, accenti, nascosti esclusi; i filtri `type:` e `in:`, scritti e tolti, e i più recenti con i soli filtri |
 | `ArchiveFoldersTests` | quali cartelle possono essere archivi, anche quelli fatti con Quiver, che passano da `.quiver` a `.inlay`, e il confronto byte per byte di una copia |
 | `ItemArrangementTests`, `NaturalStringComparerTests` | ordinamenti e ordine a mano |
 | `TopicColorTests`, `TileColorTests` | i colori di argomenti e riquadri |
@@ -46,14 +46,14 @@ Vede le parti interne dell'app (`InternalsVisibleTo`). Gli archivi stanno in `%T
 
 | File | Cosa controlla |
 |---|---|
-| `MainViewModelTests` (66 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, cartelle che diventano righe di «Generale» e tornano riquadri, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Sposta in…», i filtri della ricerca, avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
+| `MainViewModelTests` (66 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, cartelle che diventano righe di «General» e tornano riquadri, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Move to…», i filtri della ricerca, avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
 | `BackgroundOperationsTests` | le operazioni sui thread a parte, con un dispatcher come quello della finestra: la finestra resta libera; con le operazioni trattenute (`ShellRunner`), quelle su file diversi vanno insieme, le altre aspettano, `Ctrl+Z` aspetta tutte, e due copie che insieme non ci starebbero non partono insieme |
 | `ShellThreadTests` | ogni operazione su un thread STA suo, insieme alle altre |
 | `UpdaterTests` | un Inlay non installato non cerca aggiornamenti; l'aggiornamento vero si prova solo con un Inlay installato e una release nuova |
 | `ShellFileOperationsTests` | spostare, copiare e rinominare con la shell vera, senza finestre (`interactive: false`); eliminare no, perché riempirebbe il Cestino |
 | `ShellLinksTests`, `VirtualFilesTests`, `ShellIconsTests` | collegamenti, allegati e link trascinati, icone di Windows |
 | `ArchivesViewModelTests`, `SettingsViewModelTests`, `AppSettingsTests` | archivi (creare, aprire, rinominare, spostare anche su un altro disco, con la copia su un thread a parte), impostazioni, salvataggio, file delle impostazioni rovinato messo da parte, impostazioni di Quiver prese al primo avvio |
-| `DestinationPickerViewModelTests`, `RecentDestinationsTests` | l'elenco di «Sposta in…» e le destinazioni recenti |
+| `DestinationPickerViewModelTests`, `RecentDestinationsTests` | l'elenco di «Move to…» e le destinazioni recenti |
 | `CanvasCameraTests`, `CanvasWakeTests`, `TileListTests` | la camera, e le righe dei riquadri che arrivano quando servono |
 | `CoverPanelTests` | la scheda vista da lontano non fa mai crescere il riquadro che copre |
 | `PanelMenusTests` | costruisce tutti i menu del tasto destro con i loro dati e ne prepara le voci, senza mostrarli: un binding che non si può attaccare fa fallire il test (è nato dall'errore della 0.3.0) |
@@ -98,7 +98,7 @@ Lo script si rifiuta di usare una cartella che esiste già. Crea gli argomenti L
 
 ### Misurare la tela
 
-`Inlay.exe --archive <cartella> --benchmark-canvas <file.txt>` (`Services/CanvasBenchmark.cs`) apre la tela dell'archivio in una finestra grande come l'area di lavoro, senza prendere il focus (è una finestra di strumenti, che GlazeWM lascia stare), e la muove per otto secondi sempre sullo stesso percorso: avvicinamento, spostamento da vicino, allontanamento, zoom avanti e indietro, due secondi ciascuno. Nel file scrive:
+`Inlay.exe --archive <cartella> --benchmark-canvas <file.txt>` (`Services/CanvasBenchmark.cs`) apre la tela dell'archivio in una finestra grande come l'area di lavoro, senza prendere il focus (è una finestra di strumenti, che GlazeWM lascia stare), e la muove per otto secondi sempre sullo stesso percorso: avvicinamento, spostamento da vicino, allontanamento, zoom avanti e indietro, due secondi ciascuno. Nel file scrive, in inglese come l'interfaccia:
 
 - la misura della tela in pixel, la scala e il livello di accelerazione grafica di WPF;
 - quante zone, riquadri ed elementi ha l'archivio, e quanto ci ha messo la tela ad aprirsi;

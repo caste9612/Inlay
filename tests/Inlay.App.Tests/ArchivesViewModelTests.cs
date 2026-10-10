@@ -89,7 +89,7 @@ public sealed class ArchivesViewModelTests : IDisposable
 
         viewModel.AskMove(viewModel.Archives.Single(), destination);
         Assert.NotNull(viewModel.Prompt);
-        Assert.Contains("un attimo", viewModel.Prompt.Message);
+        Assert.Contains("takes a moment", viewModel.Prompt.Message);
         viewModel.Prompt.ConfirmCommand.Execute(null);
 
         Assert.False(Directory.Exists(archive));
@@ -107,7 +107,7 @@ public sealed class ArchivesViewModelTests : IDisposable
         var viewModel = Open(settings, sameDrive: (_, _) => false);
         var entry = viewModel.Archives.Single();
         viewModel.AskMove(entry, destination);
-        Assert.Contains("file per file", viewModel.Prompt!.Message);
+        Assert.Contains("file by file", viewModel.Prompt!.Message);
 
         await viewModel.MoveToOtherDriveAsync(entry, Path.Combine(destination, "Archivio"));
 
@@ -118,7 +118,7 @@ public sealed class ArchivesViewModelTests : IDisposable
         Assert.Equal([copy], AppSettings.Load(settings.SavePath).Archives);
         // The old folder is still there: the question about the Recycle Bin waits for an answer.
         Assert.True(Directory.Exists(archive));
-        Assert.Equal("Spostare la cartella vecchia nel Cestino?", viewModel.Prompt?.Title);
+        Assert.Equal("Move the old folder to the Recycle Bin?", viewModel.Prompt?.Title);
         Assert.Equal(1, viewModel.Progress);
     });
 
@@ -159,7 +159,7 @@ public sealed class ArchivesViewModelTests : IDisposable
 
         await viewModel.MoveToOtherDriveAsync(viewModel.Archives.Single(), Path.Combine(destination, "Archivio"));
 
-        Assert.StartsWith("Su Z: non c'è abbastanza spazio per l'archivio", viewModel.Status);
+        Assert.StartsWith("There isn't enough space on Z: for the vault", viewModel.Status);
         Assert.False(Directory.Exists(Path.Combine(destination, "Archivio")));
         Assert.Equal([archive], settings.Archives);
         Assert.False(viewModel.IsBusy);
@@ -177,7 +177,7 @@ public sealed class ArchivesViewModelTests : IDisposable
             await Task.Delay(20);
 
         // Everything in it counts, its hidden metadata included.
-        Assert.Matches(@"^\d+ byte · disco E: 120 GB liberi su 465 GB$", entry.Details);
+        Assert.Matches(@"^\d+ bytes · drive E: 120 GB free of 465 GB$", entry.Details);
     });
 
     [Fact]
@@ -205,7 +205,7 @@ public sealed class ArchivesViewModelTests : IDisposable
 
         var viewModel = Open(settings);
 
-        Assert.Equal("Non trovato", viewModel.Archives.Single(entry => entry.Name == "Sparito").Badge);
+        Assert.Equal("Not found", viewModel.Archives.Single(entry => entry.Name == "Sparito").Badge);
     });
 
     private ArchivesViewModel Open(AppSettings settings, Func<string, string, bool>? sameDrive = null, Func<string, DiskSpace?>? diskOf = null) =>

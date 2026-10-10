@@ -22,7 +22,7 @@
         <Setter Property="Cursor" Value="SizeNWSE" />
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Foreground" Value="{DynamicResource Brace.TextTertiary}" />
-        <Setter Property="ToolTip" Value="Trascina per cambiare la misura del riquadro; doppio clic per quella automatica" />
+        <Setter Property="ToolTip" Value="Drag to resize the tile; double-click for the automatic size" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
@@ -99,10 +99,10 @@
         <Setter Property="Margin" Value="0,0,6,0" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
-        <Setter Property="ToolTip" Value="Sempre in primo piano: disattivato" />
+        <Setter Property="ToolTip" Value="Always on top: off" />
         <Style.Triggers>
             <Trigger Property="IsChecked" Value="True">
-                <Setter Property="ToolTip" Value="Sempre in primo piano: attivo" />
+                <Setter Property="ToolTip" Value="Always on top: on" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -143,10 +143,10 @@
 
     <!-- Maximize, or restore when the window is maximized. -->
     <Style x:Key="Inlay.MaximizeButton" TargetType="Button" BasedOn="{StaticResource Inlay.TitleBarButton}">
-        <Setter Property="ToolTip" Value="Ingrandisci" />
+        <Setter Property="ToolTip" Value="Maximize" />
         <Style.Triggers>
             <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" Value="Maximized">
-                <Setter Property="ToolTip" Value="Ripristina" />
+                <Setter Property="ToolTip" Value="Restore" />
             </DataTrigger>
         </Style.Triggers>
     </Style>

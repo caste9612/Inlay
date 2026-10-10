@@ -4,7 +4,7 @@ using Inlay.App.Interop;
 namespace Inlay.App.Services;
 
 /// <summary>
-/// «Inlay» in the «Invia a» menu of Explorer: a shortcut in the SendTo folder of the user, which starts Inlay with the
+/// «Inlay» in the «Send to» menu of Explorer: a shortcut in the SendTo folder of the user, which starts Inlay with the
 /// chosen files so that they can be sent into the archive. Made when Inlay is installed, removed with it.
 /// </summary>
 internal static class SendToShortcut
@@ -39,12 +39,12 @@ internal static class SendToShortcut
         try
         {
             Directory.CreateDirectory(folder);
-            ShellLinks.Create(LinkPath(folder), Program, Arguments, "Manda i file nell'archivio di Inlay");
+            ShellLinks.Create(LinkPath(folder), Program, Arguments, "Send the files to the vault of Inlay");
             return true;
         }
         catch (Exception e) when (e is COMException or IOException or UnauthorizedAccessException)
         {
-            Log.Write($"Could not add Inlay to the «Invia a» menu: {e.Message}");
+            Log.Write($"Could not add Inlay to the Send to menu: {e.Message}");
             return false;
         }
     }
@@ -59,7 +59,7 @@ internal static class SendToShortcut
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Log.Write($"Could not remove Inlay from the «Invia a» menu: {e.Message}");
+            Log.Write($"Could not remove Inlay from the Send to menu: {e.Message}");
             return false;
         }
     }

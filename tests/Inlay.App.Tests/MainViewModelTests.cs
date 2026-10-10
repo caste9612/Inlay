@@ -149,13 +149,13 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.NewFolder(viewModel.Tiles.Single(tile => tile.Title == "Documenti"));
 
         var folder = Assert.Single(viewModel.SelectedItems());
-        Assert.Equal("Nuova cartella", folder.Name);
+        Assert.Equal("New folder", folder.Name);
         Assert.True(folder.IsEditing);
-        Assert.True(Directory.Exists(Path.Combine(_root, "Lavoro", "Documenti", "Nuova cartella")));
+        Assert.True(Directory.Exists(Path.Combine(_root, "Lavoro", "Documenti", "New folder")));
     });
 
     [Fact]
-    public void ANewFolderInGenerale_IsOneOfItsRows_WithItsNameReadyToType() => StaThread.Run(() =>
+    public void ANewFolderInGeneral_IsOneOfItsRows_WithItsNameReadyToType() => StaThread.Run(() =>
     {
         AddFile("Lavoro/Promemoria.txt");
         using var viewModel = Open();
@@ -163,15 +163,15 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.NewFolder(viewModel.Tiles.Single(tile => tile.IsGeneral));
 
         var folder = Assert.Single(viewModel.SelectedItems());
-        Assert.Equal("Nuova cartella", folder.Name);
+        Assert.Equal("New folder", folder.Name);
         Assert.True(folder.IsEditing);
         Assert.True(folder.CanBecomeTile);
-        Assert.Equal(["Nuova cartella", "Promemoria.txt"], viewModel.Tiles.Single(tile => tile.IsGeneral).Items.Select(item => item.Name));
-        Assert.Equal(["Generale", "Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["New folder", "Promemoria.txt"], viewModel.Tiles.Single(tile => tile.IsGeneral).Items.Select(item => item.Name));
+        Assert.Equal(["General", "Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
     });
 
     [Fact]
-    public void OnTheCanvas_ANewFolderInGenerale_IsARowOfItsZone_NotOfTheTopicInTheSidebar() => StaThread.Run(() =>
+    public void OnTheCanvas_ANewFolderInGeneral_IsARowOfItsZone_NotOfTheTopicInTheSidebar() => StaThread.Run(() =>
     {
         AddFile("Personale/Promemoria.txt");
         using var viewModel = Open();
@@ -181,19 +181,19 @@ public sealed class MainViewModelTests : IDisposable
 
         viewModel.NewFolder(general);
 
-        var created = Path.Combine(_root, "Personale", "Nuova cartella");
+        var created = Path.Combine(_root, "Personale", "New folder");
         Assert.True(Directory.Exists(created));
-        Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuova cartella")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "New folder")));
         var row = Assert.Single(viewModel.SelectedItems());
         Assert.Equal(created, row.Item.FullPath);
         Assert.True(row.IsEditing);
         Assert.Contains(row, viewModel.Canvas.Zones.Single(zone => zone.Key == "Personale").Tiles.Single(tile => tile.IsGeneral).Items);
     });
 
-    // ---- Folders arriving in a topic: rows of «Generale» ----
+    // ---- Folders arriving in a topic: rows of «General» ----
 
     [Fact]
-    public void AFolderDroppedOnATopic_IsARowOfItsGenerale_AndCtrlZPutsItBackATile() => StaThread.Run(() =>
+    public void AFolderDroppedOnATopic_IsARowOfItsGeneral_AndCtrlZPutsItBackATile() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         var documents = Path.Combine(_root, "Lavoro", "Documenti");
@@ -201,7 +201,7 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.Transfer([documents], Path.Combine(_root, "Personale"), TransferKind.Move);
 
         viewModel.SelectTopicByPath("Personale");
-        Assert.Equal(["Generale", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["General", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
         var row = Assert.Single(viewModel.Tiles[0].Items);
         Assert.Equal("Documenti", row.Name);
         Assert.True(row.CanBecomeTile);
@@ -229,7 +229,7 @@ public sealed class MainViewModelTests : IDisposable
             viewModel.Transfer([photos], Path.Combine(_root, "Lavoro"), TransferKind.Copy);
 
             Assert.Equal(["Foto"], viewModel.Tiles.Single(tile => tile.IsGeneral).Items.Select(item => item.Name));
-            Assert.Equal(["Generale", "Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
+            Assert.Equal(["General", "Archivio", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
             Assert.True(MetadataStore.Load(_root).IsItem("Lavoro/Foto"));
         }
         finally
@@ -253,7 +253,7 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
-    public void ARowPromotedToTile_AndATilePutInGenerale_TurnBackWithCtrlZ() => StaThread.Run(() =>
+    public void ARowPromotedToTile_AndATilePutInGeneral_TurnBackWithCtrlZ() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         viewModel.Transfer([Path.Combine(_root, "Lavoro", "Archivio")], Path.Combine(_root, "Personale"), TransferKind.Move);
@@ -262,19 +262,19 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.PromoteItem(Assert.Single(viewModel.Tiles.Single(tile => tile.IsGeneral).Items));
 
         Assert.Equal(["Archivio", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
-        Assert.Equal("Annulla «Promuovi a riquadro»", viewModel.UndoLabel);
+        Assert.Equal("Undo “Unfold as tile”", viewModel.UndoLabel);
 
         viewModel.DemoteTile(viewModel.Tiles.Single(tile => tile.Title == "Casa"));
 
-        Assert.Equal(["Generale", "Archivio"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["General", "Archivio"], viewModel.Tiles.Select(tile => tile.Title));
         Assert.Equal(["Casa"], viewModel.SelectedItems().Select(item => item.Name));
-        Assert.Equal("Annulla «Metti in Generale»", viewModel.UndoLabel);
+        Assert.Equal("Undo “Fold into General”", viewModel.UndoLabel);
 
         viewModel.Undo();
         Assert.Equal(["Archivio", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
 
         viewModel.Undo();
-        Assert.Equal(["Generale", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["General", "Casa"], viewModel.Tiles.Select(tile => tile.Title));
         Assert.Equal(["Archivio"], viewModel.Tiles[0].Items.Select(item => item.Name));
     });
 
@@ -328,7 +328,7 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.True(Directory.Exists(archive));
         Assert.True(MetadataStore.Load(_root).IsItem("Lavoro/Archivio"));
-        Assert.Equal(["Generale", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
+        Assert.Equal(["General", "Documenti"], viewModel.Tiles.Select(tile => tile.Title));
     });
 
     [Fact]
@@ -340,8 +340,8 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.NewTile();
 
         var tile = Assert.Single(viewModel.Tiles, tile => tile.IsEditing);
-        Assert.Equal("Nuovo riquadro (2)", tile.Title);
-        Assert.Equal("Nuovo riquadro (2)", tile.EditName);
+        Assert.Equal("New tile (2)", tile.Title);
+        Assert.Equal("New tile (2)", tile.EditName);
     });
 
     [Fact]
@@ -368,7 +368,7 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.BeginRename(result);
 
         Assert.False(result.IsEditing);
-        Assert.Contains("ricerca", viewModel.Status);
+        Assert.Contains("Search results", viewModel.Status);
     });
 
     [Fact]
@@ -384,26 +384,26 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.Query = "offerta";
         viewModel.ToggleKindFilter(pdf.Kind);
 
-        Assert.Equal("offerta tipo:pdf", viewModel.Query);
+        Assert.Equal("offerta type:pdf", viewModel.Query);
         Assert.True(pdf.IsChecked);
         Assert.Equal(2, viewModel.Results.Count);
 
         viewModel.SetSearchPlace(lavoro);
 
-        Assert.Equal("offerta tipo:pdf in:/Lavoro", viewModel.Query);
+        Assert.Equal("offerta type:pdf in:/Lavoro", viewModel.Query);
         Assert.Equal("In: Lavoro", viewModel.PlaceFilterText);
         Assert.True(viewModel.IsSearchPlace(lavoro));
         Assert.Equal(Path.Combine(_root, "Lavoro", "Documenti", "offerta.pdf"), Assert.Single(viewModel.Results).Item.FullPath);
 
         // Filters alone list what passes them; written by hand, they show the same.
-        viewModel.Query = "tipo:pdf";
-        Assert.Equal("2 elementi, i più recenti prima", viewModel.ResultsHeader);
-        Assert.Equal("Ovunque", viewModel.PlaceFilterText);
+        viewModel.Query = "type:pdf";
+        Assert.Equal("2 items, most recent first", viewModel.ResultsHeader);
+        Assert.Equal("Everywhere", viewModel.PlaceFilterText);
         Assert.False(viewModel.HasPlaceFilter);
-        viewModel.Query = "tipo:foto";
+        viewModel.Query = "type:photos";
         Assert.False(pdf.IsChecked);
-        Assert.True(viewModel.KindFilters.Single(filter => filter.Kind.Name == "immagini").IsChecked);
-        Assert.Equal("Niente passa questi filtri.", viewModel.ResultsHeader);
+        Assert.True(viewModel.KindFilters.Single(filter => filter.Kind.Name == "images").IsChecked);
+        Assert.Equal("Nothing matches these filters.", viewModel.ResultsHeader);
     });
 
     // ---- Ctrl+Z ----
@@ -415,7 +415,7 @@ public sealed class MainViewModelTests : IDisposable
         var documents = Path.Combine(_root, "Lavoro", "Documenti");
         var archive = Path.Combine(_root, "Lavoro", "Archivio");
         viewModel.Transfer([Path.Combine(documents, "a.txt"), Path.Combine(documents, "b.txt")], archive, TransferKind.Move);
-        Assert.Equal("Annulla lo spostamento", viewModel.UndoLabel);
+        Assert.Equal("Undo move", viewModel.UndoLabel);
 
         viewModel.Undo();
 
@@ -456,7 +456,7 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.BeginRename(item);
         item.EditName = "c.txt";
         viewModel.CommitRename(item);
-        Assert.Equal("Annulla la rinomina", viewModel.UndoLabel);
+        Assert.Equal("Undo rename", viewModel.UndoLabel);
 
         viewModel.Undo();
 
@@ -474,11 +474,11 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.CommitRename(tile);
 
         viewModel.Undo();
-        Assert.True(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuovo riquadro")));
+        Assert.True(Directory.Exists(Path.Combine(_root, "Lavoro", "New tile")));
         Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "Fornitori")));
 
         viewModel.Undo();
-        Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuovo riquadro")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Lavoro", "New tile")));
     });
 
     [Fact]
@@ -486,13 +486,13 @@ public sealed class MainViewModelTests : IDisposable
     {
         using var viewModel = Open();
         viewModel.NewFolder(viewModel.Tiles.Single(tile => tile.Title == "Documenti"));
-        var folder = Path.Combine(_root, "Lavoro", "Documenti", "Nuova cartella");
+        var folder = Path.Combine(_root, "Lavoro", "Documenti", "New folder");
         File.WriteAllText(Path.Combine(folder, "importante.txt"), "");
 
         viewModel.Undo();
 
         Assert.True(File.Exists(Path.Combine(folder, "importante.txt")));
-        Assert.Contains("non è più vuota", viewModel.Status);
+        Assert.Contains("no longer empty", viewModel.Status);
     });
 
     [Fact]
@@ -559,7 +559,7 @@ public sealed class MainViewModelTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(archive, "z.txt")));
         Assert.False(File.Exists(Path.Combine(documents, "a.txt")));
-        Assert.Contains("non si può annullare", viewModel.Status);
+        Assert.Contains("can't be undone", viewModel.Status);
     });
 
     [Fact]
@@ -569,7 +569,7 @@ public sealed class MainViewModelTests : IDisposable
 
         viewModel.Undo();
 
-        Assert.Equal("Non c'è niente da annullare.", viewModel.Status);
+        Assert.Equal("There is nothing to undo.", viewModel.Status);
     });
 
     [Fact]
@@ -598,7 +598,7 @@ public sealed class MainViewModelTests : IDisposable
         var link = Assert.Single(Assert.IsType<LinkStep>(viewModel.LastUndoStep).Links);
         Assert.Equal(Path.Combine(_root, "Lavoro", "Archivio", "bollette.csv.lnk"), link);
         Assert.Equal(["bollette.csv"], viewModel.SelectedItems().Select(item => item.Name));
-        Assert.Equal("Annulla il collegamento", viewModel.UndoLabel);
+        Assert.Equal("Undo shortcut", viewModel.UndoLabel);
     });
 
     [Fact]
@@ -617,7 +617,7 @@ public sealed class MainViewModelTests : IDisposable
         var item = Assert.Single(viewModel.SelectedItems());
         Assert.True(item.IsEditing);
         Assert.Equal("rossi.it", item.EditName);
-        Assert.Equal("Annulla il collegamento", viewModel.UndoLabel);
+        Assert.Equal("Undo shortcut", viewModel.UndoLabel);
     });
 
     [Fact]
@@ -631,7 +631,7 @@ public sealed class MainViewModelTests : IDisposable
         prompt.ConfirmCommand.Execute(null);
 
         Assert.Same(prompt, viewModel.Prompt);
-        Assert.Contains("Non trovo", prompt.Error);
+        Assert.Contains("can't be found", prompt.Error);
         Assert.Empty(Directory.GetFileSystemEntries(Path.Combine(_root, "Lavoro", "Archivio")));
     });
 
@@ -647,11 +647,11 @@ public sealed class MainViewModelTests : IDisposable
         AddFile("scansione.pdf");
         using var reopened = Open();
 
-        Assert.Equal("2 file sciolti nella radice", reopened.RootFilesText);
+        Assert.Equal("2 loose files in the vault", reopened.RootFilesText);
         // They are in no topic, but the search finds them.
         reopened.BuildIndexNow();
         reopened.Query = "scaricato";
-        Assert.Equal("Archivio", Assert.Single(reopened.Results).Location);
+        Assert.Equal("Vault", Assert.Single(reopened.Results).Location);
     });
 
     [Fact]
@@ -661,11 +661,11 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.Undo();
 
         viewModel.BuildIndexNow();
-        Assert.Equal("Non c'è niente da annullare.", Assert.Single(viewModel.Toasts).Title);
+        Assert.Equal("There is nothing to undo.", Assert.Single(viewModel.Toasts).Title);
         // Lavoro/Documenti/a.txt, b.txt and Lavoro/Archivio, with their folders and topics.
-        Assert.Matches(@"^\d+ elementi · \d+(,\d+)? (byte|KB)$", viewModel.ArchiveSummary);
+        Assert.Matches(@"^\d+ items · \d+(\.\d+)? (bytes|KB)$", viewModel.ArchiveSummary);
         Assert.NotNull(viewModel.DiskText);
-        Assert.Contains("liberi su", viewModel.DiskToolTip);
+        Assert.Contains("free of", viewModel.DiskToolTip);
 
         viewModel.OnPanelShowing();
         Assert.Empty(viewModel.Toasts);
@@ -682,7 +682,7 @@ public sealed class MainViewModelTests : IDisposable
         Item(viewModel, "b.txt").IsSelected = true;
         viewModel.UpdateSelectionSummary();
 
-        Assert.StartsWith("2 elementi selezionati · 2,", viewModel.SelectionSummary);
+        Assert.StartsWith("2 items selected · 2.", viewModel.SelectionSummary);
         Assert.EndsWith(" KB", viewModel.SelectionSummary);
 
         Item(viewModel, "a.txt").IsSelected = false;
@@ -703,7 +703,7 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.UpdateReady = "0.4.0";
         viewModel.RestartToUpdate();
 
-        Assert.Equal("Inlay 0.4.0 è pronto", viewModel.UpdateText);
+        Assert.Equal("Inlay 0.4.0 is ready", viewModel.UpdateText);
         Assert.Equal(1, asked);
     });
 
@@ -743,11 +743,11 @@ public sealed class MainViewModelTests : IDisposable
             Assert.False(File.Exists(Path.Combine(destination, Path.GetFileName(big))));
             var toast = Assert.Single(viewModel.Toasts);
             Assert.Equal(ToastKind.Warning, toast.Kind);
-            Assert.Equal("Su Z: non c'è abbastanza spazio", toast.Title);
-            Assert.StartsWith("Servono 64,0 KB e ne restano 10,0 KB.", toast.Body);
+            Assert.Equal("Not enough space on Z:", toast.Title);
+            Assert.StartsWith("The files need 64.0 KB, and 10.0 KB is left.", toast.Body);
             Assert.False(toast.ClosesByItself);
             Assert.True(viewModel.IsDiskLow);
-            Assert.StartsWith("Poco spazio: ", viewModel.DiskText);
+            Assert.StartsWith("Low on space: ", viewModel.DiskText);
         }
         finally
         {
@@ -797,13 +797,13 @@ public sealed class MainViewModelTests : IDisposable
         var item = Item(viewModel, "a.txt");
         var dates = 0;
         item.PropertyChanged += (_, e) => dates += e.PropertyName == nameof(ItemViewModel.DateText) ? 1 : 0;
-        Assert.Equal("oggi", item.DateText);
+        Assert.Equal("today", item.DateText);
         File.SetLastWriteTime(Path.Combine(_root, "Lavoro", "Documenti", "a.txt"), DateTime.Now.AddDays(-1));
 
         viewModel.OnPanelShowing();
 
         Assert.Same(item, Item(viewModel, "a.txt"));
-        Assert.Equal("ieri", item.DateText);
+        Assert.Equal("yesterday", item.DateText);
         Assert.Equal(1, dates);
     });
 
@@ -833,7 +833,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal([personale, lavoro], viewModel.Topics);
         using (var reopened = Open())
             Assert.Equal(["Personale", "Lavoro"], reopened.Topics.Select(topic => topic.Name));
-        Assert.Equal("Annulla lo spostamento dell'argomento", viewModel.UndoLabel);
+        Assert.Equal("Undo space move", viewModel.UndoLabel);
 
         viewModel.Undo();
 
@@ -877,7 +877,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.False(MainViewModel.CanGoUnder(lavoro, inside));
         viewModel.MoveTopic(lavoro, parent: inside, before: null);
 
-        Assert.True(Directory.Exists(Path.Combine(_root, "Lavoro", "Nuovo argomento")));
+        Assert.True(Directory.Exists(Path.Combine(_root, "Lavoro", "New space")));
         Assert.Same(lavoro, viewModel.Topics.Single(topic => topic.Name == "Lavoro"));
     });
 
@@ -896,7 +896,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal(15, tile.Rows);
         Assert.Equal(double.PositiveInfinity, tile.ListMaxHeight);
         Assert.Equal(new TileSize(2, 15), MetadataStore.Load(_root).SizeOf("Lavoro/Documenti"));
-        Assert.Equal("Annulla il ridimensionamento", viewModel.UndoLabel);
+        Assert.Equal("Undo resize", viewModel.UndoLabel);
 
         viewModel.Undo();
 
@@ -920,7 +920,7 @@ public sealed class MainViewModelTests : IDisposable
 
         viewModel.SetSortDirection(tile, descending: false);
         Assert.Equal(["a.txt", "b.txt"], tile.Items.Select(item => item.Name));
-        Assert.Equal("Annulla l'ordinamento", viewModel.UndoLabel);
+        Assert.Equal("Undo sort", viewModel.UndoLabel);
 
         viewModel.Undo();
         Assert.Equal(["b.txt", "a.txt"], tile.Items.Select(item => item.Name));
@@ -950,13 +950,13 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Null(viewModel.CommitRename(renamed));
         Assert.Equal(["c.txt", "z.txt", "b.txt", "0.txt"], tile.Items.Select(item => item.Name));
 
-        // «Ordina per» takes the place of the order given by hand.
+        // «Sort by» takes the place of the order given by hand.
         viewModel.SortTile(tile, SortKey.Name);
         Assert.Equal(["0.txt", "b.txt", "c.txt", "z.txt"], tile.Items.Select(item => item.Name));
         Assert.False(tile.ByHand);
     });
 
-    // ---- La tela ----
+    // ---- The canvas ----
 
     [Fact]
     public void TheCanvas_HasAZoneForEachTopic_AndTopicsInsideTheirTopic() => StaThread.Run(() =>
@@ -974,7 +974,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal(["Documenti"], lavoro.Tiles.Select(tile => tile.Title));
         Assert.Equal(["Lavoro/Archivio"], lavoro.Children.Select(zone => zone.Key));
         // Archivio, now a topic, is a zone inside and no longer a tile.
-        Assert.Equal("1 riquadro · 2 elementi", lavoro.Summary);
+        Assert.Equal("1 tile · 2 items", lavoro.Summary);
         Assert.Equal(["Casa"], viewModel.Canvas.Zones[1].Tiles.Select(tile => tile.Title));
     });
 
@@ -1012,7 +1012,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Same(casa, personale.Tiles.Single());
         Assert.Equal(["a.txt", "bollette.csv"], casa.Items.Select(item => item.Name));
         Assert.Equal(["a.txt"], viewModel.SelectedItems().Select(item => item.Name));
-        Assert.Equal("1 riquadro · 2 elementi", personale.Summary);
+        Assert.Equal("1 tile · 2 items", personale.Summary);
     });
 
     [Fact]
@@ -1033,10 +1033,10 @@ public sealed class MainViewModelTests : IDisposable
     private static ItemViewModel CanvasItem(MainViewModel viewModel, string name) =>
         viewModel.Canvas.AllTiles().SelectMany(tile => tile.Items).Single(item => item.Name == name);
 
-    // ---- «Sposta in…» ----
+    // ---- «Move to…» ----
 
     [Fact]
-    public void SpostaIn_OffersTilesAndTopics_ExceptWhereTheItemsAre_RecentFirst() => StaThread.Run(() =>
+    public void MoveTo_OffersTilesAndTopics_ExceptWhereTheItemsAre_RecentFirst() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         _recent.Remember(_root, "Personale/Casa");
@@ -1045,8 +1045,8 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.AskDestination([item.Item.FullPath]);
 
         var picker = Assert.IsType<DestinationPickerViewModel>(viewModel.Picker);
-        Assert.Equal("Sposta «a.txt» in…", picker.Title);
-        Assert.Equal("Sposta", picker.ConfirmLabel);
+        Assert.Equal("Move “a.txt” to…", picker.Title);
+        Assert.Equal("Move", picker.ConfirmLabel);
         // Not Documenti, where a.txt already is; Casa first, as the place used last.
         Assert.Equal(["Casa", "Lavoro", "Archivio", "Personale"], picker.Candidates.Select(candidate => candidate.Title));
         Assert.True(picker.Candidates[0].IsRecent);
@@ -1057,7 +1057,7 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
-    public void SpostaIn_MovesTheFiles_RemembersThePlace_AndOffersUndoAndShow() => StaThread.Run(() =>
+    public void MoveTo_MovesTheFiles_RemembersThePlace_AndOffersUndoAndShow() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         var source = Path.Combine(_root, "Lavoro", "Documenti", "a.txt");
@@ -1072,7 +1072,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.True(File.Exists(moved));
         Assert.False(File.Exists(source));
         Assert.Equal(["Personale/Casa"], _recent.For(_root));
-        Assert.Equal("«a.txt» spostato in «Casa».", viewModel.Status);
+        Assert.Equal("“a.txt” moved to “Casa”.", viewModel.Status);
         var toast = Assert.Single(viewModel.Toasts);
         Assert.Equal(ToastKind.Success, toast.Kind);
         Assert.True(toast.CanUndo);
@@ -1088,12 +1088,12 @@ public sealed class MainViewModelTests : IDisposable
         Assert.True(File.Exists(source));
         // Undone: its toast goes, and the one of the undo takes its place, with nothing more to take back.
         var undone = Assert.Single(viewModel.Toasts);
-        Assert.StartsWith("Spostamento annullato", undone.Title);
+        Assert.StartsWith("Move undone", undone.Title);
         Assert.False(undone.HasActions);
     });
 
     [Fact]
-    public void SpostaIn_LinksWhatHasAPlaceOfItsOwn() => StaThread.Run(() =>
+    public void MoveTo_LinksWhatHasAPlaceOfItsOwn() => StaThread.Run(() =>
     {
         var program = Path.Combine(Path.GetTempPath(), "inlay-app-tests", Guid.NewGuid().ToString("N") + ".exe");
         File.WriteAllText(program, "");
@@ -1102,8 +1102,8 @@ public sealed class MainViewModelTests : IDisposable
             using var viewModel = Open();
             viewModel.AskDestination([program]);
             var picker = viewModel.Picker!;
-            Assert.StartsWith("Crea un collegamento a", picker.Title);
-            Assert.Equal("Collega", picker.ConfirmLabel);
+            Assert.StartsWith("Create a shortcut to", picker.Title);
+            Assert.Equal("Create shortcut", picker.ConfirmLabel);
             picker.Filter = "archivio";
 
             picker.ConfirmCommand.Execute(null);
@@ -1111,7 +1111,7 @@ public sealed class MainViewModelTests : IDisposable
             Assert.True(File.Exists(program));
             var link = Assert.Single(Assert.IsType<LinkStep>(viewModel.LastUndoStep).Links);
             Assert.Equal(Path.Combine(_root, "Lavoro", "Archivio"), Path.GetDirectoryName(link));
-            Assert.StartsWith("Collegamento «", viewModel.Status);
+            Assert.StartsWith("Shortcut “", viewModel.Status);
             Assert.True(Assert.Single(viewModel.Toasts).CanShow);
         }
         finally
@@ -1132,14 +1132,14 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal("#FFA133", tile.Color);
         Assert.True(tile.HasColor);
         Assert.Equal("#FFA133", MetadataStore.Load(_root).ColorOf("Lavoro/Documenti"));
-        Assert.Equal("Annulla il colore", viewModel.UndoLabel);
+        Assert.Equal("Undo color", viewModel.UndoLabel);
 
         viewModel.Undo();
 
         Assert.Null(tile.Color);
         Assert.False(tile.HasColor);
         Assert.DoesNotContain("Lavoro/Documenti", MetadataStore.Load(_root).Folders.Keys);
-        Assert.Contains("senza colore", viewModel.Status);
+        Assert.Contains("no color", viewModel.Status);
     });
 
     [Fact]
@@ -1198,7 +1198,7 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal("#FF7EB6", lavoro.Color);
         Assert.Equal("#FF7EB6", lavoro.ColorChoice);
         Assert.False(MetadataStore.Load(_root).IsColorAutomatic("Lavoro"));
-        Assert.Equal("Annulla il colore", viewModel.UndoLabel);
+        Assert.Equal("Undo color", viewModel.UndoLabel);
 
         viewModel.Undo();
 
@@ -1227,7 +1227,7 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.SetTopicColor(archivio, "#36CFB0");
         Assert.Equal("#36CFB0", archivio.Color);
 
-        // Automatico, inside another topic: that of its topic again, which follows it when it changes.
+        // Auto, inside another topic: that of its topic again, which follows it when it changes.
         viewModel.SetTopicColor(archivio, null);
         viewModel.SetTopicColor(lavoro, "#B48CFF");
         Assert.Equal("#B48CFF", archivio.Color);
@@ -1235,7 +1235,7 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
-    public void AnotherOperation_TakesAnnullaAwayFromTheToastBefore() => StaThread.Run(() =>
+    public void AnotherOperation_TakesUndoAwayFromTheToastBefore() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         var documents = Path.Combine(_root, "Lavoro", "Documenti");
@@ -1246,7 +1246,7 @@ public sealed class MainViewModelTests : IDisposable
 
         viewModel.Transfer([Path.Combine(documents, "b.txt")], archive, TransferKind.Move);
 
-        // Ctrl+Z would undo the second one now: the first toast still shows where its file went, but not «Annulla».
+        // Ctrl+Z would undo the second one now: the first toast still shows where its file went, but not «Undo».
         Assert.Equal(2, viewModel.Toasts.Count);
         Assert.False(first.CanUndo);
         Assert.True(first.CanShow);
@@ -1261,17 +1261,17 @@ public sealed class MainViewModelTests : IDisposable
     {
         using var viewModel = Open();
 
-        viewModel.Tell(ToastKind.Danger, "Impossibile aprire «a.txt».");
-        viewModel.Tell(ToastKind.Danger, "Impossibile aprire «a.txt».");
+        viewModel.Tell(ToastKind.Danger, "Couldn't open “a.txt”.");
+        viewModel.Tell(ToastKind.Danger, "Couldn't open “a.txt”.");
         Assert.False(Assert.Single(viewModel.Toasts).ClosesByItself);
 
-        viewModel.Tell(ToastKind.Info, "Uno.");
-        viewModel.Tell(ToastKind.Info, "Due.");
-        viewModel.Tell(ToastKind.Info, "Tre.");
+        viewModel.Tell(ToastKind.Info, "One.");
+        viewModel.Tell(ToastKind.Info, "Two.");
+        viewModel.Tell(ToastKind.Info, "Three.");
 
-        Assert.Equal(["Uno.", "Due.", "Tre."], viewModel.Toasts.Select(toast => toast.Title));
+        Assert.Equal(["One.", "Two.", "Three."], viewModel.Toasts.Select(toast => toast.Title));
         viewModel.DismissToast(viewModel.Toasts[0]);
-        Assert.Equal(["Due.", "Tre."], viewModel.Toasts.Select(toast => toast.Title));
+        Assert.Equal(["Two.", "Three."], viewModel.Toasts.Select(toast => toast.Title));
     });
 
     private MainViewModel Open() => new(_root, live: false, recent: _recent);

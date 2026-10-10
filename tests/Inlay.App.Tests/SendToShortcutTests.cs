@@ -3,7 +3,7 @@ using Inlay.App.Services;
 
 namespace Inlay.App.Tests;
 
-/// <summary>«Inlay» in the «Invia a» menu, made in a folder of the test, never in the real SendTo folder.</summary>
+/// <summary>«Inlay» in the «Send to» menu, made in a folder of the test, never in the real SendTo folder.</summary>
 public sealed class SendToShortcutTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "inlay-app-tests", Guid.NewGuid().ToString("N"));

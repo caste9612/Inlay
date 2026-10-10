@@ -3,20 +3,20 @@ namespace Inlay.Core;
 /// <summary>A place where files can be sent: a tile, or a topic for the files it keeps loose.</summary>
 /// <param name="RelativeKey">The metadata key of its folder.</param>
 /// <param name="Location">
-/// Where it sits, like "Lavoro › Clienti"; for a tile, its topic is the last part. Empty for a topic in the root.
+/// Where it sits, like "Work › Clients"; for a tile, its topic is the last part. Empty for a topic in the root.
 /// </param>
 public sealed record Destination(string Title, string FullPath, string RelativeKey, bool IsTopic, string Location);
 
 /// <summary>
 /// Reads the archive following Inlay's rules: folders in the root are topics; deeper folders are topics
 /// only when marked in the metadata, otherwise they are tiles on their parent topic's board, or rows of its
-/// «Generale» when marked so.
+/// «General» when marked so.
 /// </summary>
 public sealed class ArchiveReader(string root, ArchiveMetadata metadata)
 {
-    public const string GeneralTileTitle = "Generale";
+    public const string GeneralTileTitle = "General";
 
-    /// <summary>Between the names of a path shown to the user, as in "Lavoro › Clienti".</summary>
+    /// <summary>Between the names of a path shown to the user, as in "Work › Clients".</summary>
     public const string PathSeparator = " › ";
 
     public string Root { get; } = Path.GetFullPath(root);
@@ -36,7 +36,7 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata)
         var subfolders = Directories(folder);
         var tiles = new List<Tile>();
 
-        // "Generale" goes by the topic's own key: it holds the files of the topic's folder, and the folders shown as its
+        // "General" goes by the topic's own key: it holds the files of the topic's folder, and the folders shown as its
         // rows, like one dropped on the topic. Folders first, as in every tile.
         List<ArchiveItem> general = [.. subfolders.Where(IsMarkedItem).Select(ArchiveItem.From), .. Files(folder).Select(ArchiveItem.From)];
         if (general.Count > 0)
@@ -97,7 +97,7 @@ public sealed class ArchiveReader(string root, ArchiveMetadata metadata)
     /// <summary>The subfolders of a topic that are its tiles, in the order of its board.</summary>
     private IEnumerable<DirectoryInfo> TileFolders(DirectoryInfo topicFolder) => TilesAmong(Directories(topicFolder));
 
-    /// <summary>The subfolders of a topic that are neither topics nor rows of «Generale», in the order of its board.</summary>
+    /// <summary>The subfolders of a topic that are neither topics nor rows of «General», in the order of its board.</summary>
     private IEnumerable<DirectoryInfo> TilesAmong(IEnumerable<DirectoryInfo> subfolders) =>
         InOrder(subfolders.Where(sub => !IsMarkedTopic(sub) && !IsMarkedItem(sub)));
 

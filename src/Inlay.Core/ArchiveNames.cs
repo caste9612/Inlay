@@ -16,22 +16,22 @@ public static class ArchiveNames
     public static string? Validate(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            return "Scrivi un nome.";
+            return "Type a name.";
         if (name.IndexOfAny(ForbiddenCharacters) >= 0 || name.Any(char.IsControl))
-            return "Il nome non può contenere questi caratteri: \\ / : * ? \" < > |";
+            return "A name can't contain these characters: \\ / : * ? \" < > |";
         if (name.EndsWith('.') || name.EndsWith(' '))
-            return "Il nome non può finire con un punto o con uno spazio.";
+            return "A name can't end with a dot or a space.";
         if (ArchiveLayout.IsHiddenName(name))
-            return "I nomi che iniziano con un punto non vengono mostrati da Inlay.";
+            return "Inlay doesn't show names that start with a dot.";
         if (ReservedNames.Contains(name.Split('.')[0].TrimEnd()))
-            return $"«{name}» è un nome riservato da Windows.";
+            return $"“{name}” is a name reserved by Windows.";
         if (name.Length > 255)
-            return "Il nome è troppo lungo.";
+            return "The name is too long.";
         return null;
     }
 
     /// <summary>A name not taken yet in the folder: the name itself, else "name (2)", "name (3)"… like Explorer.</summary>
-    /// <param name="extension">For files: kept at the end, as in "Offerta (2).lnk".</param>
+    /// <param name="extension">For files: kept at the end, as in "Offer (2).lnk".</param>
     public static string Unique(string folder, string name, string extension = "")
     {
         if (!Path.Exists(Path.Combine(folder, name + extension)))

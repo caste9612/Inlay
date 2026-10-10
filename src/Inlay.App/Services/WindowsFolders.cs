@@ -13,14 +13,14 @@ internal static class WindowsFolders
     {
         var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         string Folder(Environment.SpecialFolder folder) => Environment.GetFolderPath(folder);
-        const string Programs = "Questa è una cartella dei programmi: scegline un'altra, per esempio nella cartella del tuo utente.";
+        const string Programs = "This is a folder of programs: choose another one, for example in your user folder.";
         return new List<ReservedFolder>
         {
-            new(profile, $"Questa è la cartella del tuo utente: crea l'archivio dentro, per esempio «{Path.Combine(profile, "Archivio")}».",
+            new(profile, $"This is your user folder: create the vault inside it, for example “{Path.Combine(profile, "Vault")}”.",
                 InsideAllowed: true),
             new(Folder(Environment.SpecialFolder.DesktopDirectory),
-                "Il Desktop non può fare da archivio: Inlay ne prende il posto. Crea l'archivio in un'altra cartella, per esempio nella cartella del tuo utente."),
-            new(Folder(Environment.SpecialFolder.Windows), "Questa è una cartella di Windows: scegline un'altra."),
+                "The Desktop can't be a vault: Inlay takes its place. Create the vault in another folder, for example in your user folder."),
+            new(Folder(Environment.SpecialFolder.Windows), "This is a folder of Windows: choose another one."),
             new(Folder(Environment.SpecialFolder.ProgramFiles), Programs),
             new(Folder(Environment.SpecialFolder.ProgramFilesX86), Programs),
             new(Folder(Environment.SpecialFolder.CommonApplicationData), Programs),

@@ -16,28 +16,28 @@ internal sealed class TrayIcon : IDisposable
 
     /// <param name="isTopmost">Whether the window stays above the others now: the pin of its title bar.</param>
     /// <param name="setTopmost">Changes it, as the pin does.</param>
-    /// <param name="checkForUpdates">«Cerca aggiornamenti»; null for an Inlay that cannot update itself, as one run from the code.</param>
-    /// <param name="restartToUpdate">«Riavvia e aggiorna», shown once a new version is ready (<see cref="ShowUpdateReady"/>).</param>
+    /// <param name="checkForUpdates">«Check for updates»; null for an Inlay that cannot update itself, as one run from the code.</param>
+    /// <param name="restartToUpdate">«Restart to update», shown once a new version is ready (<see cref="ShowUpdateReady"/>).</param>
     public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action showSettings,
         Func<bool> isTopmost, Action<bool> setTopmost, Action? checkForUpdates, Action restartToUpdate, Action exit)
     {
         var menu = new ContextMenu();
-        menu.Items.Add(_open = CreateItem("Apri Inlay", showPanel, shortcut));
-        menu.Items.Add(CreateItem("Apri l'archivio in Explorer", openArchiveFolder));
+        menu.Items.Add(_open = CreateItem("Open Inlay", showPanel, shortcut));
+        menu.Items.Add(CreateItem("Open the vault in Explorer", openArchiveFolder));
         // As in Hive and Pulse: the pin of the title bar, here too.
-        var topmost = new MenuItem { Header = "Sempre in primo piano", IsCheckable = true };
+        var topmost = new MenuItem { Header = "Always on top", IsCheckable = true };
         topmost.Click += (_, _) => setTopmost(topmost.IsChecked);
         menu.Items.Add(topmost);
         menu.Items.Add(new Separator());
-        menu.Items.Add(CreateItem("Archivi…", showArchives));
-        menu.Items.Add(CreateItem("Impostazioni…", showSettings));
+        menu.Items.Add(CreateItem("Vaults…", showArchives));
+        menu.Items.Add(CreateItem("Settings…", showSettings));
         menu.Items.Add(new Separator());
-        _restartToUpdate = CreateItem("Riavvia e aggiorna", restartToUpdate);
+        _restartToUpdate = CreateItem("Restart to update", restartToUpdate);
         _restartToUpdate.Visibility = Visibility.Collapsed;
         menu.Items.Add(_restartToUpdate);
         if (checkForUpdates is not null)
-            menu.Items.Add(CreateItem("Cerca aggiornamenti", checkForUpdates));
-        menu.Items.Add(CreateItem("Esci", exit));
+            menu.Items.Add(CreateItem("Check for updates", checkForUpdates));
+        menu.Items.Add(CreateItem("Quit", exit));
         // The pin may have changed in the title bar since the menu was last open.
         menu.Opened += (_, _) => topmost.IsChecked = isTopmost();
 
@@ -61,7 +61,7 @@ internal sealed class TrayIcon : IDisposable
     /// <summary>A new version is downloaded: the menu offers to restart into it.</summary>
     public void ShowUpdateReady(string version)
     {
-        _restartToUpdate.Header = $"Riavvia e aggiorna a Inlay {version}";
+        _restartToUpdate.Header = $"Restart to update to Inlay {version}";
         _restartToUpdate.Visibility = Visibility.Visible;
     }
 

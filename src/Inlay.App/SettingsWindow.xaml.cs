@@ -17,7 +17,7 @@ public partial class SettingsWindow : Window
         DataContext = ViewModel = viewModel;
         if (viewModel.IsWelcome)
         {
-            Title = "Benvenuto in Inlay";
+            Title = "Welcome to Inlay";
             viewModel.Archives.ArchiveOpened += (_, _) => Close();
         }
         SourceInitialized += (_, _) =>

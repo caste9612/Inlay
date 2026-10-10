@@ -72,13 +72,13 @@ public partial class ArchivesView : UserControl
 
     private void BrowseParent_Click(object sender, RoutedEventArgs e)
     {
-        if (PickFolder("Dove creare l'archivio", ViewModel.NewParent) is { } folder)
+        if (PickFolder("Where to create the vault", ViewModel.NewParent) is { } folder)
             ViewModel.NewParent = folder;
     }
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        if (PickFolder("La cartella da usare come archivio", null) is { } folder)
+        if (PickFolder("The folder to use as a vault", null) is { } folder)
             ViewModel.OpenFolder(folder);
     }
 
@@ -108,7 +108,7 @@ public partial class ArchivesView : UserControl
 
     private void Move_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.Selected is { } entry && PickFolder($"Dove spostare «{entry.Name}»", Path.GetDirectoryName(entry.Path)) is { } folder)
+        if (ViewModel.Selected is { } entry && PickFolder($"Where to move “{entry.Name}”", Path.GetDirectoryName(entry.Path)) is { } folder)
             ViewModel.AskMove(entry, folder);
     }
 

@@ -15,14 +15,14 @@ internal sealed record DiskSpace(string Name, long Free, long Total)
 
     public bool IsLow => Free < LowBytes || Free < Total * LowShare;
 
-    /// <summary>"120 GB liberi".</summary>
-    public string FreeText => $"{ByteSize.Format(Free)} liberi";
+    /// <summary>"120 GB free".</summary>
+    public string FreeText => $"{ByteSize.Format(Free)} free";
 
-    /// <summary>"120 GB liberi su 465 GB".</summary>
-    public string Room => $"{ByteSize.Format(Free)} liberi su {ByteSize.Format(Total)}";
+    /// <summary>"120 GB free of 465 GB".</summary>
+    public string Room => $"{ByteSize.Format(Free)} free of {ByteSize.Format(Total)}";
 
-    /// <summary>"Disco E: 120 GB liberi su 465 GB".</summary>
-    public string Description => $"Disco {Name} {Room}";
+    /// <summary>"Drive E: 120 GB free of 465 GB".</summary>
+    public string Description => $"Drive {Name} {Room}";
 
     /// <summary>The disk of this folder; null when Windows cannot say, as for a drive no longer connected.</summary>
     public static DiskSpace? Of(string folder)

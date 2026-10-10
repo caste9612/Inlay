@@ -3,7 +3,7 @@ using Inlay.Core;
 
 namespace Inlay.App.Tests;
 
-/// <summary>«Sposta in…»: the list of places, the recent ones first, narrowed down by what is typed.</summary>
+/// <summary>«Move to…»: the list of places, the recent ones first, narrowed down by what is typed.</summary>
 public sealed class DestinationPickerViewModelTests
 {
     private static readonly Destination[] Places =
@@ -25,8 +25,8 @@ public sealed class DestinationPickerViewModelTests
         Assert.False(picker.Candidates[2].IsRecent);
         Assert.Same(picker.Candidates[0], picker.Selected);
         Assert.Equal("Lavoro › Clienti", picker.Candidates[0].Detail);
-        Assert.Equal("Argomento", picker.Candidates[1].Detail);
-        Assert.Equal("Argomento in Lavoro", picker.Candidates[4].Detail);
+        Assert.Equal("Space", picker.Candidates[1].Detail);
+        Assert.Equal("Space in Lavoro", picker.Candidates[4].Detail);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class DestinationPickerViewModelTests
         picker.Filter = "xyz";
         Assert.Empty(picker.Candidates);
         Assert.Null(picker.Selected);
-        Assert.Contains("Nessun riquadro", picker.EmptyMessage);
+        Assert.Contains("No tile", picker.EmptyMessage);
     }
 
     [Fact]
@@ -92,9 +92,9 @@ public sealed class DestinationPickerViewModelTests
         var picker = new DestinationPickerViewModel("Sposta in…", "Sposta", [], [], _ => null);
 
         Assert.False(picker.HasCandidates);
-        Assert.Contains("crea prima", picker.EmptyMessage);
+        Assert.Contains("create a tile or a space first", picker.EmptyMessage);
     }
 
     private static DestinationPickerViewModel Make(IReadOnlyList<string> recent) =>
-        new("Sposta in…", "Sposta", Places, recent, _ => null);
+        new("Move to…", "Move", Places, recent, _ => null);
 }

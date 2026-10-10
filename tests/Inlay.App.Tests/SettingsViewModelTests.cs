@@ -74,7 +74,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         Assert.True(viewModel.Autostart);
         Assert.True(_windows.AutostartEnabled);
-        Assert.Contains("avvio automatico", viewModel.WindowsProblem);
+        Assert.Contains("startup", viewModel.WindowsProblem);
     }
 
     [Fact]
@@ -84,12 +84,12 @@ public sealed class SettingsViewModelTests : IDisposable
 
         Assert.True(viewModel.IsWelcome);
         Assert.Equal(SettingsSection.Archives, viewModel.Section);
-        Assert.Equal("Benvenuto in Inlay", viewModel.Heading);
+        Assert.Equal("Welcome to Inlay", viewModel.Heading);
 
         _host.CurrentRoot = _root;
         var later = Open(Settings(), SettingsSection.Hotkey);
         Assert.False(later.IsWelcome);
-        Assert.Equal("Impostazioni", later.Heading);
+        Assert.Equal("Settings", later.Heading);
     }
 
     private SettingsViewModel Open(AppSettings settings, SettingsSection section = SettingsSection.Archives) =>

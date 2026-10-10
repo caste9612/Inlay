@@ -11,10 +11,10 @@ Sono tutti `record` immutabili, letti dal disco a ogni ricarica. L'app li avvolg
 | Tipo | Cos'è | File |
 |---|---|---|
 | `Topic` | un argomento: cartella, chiave dei metadati, sotto-argomenti, colore | `Board.cs` |
-| `Tile` | un riquadro: titolo, cartella, se è «Generale», elementi già in ordine, colore, misura, ordinamento | `Board.cs` |
+| `Tile` | un riquadro: titolo, cartella, se è «General», elementi già in ordine, colore, misura, ordinamento | `Board.cs` |
 | `Board` | la bacheca di un argomento: l'argomento e i suoi riquadri | `Board.cs` |
 | `ArchiveItem` | un elemento: percorso, nome, se è una cartella, data di modifica, dimensione | `ArchiveItem.cs` |
-| `Destination` | un posto dove mandare file, per «Sposta in…» | `ArchiveReader.cs` |
+| `Destination` | un posto dove mandare file, per «Move to…» | `ArchiveReader.cs` |
 
 - `ArchiveItem.DisplayName` toglie `.lnk` e `.url`, come Explorer. `Size` è null per le cartelle; le date sono in ora locale.
 - `Topic.Color` è il colore tenuto nei metadati, e `ColorIsAutomatic` dice se l'ha dato Inlay. Cosa si vede lo decide l'app (`TopicViewModel.Color`): un sotto-argomento senza un colore scelto per lui, nessuno o solo quello automatico che aveva quando stava nella radice, mostra quello del suo argomento.
@@ -31,15 +31,15 @@ Sono tutti `record` immutabili, letti dal disco a ogni ricarica. L'app li avvolg
 `new ArchiveReader(root, metadata)`. Ogni metodo rilegge il disco: non c'è cache.
 
 - `ReadTopics()`: le cartelle della radice sono argomenti, anche una `_Da smistare` lasciata dalle versioni che l'avevano; più in basso lo sono solo quelle con `"kind": "topic"`. Vengono prima quelle con un `"order"`, poi le altre per nome (l'ordinamento è stabile).
-- `ReadBoard(topic)`: prima «Generale», se l'argomento ha file sciolti o cartelle segnate `"kind": "item"`, che ci stanno come righe prima dei file, come le cartelle in ogni riquadro; poi un riquadro per ogni sottocartella che non è né un argomento né una riga, nello stesso ordine.
-  - «Generale» usa la chiave del suo argomento per misura, ordinamento e ordine a mano, ma non ne mostra il colore.
+- `ReadBoard(topic)`: prima «General», se l'argomento ha file sciolti o cartelle segnate `"kind": "item"`, che ci stanno come righe prima dei file, come le cartelle in ogni riquadro; poi un riquadro per ogni sottocartella che non è né un argomento né una riga, nello stesso ordine.
+  - «General» usa la chiave del suo argomento per misura, ordinamento e ordine a mano, ma non ne mostra il colore.
   - Il colore di un riquadro è `ChosenColorOf`: quello dato da Inlay quando la cartella era un argomento della radice non conta.
   - Gli elementi passano da `ItemArrangement.Arrange` ([più sotto](#ordine-degli-elementi-itemarrangement-naturalstringcomparer)).
 - `ReadRootFiles()`: i file lasciati sciolti nella radice, che nessun argomento mostra: la barra di stato dice quanti sono.
-- `ReadDestinations()`: per «Sposta in…», nell'ordine della barra laterale: ogni argomento (per i suoi file sciolti), i suoi riquadri, poi i sotto-argomenti. `Location` è il percorso da mostrare, come «Lavoro › Clienti». Le righe di «Generale» non ci sono: sono elementi, come le cartelle dentro un riquadro.
+- `ReadDestinations()`: per «Move to…», nell'ordine della barra laterale: ogni argomento (per i suoi file sciolti), i suoi riquadri, poi i sotto-argomenti. `Location` è il percorso da mostrare, come «Lavoro › Clienti». Le righe di «General» non ci sono: sono elementi, come le cartelle dentro un riquadro.
 - Gli elementi di una cartella: prima le cartelle, poi i file, in ordine naturale («Verbale 2» prima di «Verbale 10»). Una cartella che non si può leggere si mostra vuota.
 
-Le costanti che l'utente vede: `GeneralTileTitle` («Generale») e `PathSeparator` (« › »).
+Le costanti che l'utente vede: `GeneralTileTitle` («General») e `PathSeparator` (« › »).
 
 ## I metadati (`ArchiveMetadata`, `MetadataStore`)
 
@@ -47,7 +47,7 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 
 - `ArchiveMetadata.Folders` è un dizionario da chiave a `FolderMetadata`, senza distinzione di maiuscole.
 - `FolderMetadata` ha `Kind`, `Workspace`, `Color`, `AutoColor`, `Size`, `Order`, `Sort` e `Items`. Una voce che resta vuota (`IsEmpty`) viene tolta: il file tiene solo quello che serve.
-- `Kind` è `"topic"` per un argomento sotto la radice (`IsTopic`, `SetTopic`) e `"item"` per una cartella di un argomento che sta in «Generale» come riga (`IsItem`, `SetItem`). Darne uno toglie l'altro; toglierne uno lascia stare l'altro. Una riga che diventa riquadro, o argomento, tiene il resto della sua voce: colore, misura, ordine.
+- `Kind` è `"topic"` per un argomento sotto la radice (`IsTopic`, `SetTopic`) e `"item"` per una cartella di un argomento che sta in «General» come riga (`IsItem`, `SetItem`). Darne uno toglie l'altro; toglierne uno lascia stare l'altro. Una riga che diventa riquadro, o argomento, tiene il resto della sua voce: colore, misura, ordine.
 - Ogni metodo che cambia qualcosa (`SetTopic`, `SetItem`, `SetColor`, `SetOrder`, `SetSize`, `SetSort`, `SetItemOrder`, `SetArrangement`, `RenameItem`, `MoveFolder`, `RemoveFolder`, `Restore`) restituisce `true` solo se è cambiato davvero: chi lo chiama salva solo allora.
 - `MoveFolder(oldKey, newKey)` sposta la voce e tutte quelle sotto: così i metadati seguono una cartella rinominata o spostata da Inlay. Se succede da Explorer nessuno lo sa, e le voci restano sotto il nome vecchio.
 - `Snapshot(keys)` e `Restore(snapshot)` copiano e rimettono le voci di alcune cartelle e di tutto quello che c'è sotto. È così che una cartella mandata nel Cestino, o portata fuori dall'archivio, ritrova colore, misura e ordine quando torna con `Ctrl+Z`. `MetadataSnapshot.Restrict` ne tiene solo una parte.
@@ -69,12 +69,12 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 
 - Un archivio è una cartella che contiene `.inlay`, o la `.quiver` delle versioni che si chiamavano Quiver (`IsArchive`).
 - `TakeOverOldMetadata` rinomina la `.quiver` di un archivio in `.inlay`, con tutto quello che contiene, se `.inlay` non c'è ancora. Se la cartella non si può rinominare, perché un altro programma la tiene aperta, copia `archive.json` e lascia la vecchia dov'è. La chiamano `MainViewModel.LoadArchive`, tranne nelle anteprime, che non scrivono niente, e `Adopt`.
-- `Check(folder, reserved, otherArchives)` dà il motivo, in italiano, per cui una cartella non può fare da archivio, o null. Non può essere un disco intero, né una cartella riservata (`ReservedFolder`) o una che ne contiene una, né stare dentro un altro archivio o contenerne uno. Le cartelle riservate le elenca l'app ([windows.md](windows.md#cartelle-di-windows-windowsfolders)); dentro la cartella dell'utente, l'unica con `InsideAllowed`, un archivio può stare.
+- `Check(folder, reserved, otherArchives)` dà il motivo, in inglese, per cui una cartella non può fare da archivio, o null. Non può essere un disco intero, né una cartella riservata (`ReservedFolder`) o una che ne contiene una, né stare dentro un altro archivio o contenerne uno. Le cartelle riservate le elenca l'app ([windows.md](windows.md#cartelle-di-windows-windowsfolders)); dentro la cartella dell'utente, l'unica con `InsideAllowed`, un archivio può stare.
 - `Adopt` rende archivio una cartella esistente, `Create` ne fa una nuova (errore se il nome è preso), `IsSameDrive` dice se uno spostamento è una semplice rinomina.
 
 ## Nomi validi (`ArchiveNames`)
 
-- `Validate(name)` dice in italiano perché un nome non va bene (vuoto, caratteri vietati, punto o spazio in fondo, punto all'inizio, nomi riservati come `CON` o `LPT1`, oltre 255 caratteri), o null se va bene.
+- `Validate(name)` dice in inglese perché un nome non va bene (vuoto, caratteri vietati, punto o spazio in fondo, punto all'inizio, nomi riservati come `CON` o `LPT1`, oltre 255 caratteri), o null se va bene.
 - `Unique(folder, name, extension)` trova un nome libero, come Explorer: «Nome», poi «Nome (2)», «Nome (3)»…
 
 ## Le modifiche da fuori (`ArchiveWatcher`)
@@ -86,14 +86,14 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 
 ## Spostare, copiare o collegare (`TransferRules`)
 
-`Choose(sources, destination, …)` decide cosa fa un trascinamento, come Explorer. La usa anche «Sposta in…», per scartare i posti dove non farebbe niente; gli appunti no: quello che è stato tagliato si sposta, quello che è stato copiato si copia ([operazioni-sui-file.md](operazioni-sui-file.md#gli-appunti)).
+`Choose(sources, destination, …)` decide cosa fa un trascinamento, come Explorer. La usa anche «Move to…», per scartare i posti dove non farebbe niente; gli appunti no: quello che è stato tagliato si sposta, quello che è stato copiato si copia ([operazioni-sui-file.md](operazioni-sui-file.md#gli-appunti)).
 
 | Condizione | Risultato |
 |---|---|
 | la destinazione è dentro una delle sorgenti, o le sorgenti sono già tutte lì | niente (`None`) |
-| `Alt`, oppure `Ctrl+Maiusc` | collegamento (`Link`) |
+| `Alt`, oppure `Ctrl+Shift` | collegamento (`Link`) |
 | `Ctrl` | copia (`Copy`) |
-| `Maiusc` | spostamento (`Move`) |
+| `Shift` | spostamento (`Move`) |
 | `preferLink`: gli elementi hanno già un loro posto | collegamento |
 | nessuna delle precedenti | spostamento sullo stesso disco, copia tra dischi diversi |
 
@@ -116,7 +116,7 @@ Cosa cambia un'operazione sui file, per sapere quali possono andare avanti insie
 
 | Passo | Cosa ricorda |
 |---|---|
-| `MoveStep` | per ogni elemento da dove è partito e dove è arrivato (`MovedItem`), e se arrivando in un argomento è diventato una riga di «Generale» (`BecameRow`); i metadati delle cartelle uscite dall'archivio (`Forgotten`) |
+| `MoveStep` | per ogni elemento da dove è partito e dove è arrivato (`MovedItem`), e se arrivando in un argomento è diventato una riga di «General» (`BecameRow`); i metadati delle cartelle uscite dall'archivio (`Forgotten`) |
 | `CopyStep` | le copie fatte, anche di quello che arriva da altri programmi: annullare le manda nel Cestino |
 | `LinkStep` | i collegamenti fatti: annullare li manda nel Cestino, e quello a cui puntano resta dov'è |
 | `RenameStep` | il nome di prima e quello di dopo |
@@ -126,8 +126,8 @@ Cosa cambia un'operazione sui file, per sapere quali possono andare avanti insie
 | `TopicMoveStep` | un argomento trascinato dentro un altro: lo spostamento e il posto che aveva |
 | `ArrangeStep` | l'ordinamento e l'ordine a mano di prima |
 | `SizeStep` | la misura di prima |
-| `TopicStep` | se la cartella era un argomento («Promuovi ad argomento», «Riporta a riquadro») |
-| `ItemStep` | se la cartella era una riga di «Generale» («Promuovi a riquadro», «Metti in Generale») |
+| `TopicStep` | se la cartella era un argomento («Make it a space», «Back to tile») |
+| `ItemStep` | se la cartella era una riga di «General» («Unfold as tile», «Fold into General») |
 | `ColorStep` | il colore di prima, e se era automatico |
 
 Come i passi vengono registrati ed eseguiti al contrario è in [operazioni-sui-file.md](operazioni-sui-file.md#annullare).
@@ -144,15 +144,15 @@ Il Cestino di ogni disco tiene ogni elemento come due file: `$R…` è l'element
 
 ## La ricerca (`SearchIndex`, `SearchQuery`, `SearchText`)
 
-- `SearchIndex.Build(root, ct)` mette in memoria tutti i file e le cartelle dell'archivio, senza quelli nascosti, di sistema o con il punto davanti, e senza seguire junction e collegamenti simbolici. I file sciolti nella radice ci sono, con «Archivio» come posto.
+- `SearchIndex.Build(root, ct)` mette in memoria tutti i file e le cartelle dell'archivio, senza quelli nascosti, di sistema o con il punto davanti, e senza seguire junction e collegamenti simbolici. I file sciolti nella radice ci sono, con «Vault» come posto.
 - `ArchiveCount` e `ArchiveBytes` sono i numeri della barra di stato («55.781 elementi · 2,3 GB»).
 - `Search(query, max)`: ogni parola deve comparire nel nome o nel percorso, e l'elemento deve passare i filtri (più sotto). `SearchText.Score` dà 100 punti se il nome comincia con la parola, 70 se ci comincia una sua parola, 40 se la parola è in mezzo al nome e 10 se è solo nel percorso, poi toglie un quarto della lunghezza del nome: a parità vincono i nomi corti. A parità di punteggio, l'ordine naturale.
 - `SearchText.Normalize` toglie maiuscole e accenti: «perche» trova «Perché».
-- **`SearchQuery.Parse(text)`** separa le parole dai filtri: `tipo:valore` e `in:valore`, con le virgolette se il valore ha spazi (`in:"Foto vacanze"`), chiavi e valori senza maiuscole né accenti. Un filtro ancora vuoto (`tipo:`) non filtra; altri due punti fanno parte di una parola (`ore:10`).
-- **`tipo:`** vale per i tipi di `SearchKind.All` (cartelle, documenti, pdf, fogli, presentazioni, immagini, video, audio, collegamenti, compressi, posta, codice, 3d) il cui nome, o un altro modo di dirlo (`foto`, `excel`, `zip`), comincia con il valore: mentre si scrive `tipo:p` valgono tutti quelli possibili. Un valore che non è un tipo è un'estensione: `tipo:dwg`. I tipi seguono `FileKinds`, che l'indice calcola una volta per elemento; i collegamenti sono i `.lnk` e gli `.url`.
+- **`SearchQuery.Parse(text)`** separa le parole dai filtri: `type:valore` e `in:valore`, con le virgolette se il valore ha spazi (`in:"Foto vacanze"`), chiavi e valori senza maiuscole né accenti. Un filtro ancora vuoto (`type:`) non filtra; altri due punti fanno parte di una parola (`ore:10`).
+- **`type:`** vale per i tipi di `SearchKind.All` (folders, documents, pdf, spreadsheets, presentations, images, video, audio, shortcuts, compressed, mail, code, 3d) il cui nome, o un altro modo di dirlo (`photos`, `excel`, `zip`), comincia con il valore: mentre si scrive `type:p` valgono tutti quelli possibili. Un valore che non è un tipo è un'estensione: `type:dwg`. Fino alla 0.3.3 la chiave era `tipo:`, con i nomi italiani. I tipi seguono `FileKinds`, che l'indice calcola una volta per elemento; i collegamenti sono i `.lnk` e gli `.url`.
 - **`in:`** vale per gli elementi che stanno dentro una cartella con quel nome, intero e a qualunque profondità, o dentro un percorso di nomi (`in:Lavoro/Clienti`, anche con ` › `): `in:clienti` trova «Lavoro › Clienti › Rossi», non «Clienti fedeli». Con la `/` davanti il posto parte dalla radice: `in:/Lavoro` non trova «Personale › Lavoro». È così che scrive il menu dei posti.
 - Più tipi, o più posti, valgono uno o l'altro; parole, tipi e posti tutti insieme (`Admits`). Con i soli filtri l'elenco è dei più recenti, poi in ordine di nome.
-- `ToggleKind` e `WithPlace` scrivono i filtri nel testo, lasciando com'è il resto: sono quello che fanno i pulsanti sopra i risultati. Chiudono prima le virgolette lasciate aperte, perché il filtro non finisca dentro; togliere un tipo da un valore che ne valeva più d'uno, come `tipo:p`, scrive per esteso gli altri. `SamePlace` e `Display` confrontano e mostrano un posto («Lavoro › Clienti»).
+- `ToggleKind` e `WithPlace` scrivono i filtri nel testo, lasciando com'è il resto: sono quello che fanno i pulsanti sopra i risultati. Chiudono prima le virgolette lasciate aperte, perché il filtro non finisca dentro; togliere un tipo da un valore che ne valeva più d'uno, come `type:p`, scrive per esteso gli altri. `SamePlace` e `Display` confrontano e mostrano un posto («Lavoro › Clienti»).
 
 ## Ordine degli elementi (`ItemArrangement`, `NaturalStringComparer`)
 
@@ -167,4 +167,4 @@ Il Cestino di ogni disco tiene ogni elemento come due file: `$R…` è l'element
 - `WebShortcut.Parse(text)` riconosce un indirizzo scritto a mano, anche senza `https://`; `WebShortcut.Create(folder, uri)` scrive il `.url` con il nome del sito.
 - `TopicColors`: la tavolozza automatica (sette colori di Brace; il grigio, l'ottavo, solo a mano), `LeastUsed` e `AssignMissing`, che dà un colore agli argomenti della radice che non ce l'hanno.
 - `CanvasPlacement`: dove vanno le zone della tela ([tela.md](tela.md)).
-- `ByteSize.Format`: le dimensioni come le scrive Explorer in italiano, con unità da 1024 e tre cifre («12,4 MB»).
+- `ByteSize.Format`: le dimensioni come le scrive Explorer in inglese, con unità da 1024 e tre cifre («12.4 MB», «512 bytes»), qualunque sia la lingua di Windows.

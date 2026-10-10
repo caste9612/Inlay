@@ -45,8 +45,8 @@
         <DockPanel>
             <Image DockPanel.Dock="Left" Width="24" Height="24" Source="{StaticResource Inlay.Logo}"
                    RenderOptions.BitmapScalingMode="HighQuality" />
-            <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarCloseButton}" ToolTip="Chiudi"
-                    AutomationProperties.Name="Chiudi" Click="Close_Click">
+            <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarCloseButton}" ToolTip="Close"
+                    AutomationProperties.Name="Close" Click="Close_Click">
                 <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
             </Button>
             <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.Text.Heading}" Text="{Binding Heading}" />
@@ -68,20 +68,20 @@
                          SelectedValue="{Binding Section, Mode=TwoWay}">
                     <ListBoxItem Tag="{x:Static vm:SettingsSection.Archives}">
                         <DockPanel>
-                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Folder16}" />
-                            <TextBlock VerticalAlignment="Center" Text="Archivi" />
+                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Database16}" />
+                            <TextBlock VerticalAlignment="Center" Text="Vaults" />
                         </DockPanel>
                     </ListBoxItem>
                     <ListBoxItem Tag="{x:Static vm:SettingsSection.Hotkey}">
                         <DockPanel>
                             <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Open16}" />
-                            <TextBlock VerticalAlignment="Center" Text="Scorciatoia" />
+                            <TextBlock VerticalAlignment="Center" Text="Hotkey" />
                         </DockPanel>
                     </ListBoxItem>
                     <ListBoxItem Tag="{x:Static vm:SettingsSection.Windows}">
                         <DockPanel>
                             <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Desktop16}" />
-                            <TextBlock VerticalAlignment="Center" Text="Avvio ed Explorer" />
+                            <TextBlock VerticalAlignment="Center" Text="Startup &amp; Explorer" />
                         </DockPanel>
                     </ListBoxItem>
                 </ListBox>
@@ -89,38 +89,38 @@
         </Border>
 
         <Grid Grid.Column="1">
-            <!-- Archivi: the vaults, as before -->
+            <!-- Vaults -->
             <views:ArchivesView x:Name="ArchivesSection" DataContext="{Binding Archives}"
                                 Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource SectionIs}, ConverterParameter=Archives}" />
 
-            <!-- Scorciatoia -->
+            <!-- Hotkey -->
             <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Hotkey}">
-                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Scorciatoia" />
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Hotkey" />
                 <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
-                           Text="La combinazione che porta Inlay davanti da qualunque programma, e lo rimette nell'area di notifica se è già davanti." />
-                <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Combinazione" />
+                           Text="The key combination that brings Inlay to the front from any program, and puts it back in the tray when it is already in front." />
+                <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Key combination" />
                 <!-- The style of Brace for text boxes does not reach a subclass by itself. -->
                 <views:HotkeyBox x:Name="HotkeyField" Style="{StaticResource {x:Type TextBox}}" Width="220" HorizontalAlignment="Left"
-                                 Shortcut="{Binding Hotkey}" AutomationProperties.Name="Combinazione" ShortcutCaptured="HotkeyField_ShortcutCaptured" />
+                                 Shortcut="{Binding Hotkey}" AutomationProperties.Name="Key combination" ShortcutCaptured="HotkeyField_ShortcutCaptured" />
                 <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
-                           Text="Clicca nel campo e premi la combinazione: Ctrl, Alt o Win con un tasto. Vale subito, senza riavviare. Esc lascia quella di prima." />
+                           Text="Click in the field and press the combination: Ctrl, Alt or Win with a key. It works right away, without restarting. Esc keeps the one you had." />
                 <TextBlock Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding HotkeyProblem}"
                            Visibility="{Binding HasHotkeyProblem, Converter={StaticResource Visible}}" />
                 <TextBlock Margin="0,18,0,0" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}"
-                           Text="Con GlazeWM puoi anche legare un tasto a Inlay.exe --toggle, che fa lo stesso con l'Inlay già in esecuzione." />
+                           Text="With GlazeWM you can also bind a key to Inlay.exe --toggle, which does the same with the Inlay already running." />
             </StackPanel>
 
-            <!-- Avvio ed Explorer -->
+            <!-- Startup & Explorer -->
             <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Windows}">
-                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Avvio ed Explorer" />
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Startup &amp; Explorer" />
                 <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
-                           Text="Quello che Inlay imposta in Windows per il tuo utente. L'installer li accende tutti e due, la disinstallazione li spegne." />
-                <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Autostart, Mode=TwoWay}" Content="Avvia Inlay con Windows" />
+                           Text="What Inlay sets up in Windows for your user. The installer turns both on, uninstalling turns them off." />
+                <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Autostart, Mode=TwoWay}" Content="Start Inlay with Windows" />
                 <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
-                           Text="Parte nell'area di notifica, pronto per la scorciatoia." />
-                <ToggleButton Style="{StaticResource Switch}" Margin="0,14,0,0" IsChecked="{Binding SendTo, Mode=TwoWay}" Content="«Inlay» nel menu Invia a di Explorer" />
+                           Text="It starts in the tray, ready for the hotkey." />
+                <ToggleButton Style="{StaticResource Switch}" Margin="0,14,0,0" IsChecked="{Binding SendTo, Mode=TwoWay}" Content="“Inlay” in the Send to menu of Explorer" />
                 <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
-                           Text="Tasto destro su uno o più file, Invia a, Inlay: Inlay chiede in quale riquadro metterli." />
+                           Text="Right-click one or more files, Send to, Inlay: Inlay asks which tile to put them in." />
                 <TextBlock Margin="0,14,0,0" Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding WindowsProblem}" />
             </StackPanel>
         </Grid>

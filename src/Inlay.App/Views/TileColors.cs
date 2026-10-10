@@ -7,21 +7,21 @@ public sealed record TileColor(string Name, string Hex);
 
 /// <summary>
 /// The colors a tile can have: the eight of Brace that read well on its dark surfaces, the charts' five and the
-/// three of success, warning and danger. A color is kept in the metadata as "#RRGGBB", so an archive opened
-/// elsewhere shows the same.
+/// three of success, warning and danger, named after the stones of an inlay. A color is kept in the metadata as
+/// "#RRGGBB", so an archive opened elsewhere shows the same.
 /// </summary>
 internal static class TileColors
 {
     public static readonly IReadOnlyList<TileColor> All =
     [
-        new("Ambra", "#FFA133"),
-        new("Azzurro", "#5DA9FF"),
-        new("Viola", "#B48CFF"),
-        new("Rosa", "#FF7EB6"),
-        new("Verde", "#36CFB0"),
-        new("Giallo", "#F2D24B"),
-        new("Rosso", "#FF7272"),
-        new("Grigio", "#C3CAD3"),
+        new("Amber", "#FFA133"),
+        new("Lapis", "#5DA9FF"),
+        new("Amethyst", "#B48CFF"),
+        new("Rose", "#FF7EB6"),
+        new("Jade", "#36CFB0"),
+        new("Citrine", "#F2D24B"),
+        new("Coral", "#FF7272"),
+        new("Pearl", "#C3CAD3"),
     ];
 
     private static readonly Dictionary<string, SolidColorBrush> Brushes = new(StringComparer.OrdinalIgnoreCase);

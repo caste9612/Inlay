@@ -33,22 +33,22 @@
 
             <!-- What an archive is, in two lines; the first time, a welcome -->
             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
-                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Benvenuto in Inlay"
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Welcome to Inlay"
                            Visibility="{Binding IsWelcome, Converter={StaticResource Visible}}" />
-                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Archivi"
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Vaults"
                            Visibility="{Binding IsWelcome, Converter={StaticResource Hidden}}" />
                 <TextBlock Margin="0,6,0,0" MaxWidth="720" HorizontalAlignment="Left" TextWrapping="Wrap"
                            Foreground="{DynamicResource Brace.TextSecondary}"
-                           Text="Inlay tiene le tue cose in un archivio: una cartella normale, che vedi anche in Explorer, con dentro argomenti e riquadri. Come i vault di Obsidian, puoi averne più di uno, passare dall'uno all'altro e spostarli dove vuoi." />
+                           Text="Inlay keeps your things in a vault: a plain folder, which you also see in Explorer, with spaces and tiles inside. As with the vaults of Obsidian, you can have more than one, switch between them and move them wherever you like." />
                 <TextBlock Margin="0,6,0,0" MaxWidth="720" HorizontalAlignment="Left" TextWrapping="Wrap"
                            Foreground="{DynamicResource Brace.TextSecondary}" Visibility="{Binding IsWelcome, Converter={StaticResource Visible}}"
-                           Text="Inlay lavora sui file veri: quello che sposti o rinomini qui cambia anche in Explorer. Ciò che elimini va nel Cestino, e Ctrl+Z annulla l'ultima operazione." />
+                           Text="Inlay works on the real files: what you move or rename here changes in Explorer too. What you delete goes to the Recycle Bin, and Ctrl+Z undoes the last operation." />
             </StackPanel>
 
             <!-- What is going on: the result of the last action, the progress of a check -->
             <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0" MinHeight="28">
                 <!-- While the shell copies, its own window shows the progress and stops the copy. -->
-                <Button DockPanel.Dock="Right" Style="{StaticResource Brace.Button.Small}" Content="Interrompi il controllo"
+                <Button DockPanel.Dock="Right" Style="{StaticResource Brace.Button.Small}" Content="Stop the check"
                         Click="CancelCheck_Click" Visibility="{Binding IsChecking, Converter={StaticResource Visible}}" />
                 <ProgressBar DockPanel.Dock="Right" Width="160" Margin="12,0" VerticalAlignment="Center" Maximum="1"
                              Value="{Binding Progress}" Visibility="{Binding IsChecking, Converter={StaticResource Visible}}" />
@@ -66,20 +66,20 @@
                 <!-- The archives this PC knows -->
                 <GroupBox Style="{StaticResource Brace.Panel}" Padding="0">
                     <GroupBox.Header>
-                        <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="I tuoi archivi" />
+                        <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="Your vaults" />
                     </GroupBox.Header>
                     <DockPanel>
                         <WrapPanel DockPanel.Dock="Bottom" Margin="10,10,4,4" IsEnabled="{Binding IsIdle}"
                                    Visibility="{Binding HasArchives, Converter={StaticResource Visible}}">
-                            <Button Style="{StaticResource Brace.Button.Primary.Small}" Margin="0,0,6,6" Content="Apri" Click="Open_Click" />
-                            <Button Style="{StaticResource Action}" Content="Mostra in Explorer" Click="Reveal_Click" />
-                            <Button Style="{StaticResource Action}" Content="Rinomina…" Click="Rename_Click" />
-                            <Button Style="{StaticResource Action}" Content="Sposta…" Click="Move_Click" />
-                            <Button Style="{StaticResource Action}" Content="Togli dall'elenco" Click="Forget_Click" />
+                            <Button Style="{StaticResource Brace.Button.Primary.Small}" Margin="0,0,6,6" Content="Open" Click="Open_Click" />
+                            <Button Style="{StaticResource Action}" Content="Show in Explorer" Click="Reveal_Click" />
+                            <Button Style="{StaticResource Action}" Content="Rename…" Click="Rename_Click" />
+                            <Button Style="{StaticResource Action}" Content="Move…" Click="Move_Click" />
+                            <Button Style="{StaticResource Action}" Content="Remove from the list" Click="Forget_Click" />
                         </WrapPanel>
                         <Grid>
                             <TextBlock Margin="14,12" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}"
-                                       Text="Ancora nessun archivio. Creane uno qui a destra, oppure apri una cartella che hai già."
+                                       Text="No vaults yet. Create one here on the right, or open a folder you already have."
                                        Visibility="{Binding HasArchives, Converter={StaticResource Hidden}}" />
                             <ListBox x:Name="ArchiveList" BorderThickness="0" Background="Transparent" ItemsSource="{Binding Archives}"
                                      SelectedItem="{Binding Selected}" MouseDoubleClick="ArchiveList_MouseDoubleClick"
@@ -88,11 +88,11 @@
                                     <DataTemplate DataType="{x:Type vm:ArchiveEntryViewModel}">
                                         <DockPanel Margin="0,5" Background="Transparent" ToolTip="{Binding Path}">
                                             <ContentControl DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Brace.Badge.Accent}"
-                                                            Content="In uso" Visibility="{Binding IsCurrent, Converter={StaticResource Visible}}" />
+                                                            Content="In use" Visibility="{Binding IsCurrent, Converter={StaticResource Visible}}" />
                                             <ContentControl DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Brace.Badge.Warning}"
-                                                            Content="Non trovato" Visibility="{Binding IsMissing, Converter={StaticResource Visible}}" />
+                                                            Content="Not found" Visibility="{Binding IsMissing, Converter={StaticResource Visible}}" />
                                             <Path DockPanel.Dock="Left" Margin="0,1,10,0" VerticalAlignment="Top" Style="{StaticResource Kind}"
-                                                  Data="{StaticResource Brace.Icon.Folder16}" />
+                                                  Data="{StaticResource Brace.Icon.Database16}" />
                                             <StackPanel>
                                                 <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                                                 <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Path}"
@@ -113,21 +113,21 @@
                 <StackPanel Grid.Column="2" IsEnabled="{Binding IsIdle}">
                     <GroupBox Style="{StaticResource Brace.Panel}" Padding="0">
                         <GroupBox.Header>
-                            <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="Crea un archivio nuovo" />
+                            <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="Create a new vault" />
                         </GroupBox.Header>
                         <StackPanel Margin="14,12,14,14">
-                            <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Nome" />
+                            <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Name" />
                             <TextBox x:Name="NewNameBox" Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Margin="0,12,0,4" Style="{StaticResource Brace.FieldLabel}" Text="Dove" />
+                            <TextBlock Margin="0,12,0,4" Style="{StaticResource Brace.FieldLabel}" Text="Where" />
                             <DockPanel>
-                                <Button DockPanel.Dock="Right" Margin="6,0,0,0" Style="{StaticResource Brace.Button}" Content="Sfoglia…"
+                                <Button DockPanel.Dock="Right" Margin="6,0,0,0" Style="{StaticResource Brace.Button}" Content="Browse…"
                                         Click="BrowseParent_Click" />
                                 <TextBox Text="{Binding NewParent, UpdateSourceTrigger=PropertyChanged}" />
                             </DockPanel>
                             <TextBlock Style="{StaticResource Brace.FieldHint}"
-                                       Text="Meglio sullo stesso disco del Desktop: spostare lì i suoi file è istantaneo, senza copie." />
+                                       Text="Best on the same drive as the Desktop: moving its files there is instant, without copies." />
                             <DockPanel Margin="0,14,0,0">
-                                <Button DockPanel.Dock="Left" Style="{StaticResource Brace.Button.Primary}" Content="Crea l'archivio"
+                                <Button DockPanel.Dock="Left" Style="{StaticResource Brace.Button.Primary}" Content="Create the vault"
                                         Click="Create_Click" />
                                 <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}"
                                            Text="{Binding NewPath}" TextTrimming="CharacterEllipsis" ToolTip="{Binding NewPath}" />
@@ -137,13 +137,13 @@
 
                     <GroupBox Margin="0,16,0,0" Style="{StaticResource Brace.Panel}" Padding="0">
                         <GroupBox.Header>
-                            <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="Apri una cartella come archivio" />
+                            <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="Open a folder as a vault" />
                         </GroupBox.Header>
                         <StackPanel Margin="14,12,14,14">
                             <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
-                                       Text="Una cartella che hai già: le sue sottocartelle diventano argomenti, i file restano dove sono." />
+                                       Text="A folder you already have: its subfolders become spaces, the files stay where they are." />
                             <Button Margin="0,14,0,0" HorizontalAlignment="Left" Style="{StaticResource Brace.Button}"
-                                    Content="Scegli la cartella…" Click="OpenFolder_Click" />
+                                    Content="Choose the folder…" Click="OpenFolder_Click" />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>
@@ -171,7 +171,7 @@
                         <Button x:Name="PromptConfirmDanger" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Danger}"
                                 Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}"
                                 Visibility="{Binding IsDanger, Converter={StaticResource Visible}}" />
-                        <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
+                        <Button Style="{StaticResource Brace.Button}" Content="Cancel" Command="{Binding CancelCommand}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

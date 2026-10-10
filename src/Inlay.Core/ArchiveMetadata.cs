@@ -11,7 +11,7 @@ public sealed class ArchiveMetadata
 {
     public const string TopicKind = "topic";
 
-    /// <summary>A folder of a topic shown as a row of its «Generale», not as a tile of its own.</summary>
+    /// <summary>A folder of a topic shown as a row of its «General», not as a tile of its own.</summary>
     public const string ItemKind = "item";
 
     public int Version { get; set; } = 1;
@@ -20,7 +20,7 @@ public sealed class ArchiveMetadata
 
     public bool IsTopic(string relativeKey) => HasKind(relativeKey, TopicKind);
 
-    /// <summary>Whether a folder of a topic is a row of its «Generale», like a folder dropped on the topic, rather than a tile.</summary>
+    /// <summary>Whether a folder of a topic is a row of its «General», like a folder dropped on the topic, rather than a tile.</summary>
     public bool IsItem(string relativeKey) => HasKind(relativeKey, ItemKind);
 
     /// <returns>Whether anything changed.</returns>
@@ -266,7 +266,7 @@ public sealed class FolderMetadata
 {
     /// <summary>
     /// <see cref="ArchiveMetadata.TopicKind"/> for a topic below the root, <see cref="ArchiveMetadata.ItemKind"/> for a row of
-    /// «Generale»; null for a tile.
+    /// «General»; null for a tile.
     /// </summary>
     public string? Kind { get; set; }
 

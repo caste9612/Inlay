@@ -24,14 +24,14 @@ public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
 
     public ArchiveItem Item { get; private set; } = item;
 
-    /// <summary>A folder shown as a row of «Generale», like one dropped on its topic: «Promuovi a riquadro» gives it a tile.</summary>
+    /// <summary>A folder shown as a row of «General», like one dropped on its topic: «Unfold as tile» gives it a tile.</summary>
     public bool CanBecomeTile { get; init; }
 
     public string Name => Item.DisplayName;
 
     public string DateText => DateLabel.For(Item.Modified);
 
-    public string ToolTip => Item.Modified is null ? Item.FullPath : $"{Item.FullPath}\nModificato: {DateLabel.Full(Item.Modified)}";
+    public string ToolTip => Item.Modified is null ? Item.FullPath : $"{Item.FullPath}\nModified: {DateLabel.Full(Item.Modified)}";
 
     public override string RenamePath => Item.FullPath;
 
@@ -120,8 +120,8 @@ public partial class ItemViewModel(ArchiveItem item) : RenameableViewModel
 /// <summary>A search result: an item plus where it lives.</summary>
 public sealed class SearchResultViewModel(SearchHit hit) : ItemViewModel(hit.Item)
 {
-    /// <summary>Like "Lavoro › Clienti › Rossi".</summary>
+    /// <summary>Like "Work › Clients › Smith"; "Vault" for what is loose in its root.</summary>
     public string Location { get; } = hit.RelativeDirectory.Length == 0
-        ? "Archivio"
+        ? "Vault"
         : string.Join(" › ", hit.RelativeDirectory.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 }

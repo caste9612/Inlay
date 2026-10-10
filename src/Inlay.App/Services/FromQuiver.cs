@@ -2,7 +2,7 @@ namespace Inlay.App.Services;
 
 /// <summary>
 /// What Inlay takes over from the versions called Quiver, up to 0.3.2: the settings and the recent places of this PC, copied
-/// the first time Inlay starts. The old folder stays, untouched. The start with Windows and «Invia a» of Quiver go away
+/// the first time Inlay starts. The old folder stays, untouched. The start with Windows and «Send to» of Quiver go away
 /// when Quiver is uninstalled; the archives take their own metadata over when they are opened
 /// (<see cref="Core.ArchiveFolders.TakeOverOldMetadata"/>).
 /// </summary>

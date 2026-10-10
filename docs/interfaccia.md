@@ -5,10 +5,10 @@ Come è fatto il pannello: view model, ricarica, ricerca, selezione, tastiera e 
 ## Come è diviso il codice
 
 - **MVVM con CommunityToolkit.Mvvm**: proprietà con `[ObservableProperty]` e `[NotifyPropertyChangedFor]`, comandi con `[RelayCommand]`, reazioni nei metodi parziali `On…Changed`.
-- **I view model** stanno in `ViewModels`. `MainViewModel` è lo stato del pannello; attorno a lui `TopicViewModel`, `TileViewModel`, `ItemViewModel` (e `SearchResultViewModel`), `ZoneViewModel` e `CanvasViewModel`, più `PromptViewModel`, `DestinationPickerViewModel` e `ToastViewModel` per domande, «Sposta in…» e avvisi.
+- **I view model** stanno in `ViewModels`. `MainViewModel` è lo stato del pannello; attorno a lui `TopicViewModel`, `TileViewModel`, `ItemViewModel` (e `SearchResultViewModel`), `ZoneViewModel` e `CanvasViewModel`, più `PromptViewModel`, `DestinationPickerViewModel` e `ToastViewModel` per domande, «Move to…» e avvisi.
 - **I gesti stanno nel code-behind** di `PanelView` (`Views/PanelView.xaml.cs`): tastiera, mouse, trascinamenti e menu decidono cosa fare e chiamano i metodi di `MainViewModel`. I comandi sono pochi (`SelectTopicCommand` e quelli delle domande).
 - **Il view model parla alla vista con eventi**: `FileOperationCompleted` (la finestra si riprende il focus), `SelectionRestored` (il focus va sulla selezione), `ShowOnCanvasRequested` (volo a un riquadro), `Reloaded` (il focus torna dov'era).
-- **I testi dell'interfaccia** sono in italiano, scritti direttamente nel XAML e nel codice; i commenti e i nomi sono in inglese.
+- **I testi dell'interfaccia** sono in inglese dalla 0.3.4 (fino alla 0.3.3 erano in italiano), scritti direttamente nel XAML e nel codice, come i commenti e i nomi. Numeri e date si scrivono all'inglese qualunque sia la lingua di Windows: `ByteSize` e `DateLabel` usano la cultura `en-US`, e così i conteggi di `MainViewModel` e `ZoneViewModel` («18,481 items», «12.4 MB», «5 Oct»).
 
 ## `MainViewModel`: lo stato del pannello
 
@@ -49,11 +49,11 @@ A ogni ricarica `MainViewModel` legge i metadati, crea un nuovo `ArchiveReader`,
 
 ## La ricerca
 
-- L'indice (`SearchIndex`) si costruisce in background quando si apre l'archivio e quando il watcher vede un cambiamento; una costruzione nuova annulla quella in corso. Mentre un'operazione sposta file, aspetta e si fa una volta sola alla fine. Finché non c'è, la ricerca dice «Indicizzazione in corso…».
-- Scrivere in qualunque punto del pannello scrive nella ricerca (`OnPreviewTextInput`). `Query` produce al massimo 60 risultati, ognuno con il suo percorso («Lavoro › Clienti › Rossi», o «Archivio»). `RunSearch` la legge con `SearchQuery.Parse` ([archivio.md](archivio.md#la-ricerca-searchindex-searchquery-searchtext)); con i soli filtri l'intestazione dice «I 60 più recenti» o quanti sono.
-- **I filtri sopra i risultati**: il pulsante del posto («Ovunque», o «In: Lavoro», `PlaceFilterText`) apre un menu con gli argomenti, rientrati come nella barra laterale; i tipi sono `KindFilters`, un `SearchKindFilter` per tipo, nel colore dell'accento quando sono scritti nella casella (`IsChecked`). Un clic scrive o toglie `tipo:…` (`ToggleKindFilter`) o `in:/…` (`SetSearchPlace`, dalla radice: un argomento scelto è quello, non un'altra cartella con il suo nome) e rimette il cursore in fondo alla casella: la casella resta l'unico posto dove stanno i filtri, e quello che vi si scrive a mano accende gli stessi pulsanti.
-- **Il pulsante a imbuto** nella casella apre un menu con i tipi e i posti, anche prima di scrivere: un filtro scelto lì fa comparire i risultati.
-- Le frecce scelgono, `Invio` apre, `Ctrl+Invio` mostra in Explorer, `Esc` svuota la ricerca e una seconda volta chiude la finestra. Sulla tela un clic su un risultato ci vola sopra ([tela.md](tela.md#i-gesti-in-panelview)).
+- L'indice (`SearchIndex`) si costruisce in background quando si apre l'archivio e quando il watcher vede un cambiamento; una costruzione nuova annulla quella in corso. Mentre un'operazione sposta file, aspetta e si fa una volta sola alla fine. Finché non c'è, la ricerca dice «Indexing…».
+- Scrivere in qualunque punto del pannello scrive nella ricerca (`OnPreviewTextInput`). `Query` produce al massimo 60 risultati, ognuno con il suo percorso («Lavoro › Clienti › Rossi», o «Vault» per i file sciolti nella radice). `RunSearch` la legge con `SearchQuery.Parse` ([archivio.md](archivio.md#la-ricerca-searchindex-searchquery-searchtext)); con i soli filtri l'intestazione dice «The 60 most recent» o quanti sono («2 items, most recent first»).
+- **I filtri sopra i risultati**: il pulsante del posto («Everywhere», o «In: Lavoro», `PlaceFilterText`) apre un menu con gli argomenti, rientrati come nella barra laterale; i tipi sono `KindFilters`, un `SearchKindFilter` per tipo, nel colore dell'accento quando sono scritti nella casella (`IsChecked`). Un clic scrive o toglie `type:…` (`ToggleKindFilter`) o `in:/…` (`SetSearchPlace`, dalla radice: un argomento scelto è quello, non un'altra cartella con il suo nome) e rimette il cursore in fondo alla casella: la casella resta l'unico posto dove stanno i filtri, e quello che vi si scrive a mano accende gli stessi pulsanti.
+- **Il pulsante a imbuto** nella casella apre un menu con i tipi (**Type**) e i posti (**Where**), anche prima di scrivere: un filtro scelto lì fa comparire i risultati.
+- Le frecce scelgono, `Enter` apre, `Ctrl+Enter` mostra in Explorer, `Esc` svuota la ricerca e una seconda volta chiude la finestra. Sulla tela un clic su un risultato ci vola sopra ([tela.md](tela.md#i-gesti-in-panelview)).
 - Con la ricerca vuota, `Ctrl+Z` e `Ctrl+V` (di file) agiscono sulla bacheca: il pannello si apre con il focus nella ricerca, e devono funzionare subito.
 
 ## Selezione, tastiera e mouse
@@ -64,51 +64,51 @@ A ogni ricarica `MainViewModel` legge i metadati, crea un nuovo `ArchiveReader`,
 - **Il rettangolo** (solo sulla bacheca): trascinando sul vuoto, non dal titolo di un riquadro né da un pulsante, `SelectionBandAdorner` disegna il rettangolo e seleziona le righe che tocca, solo nella parte visibile di ogni riquadro; con `Ctrl` tiene quelle di prima.
 - **La rotella** su un riquadro ne fa scorrere la lista; agli estremi fa scorrere la bacheca.
 
-I tasti, gestiti quasi tutti in `OnPreviewKeyDown` (`Invio` nelle liste in `ItemList_KeyDown`, nella ricerca in `SearchBox_PreviewKeyDown`):
+I tasti, gestiti quasi tutti in `OnPreviewKeyDown` (`Enter` nelle liste in `ItemList_KeyDown`, nella ricerca in `SearchBox_PreviewKeyDown`):
 
 | Tasto | Cosa fa |
 |---|---|
-| `Ctrl+Maiusc+N` | nuovo riquadro |
+| `Ctrl+Shift+N` | nuovo riquadro |
 | `Ctrl+B` | chiude o apre la barra degli argomenti |
 | `Ctrl+0`, `Ctrl++`, `Ctrl+-` | sulla tela: tutto in vista, avvicina, allontana |
 | `Esc` | svuota la ricerca; senza ricerca, rimette Inlay nella tray |
 | `Ctrl+Z` | annulla |
 | `F2` | rinomina l'argomento con il focus o l'unico elemento selezionato |
-| `Canc` | Cestino per l'argomento con il focus o la selezione |
+| `Del` | Cestino per l'argomento con il focus o la selezione |
 | `Ctrl+A` | seleziona tutto il riquadro con il focus |
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | appunti; si incolla nell'argomento o nel riquadro con il focus, se no sulla bacheca |
-| `Ctrl+Maiusc+C` | copia il percorso |
-| `Alt+Invio` | proprietà |
-| `Invio`, `Ctrl+Invio` (in una lista) | apre, mostra in Explorer |
+| `Ctrl+Shift+C` | copia il percorso |
+| `Alt+Enter` | proprietà |
+| `Enter`, `Ctrl+Enter` (in una lista) | apre, mostra in Explorer |
 
-Mentre una domanda è aperta, i tasti vanno a lei: `Esc` annulla, `Invio` conferma (o preme il pulsante su cui si è arrivati con `Tab`), le frecce scorrono l'elenco di «Sposta in…».
+Mentre una domanda è aperta, i tasti vanno a lei: `Esc` annulla, `Enter` conferma (o preme il pulsante su cui si è arrivati con `Tab`), le frecce scorrono l'elenco di «Move to…».
 
-**La rinomina sul posto**: `Invio` conferma (se il nome non va, un avviso lo dice e il campo resta aperto), `Esc` annulla, perdere il focus conferma (tranne verso il menu del campo stesso), e un clic altrove conferma dopo che il clic ha fatto il suo lavoro (`CommitAfterInput`).
+**La rinomina sul posto**: `Enter` conferma (se il nome non va, un avviso lo dice e il campo resta aperto), `Esc` annulla, perdere il focus conferma (tranne verso il menu del campo stesso), e un clic altrove conferma dopo che il clic ha fatto il suo lavoro (`CommitAfterInput`).
 
 ## Le domande sopra la bacheca
 
 - **`PromptViewModel`**: titolo, etichetta del pulsante, messaggio, un campo di testo facoltativo, pulsante rosso per le azioni che tolgono qualcosa (`IsDanger`). La funzione di conferma restituisce un problema da mostrare sotto il campo, o null per chiudere. Sono dentro il pannello e non finestre a parte, perché fino alla 0.2.1 il pannello si nascondeva appena perdeva il focus.
-- **`DestinationPickerViewModel`** («Sposta in…»): senza filtro, prima le destinazioni recenti e poi le altre nell'ordine della barra laterale; con un filtro, il punteggio di `SearchText`, con 30 punti in più per le recenti. `Detail` dice dove sta ogni posto.
+- **`DestinationPickerViewModel`** («Move to…»): senza filtro, prima le destinazioni recenti e poi le altre nell'ordine della barra laterale; con un filtro, il punteggio di `SearchText`, con 30 punti in più per le recenti. `Detail` dice dove sta ogni posto: «Lavoro › Clienti» per un riquadro, «Space» o «Space in Lavoro» per un argomento.
 - Entrano con `Motion.Enter`, il focus va al campo o al pulsante di conferma, e alla chiusura torna dov'era.
 
 ## Avvisi e barra di stato
 
-- **`ToastViewModel`**: tipo (`Success`, `Info`, `Warning`, `Danger`), titolo, testo, e facoltativi **Mostra** (`Notice`) e **Annulla** (`UndoStep`, finché è l'ultimo passo del registro).
+- **`ToastViewModel`**: tipo (`Success`, `Info`, `Warning`, `Danger`), titolo, testo, e facoltativi **Show** (`Notice`) e **Undo** (`UndoStep`, finché è l'ultimo passo del registro).
 - **`Tell`**: un avviso uguale a uno già in vista lo sostituisce; al massimo tre, il più vecchio esce. Attenzioni ed errori vanno anche nel log. Gli avvisi si svuotano a ogni apertura del pannello e cambiando archivio.
 - **`ToastClock`**: successi e notizie si chiudono dopo sei secondi, con il conto fermo mentre il puntatore o il focus sono sopra. Attenzioni ed errori restano finché non si chiudono.
-- **La barra di stato**: a sinistra l'archivio (un clic lo apre in Explorer) con `ArchiveSummary` e, quando ce ne sono, i file sciolti nella radice (`RootFilesText`: un clic apre la radice), oppure, durante le operazioni, i LED di `Brace.Activity` con `Activity` (l'ultima partita, e quante altre sono in corso o in attesa; il tooltip le elenca); a destra `SelectionSummary` (quanti elementi sono selezionati e quanto pesano i loro file: come in Explorer, il peso delle cartelle non si conta), lo spazio libero (con l'icona di avviso quando è poco), «Inlay X è pronto» quando una versione nuova è scaricata (`UpdateText`: un clic chiede di riavviare, `RestartToUpdateRequested`) e **?**, i tasti da sapere.
-- **I tasti da sapere** sono `MainViewModel.Shortcuts`, costruiti da `ShortcutGroup.For(Hotkey)`: tra loro c'è la scorciatoia in uso, che `App` passa al view model all'avvio e ogni volta che cambia nelle impostazioni.
+- **La barra di stato**: a sinistra un pulsante con l'icona dell'archivio e `ArchiveSummary` («18,481 items · 6.93 GB»), senza il nome, che compare una volta sola, nella barra del titolo: il tooltip (`ArchiveToolTip`) dice dov'è l'archivio, e un clic lo apre in Explorer. Poi, quando ce ne sono, i file sciolti nella radice (`RootFilesText`, «3 loose files in the vault»: un clic apre la radice), oppure, durante le operazioni, i LED di `Brace.Activity` con `Activity` (l'ultima partita, e quante altre sono in corso o in attesa; il tooltip le elenca); a destra `SelectionSummary` (quanti elementi sono selezionati e quanto pesano i loro file: come in Explorer, il peso delle cartelle non si conta), lo spazio libero (con l'icona di avviso quando è poco), «Inlay X is ready» quando una versione nuova è scaricata (`UpdateText`: un clic chiede di riavviare, `RestartToUpdateRequested`) e **?**, i tasti da sapere («Keyboard shortcuts»).
+- **I tasti da sapere** sono `MainViewModel.Shortcuts`, costruiti da `ShortcutGroup.For(Hotkey)` a gruppi (Items, Clipboard, Vault, Search, Mosaic, Window): tra loro c'è la scorciatoia in uso, che `App` passa al view model all'avvio e ogni volta che cambia nelle impostazioni.
 
 ## I menu
 
-Sono risorse di `PanelView.xaml` con `x:Shared="False"`. `ItemMenu`, `TileMenu` e `TopicMenu` sono assegnati con `DynamicResource`: ogni elemento ha il suo menu, creato quando serve. `BoardMenu` è uno solo, assegnato alla bacheca con `StaticResource`. Nei menu che hanno `Opened="ContextMenu_Opened"` (riquadro, argomento, bacheca), le voci «Incolla» (`Tag="paste"`) sono attive solo se negli appunti ci sono file. Il pulsante … di un riquadro apre il suo stesso menu.
+Sono risorse di `PanelView.xaml` con `x:Shared="False"`. `ItemMenu`, `TileMenu` e `TopicMenu` sono assegnati con `DynamicResource`: ogni elemento ha il suo menu, creato quando serve. `BoardMenu` è uno solo, assegnato alla bacheca con `StaticResource`. Nei menu che hanno `Opened="ContextMenu_Opened"` (riquadro, argomento, bacheca), le voci «Paste» (`Tag="paste"`) sono attive solo se negli appunti ci sono file. Il pulsante … di un riquadro apre il suo stesso menu.
 
 | Menu | Voci |
 |---|---|
-| `ItemMenu`, elemento | Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Promuovi a riquadro (solo per le cartelle di «Generale», `CanBecomeTile`), Proprietà, Sposta nel Cestino |
-| `TileMenu`, riquadro | Incolla, Incolla collegamento, Nuova cartella, Nuovo collegamento…, Apri in Explorer, Rinomina riquadro, Promuovi ad argomento, Metti in Generale, Colore, Ordina per, Misura automatica, Sposta il riquadro nel Cestino |
-| `TopicMenu`, argomento | Apri in Explorer, Incolla qui, Incolla collegamento qui, Nuovo riquadro, Nuovo argomento qui dentro, Rinomina, Riporta a riquadro, Colore (con Automatico e Nessuno), Sposta nel Cestino |
-| `BoardMenu`, bacheca | Annulla (con l'etichetta di `UndoLabel`), Nuovo riquadro, Nuovo collegamento…, Incolla, Incolla collegamento, Apri in Explorer |
+| `ItemMenu`, elemento | Open, Open with…, Show in Explorer, Move to…, Cut, Copy, Copy path, Rename, Unfold as tile (solo per le cartelle di «General», `CanBecomeTile`), Properties, Move to Recycle Bin |
+| `TileMenu`, riquadro | Paste, Paste shortcut, New folder, New shortcut…, Open in Explorer, Rename tile, Make it a space, Fold into General, Color, Sort by, Auto size, Move tile to Recycle Bin |
+| `TopicMenu`, argomento | Open in Explorer, Paste here, Paste shortcut here, New tile, New space inside, Rename, Back to tile, Color (con Auto e None), Move to Recycle Bin |
+| `BoardMenu`, bacheca | Undo (con l'etichetta di `UndoLabel`, come «Undo move»), New tile, New shortcut…, Paste, Paste shortcut, Open in Explorer |
 
 Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che resta della v0.2.
 
@@ -118,7 +118,7 @@ Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che rest
 - **`TileList`**, la lista di un riquadro: con `Rows` è alta esattamente quelle righe, misurate sullo schermo (`RowPitch`: al 125 % Windows arrotonda una riga da 22 a 22,4 punti); senza, segue i suoi elementi fino a 268 punti (`TileViewModel.UsualListHeight`), poco meno di dodici righe. Prende gli elementi da `Source` invece che da `ItemsSource`, perché sulla tela nasce addormentata ([tela.md](tela.md#le-righe-create-quando-servono)).
 - **L'angolo** (`ResizeGrip_*`): in larghezza scatta alle colonne della bacheca (al massimo 3, e non più di quelle che ci sono), in altezza a righe, ma solo se il trascinamento si è mosso di almeno mezza riga o il riquadro aveva già un'altezza. Alla fine `ResizeTile`; se il trascinamento viene interrotto, il riquadro torna com'era. Il doppio clic torna alla misura automatica.
 - **`TileGridPanel`** dispone i riquadri in colonne di almeno 280 punti, con 16 punti tra l'una e l'altra.
-- Sopra i riquadri, i sotto-argomenti come pulsanti; sopra ancora, il percorso, il titolo, l'interruttore «Bacheca | Tela» e **Nuovo riquadro**.
+- Sopra i riquadri, i sotto-argomenti come pulsanti; sopra ancora, il percorso, il titolo, l'interruttore «Board | Mosaic» e **New tile**.
 
 ### Le icone degli elementi
 
@@ -131,17 +131,19 @@ Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che rest
 
 - Larga 264 punti; chiusa (`Ctrl+B` o il pulsante nella barra del titolo) non occupa spazio, e Inlay ricorda com'era.
 - **Gli argomenti** sono un `TreeView` con lo stile `TopicItem`: righe da 32 punti e nomi da 14 (`NavRowHeight`, `NavTextSize`), quelli della radice un po' più marcati, l'icona del colore dell'argomento. Quello scelto ha la cartella piena e lo sfondo `accent-subtle`, che diventa `Brace.SelectionInactive` quando il focus non è nell'albero.
-- In alto il **+** per un argomento nuovo.
+- In alto l'etichetta «Spaces» e il **+** per un argomento nuovo (tooltip «New space»).
 
 ## La barra del titolo
 
-Disegnata da Inlay come `br-titlebar` di Brace, perché Brace per WPF non ne ha ancora una: logo e nome, il pulsante della barra laterale, la ricerca al centro (al massimo 280 punti), il nome dell'archivio (apre Impostazioni › Archivi), il pin (legato a `Window.Topmost`), riduci, ingrandisci o ripristina, chiudi (che nasconde). Gli elementi che devono ricevere i clic dentro la zona della cornice hanno `WindowChrome.IsHitTestVisibleInChrome`.
+Disegnata da Inlay come `br-titlebar` di Brace, perché Brace per WPF non ne ha ancora una: logo e nome, il pulsante della barra laterale, la ricerca al centro (al massimo 280 punti, «Search the vault»), il badge dell'archivio in uso, il pin (legato a `Window.Topmost`), riduci, ingrandisci o ripristina, chiudi (che nasconde). Gli elementi che devono ricevere i clic dentro la zona della cornice hanno `WindowChrome.IsHitTestVisibleInChrome`.
+
+Il badge (`Inlay.ProjectBadge`) ha l'icona dell'archivio (`Brace.Icon.Database16`, la stessa della barra di stato e della pagina **Vaults**) e il nome dell'archivio, che compare solo qui: l'icona dice cos'è, e il tooltip anche («The vault in use: click to switch, create, rename or move vaults»). Un clic apre **Settings** › **Vaults**.
 
 ## Colori
 
-- **Gli otto colori** (Ambra, Azzurro, Viola, Rosa, Verde, Giallo, Rosso, Grigio) sono scritti nei due menu **Colore** di `PanelView.xaml`, quello del riquadro e quello dell'argomento. `TileColors.All` li elenca con il loro nome, ma oggi nessuno lo usa: cambiarlo non cambia i menu.
+- **Gli otto colori** (Amber, Lapis, Amethyst, Rose, Jade, Citrine, Coral, Pearl: i nomi delle pietre di un intarsio) sono scritti nei due menu **Color** di `PanelView.xaml`, quello del riquadro e quello dell'argomento. `TileColors.All` li elenca con il loro nome, ma oggi nessuno lo usa: cambiarlo non cambia i menu.
 - **`TileColors.BrushFor`** dà un pennello congelato per un colore «#RRGGBB»; un valore scritto a mano che non è un colore vale come nessuno.
-- **`TopicViewModel.Color`**: `none` vuol dire nessun colore; un argomento della radice mostra il suo; uno interno il suo se scelto a mano, altrimenti quello del genitore. `ColorChoice` dice quale voce del menu Colore ha la spunta (`auto`, `none` o il colore).
+- **`TopicViewModel.Color`**: `none` vuol dire nessun colore; un argomento della radice mostra il suo; uno interno il suo se scelto a mano, altrimenti quello del genitore. `ColorChoice` dice quale voce del menu **Color** ha la spunta (`auto`, `none` o il colore).
 - Le zone della tela prendono il colore del loro argomento.
 
 ## Movimento
@@ -151,16 +153,16 @@ Disegnata da Inlay come `br-titlebar` di Brace, perché Brace per WPF non ne ha 
 
 ## Le impostazioni (`SettingsViewModel`, `ArchivesViewModel`)
 
-`SettingsView` ha le pagine a sinistra (`SettingsSection`: Archivi, Scorciatoia, Avvio ed Explorer) e la pagina scelta a destra. Ogni cambiamento vale subito. La prima volta (`IsWelcome`) c'è solo la pagina degli archivi.
+`SettingsView` ha le pagine a sinistra (`SettingsSection`: **Vaults**, **Hotkey**, **Startup & Explorer**) e la pagina scelta a destra. Ogni cambiamento vale subito. La prima volta (`IsWelcome`) c'è solo la pagina degli archivi, sotto il titolo «Welcome to Inlay».
 
-- **Scorciatoia**: `HotkeyBox` registra la combinazione premuta (con `Ctrl`, `Alt` o `Win`; `Maiusc` da solo no; `Esc` lascia quella di prima). `UseHotkey` la prova subito tramite `ISettingsHost.TryUseHotkey` e la salva solo se Windows la dà a Inlay; se no, sotto il campo compare il motivo.
-- **Avvio ed Explorer**: avvio con Windows e voce di «Invia a», tramite `IWindowsIntegration`. Se Windows rifiuta, l'interruttore torna com'era e un messaggio lo dice.
-- **Archivi** (`ArchivesViewModel`):
-  - l'elenco viene dalle impostazioni, il più recente per primo, con «In uso» o «Non trovato»; sotto ogni archivio, contato in background, quanto occupa e quanto spazio ha il suo disco;
-  - **Crea** (nome e cartella, che di partenza è quella dell'utente, sullo stesso disco del Desktop), **Apri una cartella** (`ArchiveFolders.Adopt`), **Apri**, **Mostra in Explorer**, **Togli dall'elenco** (non quello in uso; la cartella resta);
-  - **Rinomina** e **Sposta…** sullo stesso disco sono un `Directory.Move` della cartella, dopo aver lasciato libero l'archivio in uso (`IArchiveHost.Release`), che poi si riapre dal posto nuovo;
-  - **Sposta…** su un altro disco (`MoveToOtherDriveAsync`): conta quanto occupa l'archivio e controlla lo spazio, lo copia con la shell, confronta byte per byte la copia con l'originale (`CopyCheck`) e passa alla copia solo se è identica; poi chiede se mandare la cartella vecchia nel Cestino. In ogni altro caso l'archivio resta dov'era.
-  - Il conto e il confronto girano in background. La copia gira su un thread STA a parte (`CopyAsync`, con `ShellThread`), con la finestra di avanzamento di Windows: Inlay resta usabile. Mentre la shell copia (`IsCopying`) la finestra Impostazioni non si chiude (`TryClose`) ed **Esci** aspetta (`WhenCopied`), perché una copia interrotta lascerebbe mezzo archivio sull'altro disco. Durante il confronto (`IsChecking`) compaiono l'avanzamento e «Interrompi il controllo».
+- **Hotkey**: `HotkeyBox` registra la combinazione premuta (con `Ctrl`, `Alt` o `Win`; `Shift` da solo no; `Esc` lascia quella di prima). `UseHotkey` la prova subito tramite `ISettingsHost.TryUseHotkey` e la salva solo se Windows la dà a Inlay; se no, sotto il campo compare il motivo.
+- **Startup & Explorer**: avvio con Windows (**Start Inlay with Windows**) e voce di «Invia a» (**“Inlay” in the Send to menu of Explorer**), tramite `IWindowsIntegration`. Se Windows rifiuta, l'interruttore torna com'era e un messaggio lo dice.
+- **Vaults** (`ArchivesViewModel`):
+  - l'elenco viene dalle impostazioni, il più recente per primo, con «In use» o «Not found» e l'icona dell'archivio, come nella barra del titolo; sotto ogni archivio, contato in background, quanto occupa e quanto spazio ha il suo disco;
+  - **Create the vault** (il nome, di partenza «Vault», e la cartella, che di partenza è quella dell'utente, sullo stesso disco del Desktop), **Choose the folder…** sotto «Open a folder as a vault» (`ArchiveFolders.Adopt`), **Open**, **Show in Explorer**, **Remove from the list** (non quello in uso; la cartella resta);
+  - **Rename…** e **Move…** sullo stesso disco sono un `Directory.Move` della cartella, dopo aver lasciato libero l'archivio in uso (`IArchiveHost.Release`), che poi si riapre dal posto nuovo;
+  - **Move…** su un altro disco (`MoveToOtherDriveAsync`): conta quanto occupa l'archivio e controlla lo spazio, lo copia con la shell, confronta byte per byte la copia con l'originale (`CopyCheck`) e passa alla copia solo se è identica; poi chiede se mandare la cartella vecchia nel Cestino. In ogni altro caso l'archivio resta dov'era.
+  - Il conto e il confronto girano in background. La copia gira su un thread STA a parte (`CopyAsync`, con `ShellThread`), con la finestra di avanzamento di Windows: Inlay resta usabile. Mentre la shell copia (`IsCopying`) la finestra **Settings** non si chiude (`TryClose`) e **Quit** aspetta (`WhenCopied`), perché una copia interrotta lascerebbe mezzo archivio sull'altro disco. Durante il confronto (`IsChecking`) compaiono l'avanzamento e «Stop the check».
   - Restano sul thread della finestra la rinomina e lo spostamento sullo stesso disco (un `Directory.Move`) e il Cestino della cartella vecchia, che di solito sono rapidi.
   - Le domande della pagina sono anche qui dei `PromptViewModel`.
 

@@ -19,7 +19,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 {
     private const int MaxResults = 60;
     private const int MaxToasts = 3;
-    private const string Everywhere = "Ovunque";
+    private const string Everywhere = "Everywhere";
+    // Numbers as the words around them: "18,481 items", whatever the language of Windows.
+    private static readonly System.Globalization.CultureInfo English = System.Globalization.CultureInfo.GetCultureInfo("en-US");
 
     private readonly bool _live;
     private readonly bool _readOnly;
@@ -66,7 +68,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(IsBoardVisible), nameof(IsCanvasVisible), nameof(ViewIndex))]
     private bool _isCanvasShown;
 
-    /// <summary>Where the board's topic sits, like "Lavoro › Clienti"; empty for topics in the root.</summary>
+    /// <summary>Where the board's topic sits, like "Work › Clients"; empty for topics in the root.</summary>
     [ObservableProperty]
     private string _boardPath = "";
 
@@ -79,7 +81,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _resultsHeader = "";
 
-    /// <summary>Where the search looks, as the filter above the results says it: "Ovunque", or "In: Lavoro › Clienti".</summary>
+    /// <summary>Where the search looks, as the filter above the results says it: "Everywhere", or "In: Work › Clients".</summary>
     [ObservableProperty]
     private string _placeFilterText = Everywhere;
 
@@ -96,7 +98,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// The operations under way, next to the LEDs of the status bar: the last one started, and how many more run or wait,
-    /// as in "Copio «Foto» in «Lavoro»… · un'altra in corso · 1 in attesa".
+    /// as in "Copying “Photos” to “Work”… · 1 more running · 1 waiting".
     /// </summary>
     [ObservableProperty]
     private string _activity = "";
@@ -105,15 +107,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _activityDetails = "";
 
-    /// <summary>"55.781 elementi · 2,3 GB", in the status bar once the archive has been read whole; empty before.</summary>
+    /// <summary>"55,781 items · 2.3 GB", in the status bar once the archive has been read whole; empty before.</summary>
     [ObservableProperty]
     private string _archiveSummary = "";
 
-    /// <summary>"3 elementi selezionati · 12,4 MB", as in Explorer; null without a selection.</summary>
+    /// <summary>"3 items selected · 12.4 MB", as in Explorer; null without a selection.</summary>
     [ObservableProperty]
     private string? _selectionSummary;
 
-    /// <summary>"120 GB liberi" on the disk of the archive, or "Poco spazio: 3,1 GB liberi"; null when Windows cannot say.</summary>
+    /// <summary>"120 GB free" on the disk of the archive, or "Low on space: 3.1 GB free"; null when Windows cannot say.</summary>
     [ObservableProperty]
     private string? _diskText;
 
@@ -123,7 +125,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isDiskLow;
 
-    /// <summary>"3 file sciolti nella radice": files no topic shows, in the status bar; null when there are none.</summary>
+    /// <summary>"3 loose files in the vault": files no topic shows, in the status bar; null when there are none.</summary>
     [ObservableProperty]
     private string? _rootFilesText;
 
@@ -135,7 +137,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private PromptViewModel? _prompt;
 
-    /// <summary>«Sposta in…», open over the board.</summary>
+    /// <summary>«Move to…», open over the board.</summary>
     [ObservableProperty]
     private DestinationPickerViewModel? _picker;
 
@@ -145,7 +147,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// file operations are done before their method returns.
     /// </param>
     /// <param name="recycleBin">Where Ctrl+Z finds what went to the Recycle Bin; by default, the one of Windows.</param>
-    /// <param name="recent">Where files were sent last, offered first by «Sposta in…»; by default, those of this PC.</param>
+    /// <param name="recent">Where files were sent last, offered first by «Move to…»; by default, those of this PC.</param>
     /// <param name="readOnly">
     /// For previews and measures, which look at the archive and write nothing into it: the colors new topics get are only
     /// shown, not kept.
@@ -170,7 +172,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Raised when items were selected after a reload (renamed, moved, pasted): the view focuses them.</summary>
     public event EventHandler? SelectionRestored;
 
-    /// <summary>«Mostra» on the canvas: the view flies to the tile of this folder, where the items are selected.</summary>
+    /// <summary>«Show» on the canvas: the view flies to the tile of this folder, where the items are selected.</summary>
     public event EventHandler<string>? ShowOnCanvasRequested;
 
     /// <summary>The button of the status bar: the app restarts into the new version, once the operations on the files end.</summary>
@@ -216,13 +218,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>The name of the archive in use: that of its folder.</summary>
     public string ArchiveName => Path.GetFileName(_root);
 
-    /// <summary>The archive in the status bar: where it is, and what a click on it does.</summary>
-    public string ArchiveToolTip => $"{_root}: apri in Explorer";
+    /// <summary>The archive in the status bar, which does not say its name: where it is, and what a click on it does.</summary>
+    public string ArchiveToolTip => $"{_root}: click to open it in Explorer";
 
-    /// <summary>"Inlay 0.4.0 è pronto", in the status bar; null when there is no new version.</summary>
-    public string? UpdateText => UpdateReady is { } version ? $"Inlay {version} è pronto" : null;
+    /// <summary>"Inlay 0.4.0 is ready", in the status bar; null when there is no new version.</summary>
+    public string? UpdateText => UpdateReady is { } version ? $"Inlay {version} is ready" : null;
 
-    /// <summary>«Inlay X è pronto» in the status bar, clicked.</summary>
+    /// <summary>«Inlay X is ready» in the status bar, clicked.</summary>
     public void RestartToUpdate() => RestartToUpdateRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>The folder the board shows: files pasted or dropped on its background go there.</summary>
@@ -236,7 +238,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public bool IsCanvasVisible => !IsSearching && IsCanvasShown;
 
-    /// <summary>For the switch «Bacheca | Tela»: 0 for the board, 1 for the canvas.</summary>
+    /// <summary>For the switch «Board | Mosaic»: 0 for the board, 1 for the canvas.</summary>
     public int ViewIndex
     {
         get => IsCanvasShown ? 1 : 0;
@@ -251,22 +253,22 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>What Ctrl+Z would undo, for the menu.</summary>
     public string UndoLabel => _history.Last switch
     {
-        MoveStep => "Annulla lo spostamento",
-        CopyStep => "Annulla la copia",
-        LinkStep => "Annulla il collegamento",
-        RenameStep => "Annulla la rinomina",
-        CreateStep => "Annulla la creazione",
-        RecycleStep => "Annulla lo spostamento nel Cestino",
-        TileOrderStep => "Annulla lo spostamento del riquadro",
-        TopicOrderStep or TopicMoveStep => "Annulla lo spostamento dell'argomento",
-        TopicStep { WasTopic: false } => "Annulla «Promuovi ad argomento»",
-        TopicStep => "Annulla «Riporta a riquadro»",
-        ItemStep { WasItem: true } => "Annulla «Promuovi a riquadro»",
-        ItemStep => "Annulla «Metti in Generale»",
-        ColorStep => "Annulla il colore",
-        ArrangeStep => "Annulla l'ordinamento",
-        SizeStep => "Annulla il ridimensionamento",
-        _ => "Annulla",
+        MoveStep => "Undo move",
+        CopyStep => "Undo copy",
+        LinkStep => "Undo shortcut",
+        RenameStep => "Undo rename",
+        CreateStep => "Undo creation",
+        RecycleStep => "Undo move to Recycle Bin",
+        TileOrderStep => "Undo tile move",
+        TopicOrderStep or TopicMoveStep => "Undo space move",
+        TopicStep { WasTopic: false } => "Undo “Make it a space”",
+        TopicStep => "Undo “Back to tile”",
+        ItemStep { WasItem: true } => "Undo “Unfold as tile”",
+        ItemStep => "Undo “Fold into General”",
+        ColorStep => "Undo color",
+        ArrangeStep => "Undo sort",
+        SizeStep => "Undo resize",
+        _ => "Undo",
     };
 
     /// <summary>The panel window, owner of the progress and conflict dialogs of file operations.</summary>
@@ -278,7 +280,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     public bool IsBusy => _fileWork.Count > 0;
 
-    /// <summary>Done when no file operation runs or waits: «Esci» waits for it, so that a copy is not cut halfway.</summary>
+    /// <summary>Done when no file operation runs or waits: «Quit» waits for it, so that a copy is not cut halfway.</summary>
     public Task WhenIdle() => IsBusy ? (_idle ??= new TaskCompletionSource()).Task : Task.CompletedTask;
 
     [MemberNotNull(nameof(_root), nameof(_reader))]
@@ -399,11 +401,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             Clipboard.SetText(item.Item.FullPath);
-            Tell(ToastKind.Success, "Percorso copiato", item.Item.FullPath);
+            Tell(ToastKind.Success, "Path copied", item.Item.FullPath);
         }
         catch (ExternalException)
         {
-            Tell(ToastKind.Danger, "Gli appunti sono occupati da un altro programma. Riprova tra un attimo.");
+            Tell(ToastKind.Danger, "Another program is using the clipboard. Try again in a moment.");
         }
     }
 
@@ -416,7 +418,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var paths = items.Select(item => item.Item.FullPath).ToList();
         if (!FileClipboard.Put(paths, cut))
         {
-            Tell(ToastKind.Danger, "Gli appunti sono occupati da un altro programma. Riprova tra un attimo.");
+            Tell(ToastKind.Danger, "Another program is using the clipboard. Try again in a moment.");
             return;
         }
         _cutPaths.Clear();
@@ -426,29 +428,29 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         foreach (var item in Tiles.Concat(Canvas.AllTiles()).SelectMany(tile => tile.Items).Concat(Results))
             item.IsCut = _cutPaths.Contains(item.Item.FullPath);
         if (cut)
-            Tell(ToastKind.Info, $"{Count(items.Count, "elemento pronto", "elementi pronti")} da spostare: incolla con Ctrl+V dove vuoi.");
+            Tell(ToastKind.Info, $"{Count(items.Count, "item", "items")} ready to move: paste with Ctrl+V wherever you want.");
         else
-            Tell(ToastKind.Success, $"{Count(items.Count, "elemento copiato", "elementi copiati")}.");
+            Tell(ToastKind.Success, $"{Count(items.Count, "item", "items")} copied.");
     }
 
     public async Task PasteInto(string folder)
     {
         if (FileClipboard.Read() is not { } clipboard || clipboard.Paths.Count == 0)
         {
-            Tell(ToastKind.Info, "Negli appunti non ci sono file da incollare.");
+            Tell(ToastKind.Info, "There are no files on the clipboard to paste.");
             return;
         }
         var destination = Path.GetFullPath(folder);
         if (clipboard.Paths.Any(path => TransferRules.IsSameOrInside(destination, Path.GetFullPath(path))))
         {
-            Tell(ToastKind.Warning, "Una cartella non si può incollare dentro se stessa.");
+            Tell(ToastKind.Warning, "A folder can't be pasted inside itself.");
             return;
         }
         if (clipboard.Cut)
         {
             if (clipboard.Paths.All(path => SamePath(Path.GetDirectoryName(path) ?? "", destination)))
             {
-                Tell(ToastKind.Info, "I file sono già in questa cartella.");
+                Tell(ToastKind.Info, "The files are already in this folder.");
                 return;
             }
             _cutPaths.Clear();
@@ -462,18 +464,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>Like "Nuovo › Collegamento" in Explorer: a website or a path, typed or pasted, in <paramref name="folder"/>.</summary>
+    /// <summary>Like "New › Shortcut" in Explorer: a website or a path, typed or pasted, in <paramref name="folder"/>.</summary>
     public void AskNewLink(string folder) =>
-        ShowPrompt(new PromptViewModel("Nuovo collegamento", "Crea collegamento", text => CreateTypedLink(folder, text),
+        ShowPrompt(new PromptViewModel("New shortcut", "Create shortcut", text => CreateTypedLink(folder, text),
             initialText: "",
-            message: "Scrivi l'indirizzo di un sito, oppure il percorso di un programma, di un file o di una cartella."));
+            message: "Type the address of a website, or the path of a program, a file or a folder."));
 
     /// <returns>Why no shortcut was made, shown under the field; null when it is done.</returns>
     private string? CreateTypedLink(string folder, string text)
     {
         var typed = Environment.ExpandEnvironmentVariables(text.Trim().Trim('"').Trim());
         if (typed.Length == 0)
-            return "Scrivi un indirizzo o un percorso.";
+            return "Type an address or a path.";
         if (!EnsureFolder(folder))
             return Status;
         string link;
@@ -484,12 +486,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             else if (WebShortcut.Parse(typed) is { } address)
                 link = WebShortcut.Create(folder, address);
             else
-                return "Non trovo questo percorso, e non sembra l'indirizzo di un sito.";
+                return "This path can't be found, and it doesn't look like the address of a website.";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or COMException or ArgumentException)
         {
             Log.Write($"Could not make a shortcut to {typed}: {e}");
-            return $"Impossibile creare il collegamento: {e.Message}";
+            return $"Couldn't create the shortcut: {e.Message}";
         }
         Remember(new LinkStep([link]));
         ClearSelection();
@@ -503,12 +505,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         return null;
     }
 
-    /// <summary>"Incolla collegamento", as in Explorer: shortcuts to the files on the clipboard, which stay where they are.</summary>
+    /// <summary>"Paste shortcut", as in Explorer: shortcuts to the files on the clipboard, which stay where they are.</summary>
     public Task PasteLinksInto(string folder)
     {
         if (FileClipboard.Read() is not { } clipboard || clipboard.Paths.Count == 0)
         {
-            Tell(ToastKind.Info, "Negli appunti non ci sono file da collegare.");
+            Tell(ToastKind.Info, "There are no files on the clipboard to make shortcuts to.");
             return Task.CompletedTask;
         }
         return Transfer(clipboard.Paths, folder, TransferKind.Link);
@@ -516,18 +518,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     // ---- Creating ----
 
-    /// <summary>Like "New folder" on the desktop: a tile named "Nuovo riquadro", with its name ready to type over.</summary>
+    /// <summary>Like "New folder" on the desktop: a tile named "New tile", with its name ready to type over.</summary>
     /// <param name="topic">Null for the topic on the board.</param>
     public void NewTile(TopicViewModel? topic = null)
     {
         topic ??= _selectedTopic;
         if (topic is null)
         {
-            Tell(ToastKind.Info, "Per creare un riquadro, scegli prima un argomento.");
+            Tell(ToastKind.Info, "To create a tile, choose a space first.");
             return;
         }
         var folder = topic.Topic.FullPath;
-        if (CreateFolder(folder, ArchiveNames.Unique(folder, "Nuovo riquadro")) is not { } path)
+        if (CreateFolder(folder, ArchiveNames.Unique(folder, "New tile")) is not { } path)
             return;
         Remember(new CreateStep(path));
         _selectedTopicPath = topic.Topic.RelativePath;
@@ -540,7 +542,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void NewTopic(TopicViewModel? parent)
     {
         var folder = parent?.Topic.FullPath ?? _root;
-        if (CreateFolder(folder, ArchiveNames.Unique(folder, "Nuovo argomento")) is not { } path)
+        if (CreateFolder(folder, ArchiveNames.Unique(folder, "New space")) is not { } path)
             return;
         Remember(new CreateStep(path));
         // Folders in the root are topics anyway; deeper ones have to be marked.
@@ -554,10 +556,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public void NewFolder(TileViewModel tile)
     {
-        if (CreateFolder(tile.FolderPath, ArchiveNames.Unique(tile.FolderPath, "Nuova cartella")) is not { } path)
+        if (CreateFolder(tile.FolderPath, ArchiveNames.Unique(tile.FolderPath, "New folder")) is not { } path)
             return;
         Remember(new CreateStep(path));
-        // The folder of «Generale» is that of its topic: a folder made there is one of its rows, not a tile of its own.
+        // The folder of «General» is that of its topic: a folder made there is one of its rows, not a tile of its own.
         if (tile.IsGeneral)
             UpdateMetadata(metadata => metadata.SetItem(KeyOf(path), true));
         ClearSelection();
@@ -576,7 +578,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         // Search results show no field for the name.
         if (target is SearchResultViewModel)
         {
-            Tell(ToastKind.Info, "Dai risultati della ricerca non si rinomina: premi Esc e apri l'argomento che lo contiene.");
+            Tell(ToastKind.Info, "Search results can't be renamed: press Esc and open the space that holds it.");
             return;
         }
         CancelAllEdits();
@@ -609,10 +611,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var newPath = Path.Combine(Path.GetDirectoryName(path)!, newName);
         var onlyTheCaseChanges = newName.Equals(oldName, StringComparison.OrdinalIgnoreCase);
         if (!onlyTheCaseChanges && Path.Exists(newPath))
-            return $"In questa cartella c'è già «{target.EditName.Trim()}». Scegli un altro nome.";
+            return $"This folder already has a “{target.EditName.Trim()}”. Choose another name.";
         var isFolder = Directory.Exists(path);
         if (!RenameNow(path, newPath))
-            return $"Impossibile rinominare «{oldName}»: forse è aperto in un altro programma.";
+            return $"Couldn't rename “{oldName}”: it may be open in another program.";
         target.IsEditing = false;
         Remember(new RenameStep(path, newPath));
         KeepPlace(path, newPath);
@@ -638,9 +640,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
         var title = paths.Count == 1
-            ? $"Spostare «{Path.GetFileName(paths[0])}» nel Cestino?"
-            : $"Spostare {paths.Count} elementi nel Cestino?";
-        var label = paths.Count == 1 ? "Sposta nel Cestino" : $"Sposta {paths.Count} elementi nel Cestino";
+            ? $"Move “{Path.GetFileName(paths[0])}” to the Recycle Bin?"
+            : $"Move {paths.Count} items to the Recycle Bin?";
+        var label = paths.Count == 1 ? "Move to Recycle Bin" : $"Move {paths.Count} items to Recycle Bin";
         ShowPrompt(new PromptViewModel(title, label,
             _ =>
             {
@@ -648,14 +650,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 Start(Recycle(paths));
                 return null;
             },
-            message: "Le cartelle ci vanno con tutto il loro contenuto. Si possono recuperare dal Cestino.",
+            message: "Folders go with everything in them. They can be restored from the Recycle Bin.",
             isDanger: true));
     }
 
     public async Task<bool> Recycle(IReadOnlyList<string> paths)
     {
         using var turn = await BeginFileWork(
-            paths.Count == 1 ? $"Sposto «{DisplayNameOf(paths[0])}» nel Cestino…" : $"Sposto {paths.Count} elementi nel Cestino…",
+            paths.Count == 1 ? $"Moving “{DisplayNameOf(paths[0])}” to the Recycle Bin…" : $"Moving {paths.Count} items to the Recycle Bin…",
             new FileTouches(paths));
         var folders = paths.Where(Directory.Exists).Where(IsInsideArchive).ToList();
         var forgotten = SnapshotOf(paths);
@@ -671,25 +673,25 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             var inBin = _recycleBin.FindDeleted(gone, since);
             var step = new RecycleStep(inBin, gone.Count - inBin.Count, forgotten.Restrict(ArchiveKeys(gone)));
             Remember(step, turn);
-            var where = inBin.Count == gone.Count ? "nel Cestino" : "stat{0} eliminat{0} definitivamente, senza passare dal Cestino";
+            var where = inBin.Count == gone.Count ? "{0} in the Recycle Bin" : "{1} deleted for good, without going through the Recycle Bin";
             Report(gone.Count == 1
-                    ? $"«{DisplayNameOf(gone[0])}» è {string.Format(where, "o")}."
-                    : $"{gone.Count} elementi sono {string.Format(where, "i")}.",
+                    ? $"“{DisplayNameOf(gone[0])}” {string.Format(where, "is", "was")}."
+                    : $"{gone.Count} items {string.Format(where, "are", "were")}.",
                 new StatusNotice(null, gone), step, inBin.Count == gone.Count ? ToastKind.Success : ToastKind.Warning);
         }
         else if (done)
         {
-            Tell(ToastKind.Info, "Non c'era niente da spostare nel Cestino.");
+            Tell(ToastKind.Info, "There was nothing to move to the Recycle Bin.");
         }
         else
         {
-            Tell(ToastKind.Danger, "Lo spostamento nel Cestino non è riuscito.");
+            Tell(ToastKind.Danger, "Moving to the Recycle Bin didn't work.");
         }
         ReloadUnlessEditing();
         return done;
     }
 
-    // ---- «Sposta in…» ----
+    // ---- «Move to…» ----
 
     /// <summary>
     /// Asks where the files go, among the tiles and topics of the archive, the recent ones first. What has a place of
@@ -708,12 +710,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var name = DisplayNameOf(sources[0]);
         var title = (sources.Count, link) switch
         {
-            (1, false) => $"Sposta «{name}» in…",
-            (_, false) => $"Sposta {sources.Count} elementi in…",
-            (1, true) => $"Crea un collegamento a «{name}» in…",
-            _ => $"Crea {sources.Count} collegamenti in…",
+            (1, false) => $"Move “{name}” to…",
+            (_, false) => $"Move {sources.Count} items to…",
+            (1, true) => $"Create a shortcut to “{name}” in…",
+            _ => $"Create {sources.Count} shortcuts in…",
         };
-        ShowPicker(new DestinationPickerViewModel(title, link ? "Collega" : "Sposta", destinations, _recent.For(_root),
+        ShowPicker(new DestinationPickerViewModel(title, link ? "Create shortcut" : "Move", destinations, _recent.For(_root),
             destination => SendTo(sources, destination, link)));
     }
 
@@ -725,14 +727,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var kind = KindFor(sources, destination.FullPath, link);
         if (kind == TransferKind.None)
-            return "I file sono già lì.";
+            return "The files are already there.";
         _recent.Remember(_root, destination.RelativeKey);
         // The picker closes at once; the files go meanwhile, with the window still in hand.
         Start(Transfer(sources, destination.FullPath, kind));
         return null;
     }
 
-    /// <summary>«Mostra» on the toast of an operation: the board goes where the items went, with them selected.</summary>
+    /// <summary>«Show» on the toast of an operation: the board goes where the items went, with them selected.</summary>
     public void ShowNotice(StatusNotice notice)
     {
         if (notice.ShowFolder is not { } folder)
@@ -761,7 +763,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// then; meanwhile the operations on other files go on.
     /// </summary>
     /// <param name="foldersAsRows">
-    /// Folders that land in a topic become rows of its «Generale» (see <see cref="MarkArrivals"/>); false for a tile
+    /// Folders that land in a topic become rows of its «General» (see <see cref="MarkArrivals"/>); false for a tile
     /// dragged by its title, which stays a tile.
     /// </param>
     public async Task Transfer(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind, bool foldersAsRows = true)
@@ -824,7 +826,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var arrived = paths.Select(path => Path.Combine(destinationFolder, Path.GetFileName(path))).ToList();
-        // What «Annulla» on the toast takes back: this operation, if it can be undone at all.
+        // What «Undo» on the toast takes back: this operation, if it can be undone at all.
         UndoStep? step = null;
         if (kind == TransferKind.Move)
         {
@@ -837,7 +839,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 Remember(step = new MoveStep(moved.Select(item => item with { BecameRow = rows.Contains(item.To) }).ToList(), forgotten), turn);
             }
         }
-        // The copies are the new names, each starting like an original: "a.txt", or "a - Copia.txt" next to it.
+        // The copies are the new names, each starting like an original: "a.txt", or "a - Copia.txt" next to it, as Windows names it.
         // Without the names from before, the copies cannot be told from what was already there: no undo then.
         else if (namesBefore is not null && EntryNames(destinationFolder) is { } namesAfter)
         {
@@ -856,10 +858,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var present = arrived.Where(Path.Exists).ToList();
-        var verb = kind == TransferKind.Copy ? ("copiato", "copiati") : ("spostato", "spostati");
+        var verb = kind == TransferKind.Copy ? "copied to" : "moved to";
         // Stopped in the dialog of the shell, or by a problem the shell has just told about.
         if (!done)
-            Tell(ToastKind.Info, kind == TransferKind.Copy ? "La copia non è stata completata." : "Lo spostamento non è stato completato.");
+            Tell(ToastKind.Info, kind == TransferKind.Copy ? "The copy wasn't completed." : "The move wasn't completed.");
         else if (present.Count > 0)
             Report(Done(present, verb, destinationFolder), new StatusNotice(destinationFolder, present), step);
         // Each one in the place of another with its name, as chosen in the dialog: done, with nothing new to point at.
@@ -873,7 +875,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Folders that arrive in a topic are rows of its «Generale», like files, not tiles of their own: a folder of photos
+    /// Folders that arrive in a topic are rows of its «General», like files, not tiles of their own: a folder of photos
     /// dropped on a topic shows as one row, not as all its photos. One that comes as a topic, or as a row, stays so.
     /// </summary>
     /// <param name="rootTopics">
@@ -913,18 +915,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private bool IsInRoot(string path) =>
         Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path))) is { } parent && SamePath(parent, _root);
 
-    /// <summary>"Sposto «a.txt» in «Casa»…", while the shell works.</summary>
+    /// <summary>"Moving “a.txt” to “Home”…", while the shell works.</summary>
     private static string Doing(IReadOnlyList<string> paths, TransferKind kind, string folder)
     {
-        var verb = kind switch
+        var what = paths.Count == 1 ? $"“{DisplayNameOf(paths[0])}”" : $"{paths.Count} items";
+        return kind switch
         {
-            TransferKind.Copy => "Copio",
-            TransferKind.Link => "Collego",
-            _ => "Sposto",
+            TransferKind.Copy => $"Copying {what} to “{Path.GetFileName(folder)}”…",
+            TransferKind.Link when paths.Count == 1 => $"Creating a shortcut to {what} in “{Path.GetFileName(folder)}”…",
+            TransferKind.Link => $"Creating shortcuts to {what} in “{Path.GetFileName(folder)}”…",
+            _ => $"Moving {what} to “{Path.GetFileName(folder)}”…",
         };
-        return paths.Count == 1
-            ? $"{verb} «{DisplayNameOf(paths[0])}» in «{Path.GetFileName(folder)}»…"
-            : $"{verb} {paths.Count} elementi in «{Path.GetFileName(folder)}»…";
     }
 
     /// <summary>
@@ -950,10 +951,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return null;
         }
         Log.Write($"Not enough room on {disk.Name} for {paths.Count} items: {needed} bytes needed, {disk.Free} free, {taken} for the copies under way");
-        return ($"Su {disk.Name} non c'è abbastanza spazio", taken == 0
-            ? $"Servono {ByteSize.Format(needed)} e ne restano {ByteSize.Format(disk.Free)}. Libera un po' di spazio, poi riprova."
-            : $"Servono {ByteSize.Format(needed)} e, tolto quello che serve alle copie in corso, ne restano {ByteSize.Format(left)}. " +
-              "Riprova quando sono finite, o libera un po' di spazio.");
+        return ($"Not enough space on {disk.Name}", taken == 0
+            ? $"The files need {ByteSize.Format(needed)}, and {ByteSize.Format(disk.Free)} is left. Free up some space, then try again."
+            : $"The files need {ByteSize.Format(needed)}, and once the copies under way are counted {ByteSize.Format(left)} is left. " +
+              "Try again when they are done, or free up some space.");
     }
 
     /// <summary>
@@ -973,14 +974,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             // Whatever the other program does wrong (COM errors come in many forms), the files saved so far keep their undo.
             Log.Write($"Could not save what was dropped: {e}");
-            Tell(ToastKind.Danger, "Non sono riuscito a salvare quello che hai trascinato", e.Message);
+            Tell(ToastKind.Danger, "Couldn't save what you dropped", e.Message);
         }
         if (created.Count > 0)
         {
             var step = new CopyStep(created);
             Remember(step);
             SelectAfterReload(created);
-            Report(Done(created, ("salvato", "salvati"), destinationFolder), new StatusNotice(destinationFolder, created), step);
+            Report(Done(created, "saved to", destinationFolder), new StatusNotice(destinationFolder, created), step);
         }
         Reload();
     }
@@ -995,7 +996,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Tell(ToastKind.Danger, $"Impossibile usare la cartella {folder}", e.Message);
+            Tell(ToastKind.Danger, $"Couldn't use the folder {folder}", e.Message);
             return false;
         }
     }
@@ -1012,7 +1013,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or COMException or ArgumentException)
             {
                 Log.Write($"Could not make a shortcut to {target}: {e}");
-                Tell(ToastKind.Danger, $"Impossibile creare il collegamento a «{Path.GetFileName(target)}»", e.Message);
+                Tell(ToastKind.Danger, $"Couldn't create a shortcut to “{Path.GetFileName(target)}”", e.Message);
             }
         }
         if (links.Count > 0)
@@ -1021,18 +1022,19 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Remember(step, turn);
             SelectAfterReload(links);
             Report(links.Count == 1
-                    ? $"Collegamento «{DisplayNameOf(links[0])}» creato in «{Path.GetFileName(destinationFolder)}»."
-                    : $"{links.Count} collegamenti creati in «{Path.GetFileName(destinationFolder)}».",
+                    ? $"Shortcut “{DisplayNameOf(links[0])}” created in “{Path.GetFileName(destinationFolder)}”."
+                    : $"{links.Count} shortcuts created in “{Path.GetFileName(destinationFolder)}”.",
                 new StatusNotice(destinationFolder, links), step);
         }
         Reload();
     }
 
-    /// <summary>"«Offerta.pdf» spostato in «Documenti»", or "3 elementi spostati in «Documenti»".</summary>
-    private static string Done(IReadOnlyList<string> paths, (string One, string Many) verb, string folder) =>
+    /// <summary>"“Offer.pdf” moved to “Documents”.", or "3 items moved to “Documents”.".</summary>
+    /// <param name="verb">With its preposition: "moved to".</param>
+    private static string Done(IReadOnlyList<string> paths, string verb, string folder) =>
         paths.Count == 1
-            ? $"«{DisplayNameOf(paths[0])}» {verb.One} in «{Path.GetFileName(folder)}»."
-            : $"{paths.Count} elementi {verb.Many} in «{Path.GetFileName(folder)}».";
+            ? $"“{DisplayNameOf(paths[0])}” {verb} “{Path.GetFileName(folder)}”."
+            : $"{paths.Count} items {verb} “{Path.GetFileName(folder)}”.";
 
     /// <summary>Puts a tile in another place on its board, before <paramref name="before"/> (null: at the end).</summary>
     public void MoveTile(TileViewModel tile, TileViewModel? before)
@@ -1067,14 +1069,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
 
         var destination = parent?.Topic.FullPath ?? _root;
-        using var turn = await BeginFileWork($"Sposto «{topic.Name}» in «{parent?.Name ?? ArchiveName}»…",
+        using var turn = await BeginFileWork($"Moving “{topic.Name}” to “{parent?.Name ?? ArchiveName}”…",
             FileTouches.Transfer([topic.Topic.FullPath], destination));
         var previousOrder = LoadMetadata().OrderOf(topic.Topic.RelativePath);
         var newPath = Path.Combine(destination, topic.Name);
         // Two topics with the same name would be merged into one: not something a drag should do.
         if (Path.Exists(newPath))
         {
-            Tell(ToastKind.Warning, $"In «{parent?.Name ?? ArchiveName}» c'è già «{topic.Name}»: rinominane uno, poi riprova.");
+            Tell(ToastKind.Warning, $"“{parent?.Name ?? ArchiveName}” already has a “{topic.Name}”: rename one of them, then try again.");
             return;
         }
         var (done, step) = await TransferNow(turn, [topic.Topic.FullPath], destination, TransferKind.Move, reload: false,
@@ -1138,7 +1140,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// «Ordina per»: the items of the tile by name, date, type or size. A new key starts in its usual direction; the order
+    /// «Sort by»: the items of the tile by name, date, type or size. A new key starts in its usual direction; the order
     /// given by hand goes.
     /// </summary>
     public void SortTile(TileViewModel tile, SortKey key)
@@ -1148,7 +1150,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Arrange(tile, metadataKey, m => m.SetSort(metadataKey, sort));
     }
 
-    /// <summary>«Crescente» or «Decrescente», for the sort in use, by name when the items were in order by hand.</summary>
+    /// <summary>«Ascending» or «Descending», for the sort in use, by name when the items were in order by hand.</summary>
     public void SetSortDirection(TileViewModel tile, bool descending)
     {
         var metadataKey = tile.MetadataKey;
@@ -1203,9 +1205,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             new TopicStep(topic.Topic.RelativePath, topic.Name, WasTopic: true));
     }
 
-    // ---- Rows of «Generale» ----
+    // ---- Rows of «General» ----
 
-    /// <summary>«Promuovi a riquadro»: a folder shown as a row of «Generale» gets a tile of its own, its folder where it is.</summary>
+    /// <summary>«Unfold as tile»: a folder shown as a row of «General» gets a tile of its own, its folder where it is.</summary>
     public void PromoteItem(ItemViewModel item)
     {
         if (!item.CanBecomeTile)
@@ -1214,7 +1216,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         ChangeMetadata(metadata => metadata.SetItem(key, false), new ItemStep(key, item.Name, WasItem: true));
     }
 
-    /// <summary>«Metti in Generale»: a tile becomes a row of «Generale», its folder where it is; the row is selected, to be seen.</summary>
+    /// <summary>«Fold into General»: a tile becomes a row of «General», its folder where it is; the row is selected, to be seen.</summary>
     public void DemoteTile(TileViewModel tile)
     {
         if (tile.RelativePath is not { } key)
@@ -1233,7 +1235,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// «Colore» of a topic: one of the palette, none on purpose (<see cref="TopicColors.None"/>), or with null the automatic
+    /// «Color» of a topic: one of the palette, none on purpose (<see cref="TopicColors.None"/>), or with null the automatic
     /// one: for a topic of the root the color least used by the others, for one inside another that of its topic. Kept in
     /// the metadata of the archive; Ctrl+Z takes it back.
     /// </summary>
@@ -1267,17 +1269,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private async Task Undo(UndoStep? only)
     {
         CommitAllEdits();
-        using var turn = await BeginFileWork("Annullo l'ultima operazione…", touches: null);
+        using var turn = await BeginFileWork("Undoing the last operation…", touches: null);
         var step = only ?? _history.Last;
         if (step is null || _history.OrderOf(step) is not { } stepOrder)
         {
-            Tell(ToastKind.Info, only is null ? "Non c'è niente da annullare." : "Questa operazione non si può più annullare.");
+            Tell(ToastKind.Info, only is null ? "There is nothing to undo." : "This operation can no longer be undone.");
             return;
         }
         _history.Remove(step);
         // Put back in its place if the undo fails, as if never taken.
         _undoneOrder = stepOrder;
-        // Its toast offered «Annulla»: now it is done, and what the undo did takes its place.
+        // Its toast offered «Undo»: now it is done, and what the undo did takes its place.
         foreach (var toast in Toasts.Where(toast => ReferenceEquals(toast.UndoStep, step)).ToList())
             Toasts.Remove(toast);
         NotifyHistoryChanged();
@@ -1285,13 +1287,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             MoveStep move => await UndoMove(turn, move),
             TopicMoveStep topicMove => await UndoTopicMove(turn, topicMove),
-            CopyStep copy => await RecycleCreated(copy, copy.Copies, "Copia annullata", "le copie", "copie"),
-            LinkStep link => await RecycleCreated(link, link.Links, "Collegamento annullato", "i collegamenti", "collegamenti"),
+            CopyStep copy => await RecycleCreated(copy, copy.Copies, "Copy undone", "the copies", "copies"),
+            LinkStep link => await RecycleCreated(link, link.Links, "Shortcut undone", "the shortcuts", "shortcuts"),
             RenameStep rename => UndoRename(rename),
             CreateStep create => UndoCreate(create),
             RecycleStep recycle => UndoRecycle(recycle),
-            TileOrderStep order => UndoOrder(order.PreviousOrder, "I riquadri sono tornati nell'ordine di prima."),
-            TopicOrderStep order => UndoOrder(order.PreviousOrder, "Gli argomenti sono tornati nell'ordine di prima."),
+            TileOrderStep order => UndoOrder(order.PreviousOrder, "The tiles are back in the order they had."),
+            TopicOrderStep order => UndoOrder(order.PreviousOrder, "The spaces are back in the order they had."),
             TopicStep topic => UndoTopic(topic),
             ItemStep item => UndoItem(item),
             ColorStep color => UndoColor(color),
@@ -1317,10 +1319,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private Outcome? UndoColor(ColorStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return Outcome.Refused($"«{step.Name}» non c'è più.");
+            return Outcome.Refused($"“{step.Name}” is gone.");
         if (!UpdateMetadata(metadata => metadata.SetColor(step.Key, step.Previous, step.WasAutomatic)))
             return null;
-        return Outcome.Done(step.Previous is null ? $"«{step.Name}» è di nuovo senza colore." : $"«{step.Name}» ha di nuovo il colore di prima.");
+        return Outcome.Done(step.Previous is null ? $"“{step.Name}” has no color again." : $"“{step.Name}” has its old color again.");
     }
 
     /// <summary>The undo did not happen, most likely because a file is open in another program: Ctrl+Z can try again.</summary>
@@ -1331,10 +1333,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         // Only what is still where it went goes back, and only to a place that is still free.
         var items = step.Items.Where(item => Path.Exists(item.To) && !Path.Exists(item.From)).ToList();
         if (items.Count == 0)
-            return Outcome.Refused("Lo spostamento non si può annullare: nel frattempo gli elementi sono stati spostati o rinominati.");
+            return Outcome.Refused("The move can't be undone: the items have been moved or renamed since.");
         turn.Say(items.Count == 1
-            ? $"Rimetto «{DisplayNameOf(items[0].To)}» dov'era…"
-            : $"Rimetto {items.Count} elementi dov'erano…");
+            ? $"Putting “{DisplayNameOf(items[0].To)}” back…"
+            : $"Putting {items.Count} items back…");
         var owner = OwnerWindow;
         await RunShell(() => ShellFileOperations.MoveEach(
             items.Select(item => item.To).ToList(), items.Select(item => item.From).ToList(), owner));
@@ -1342,13 +1344,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (back.Count == 0)
         {
             KeepForRetry(step);
-            return Outcome.Failed("Lo spostamento non è stato annullato: forse un elemento è aperto in un altro programma. Riprova con Ctrl+Z.");
+            return Outcome.Failed("The move wasn't undone: an item may be open in another program. Try again with Ctrl+Z.");
         }
         FollowBack(back, step.Forgotten);
         SelectAfterReload(back.Select(item => item.From));
         var done = back.Count == 1
-            ? $"Spostamento annullato: «{DisplayNameOf(back[0].From)}» è di nuovo in «{FolderName(back[0].From)}»."
-            : $"Spostamento annullato: {back.Count} elementi sono tornati dov'erano.";
+            ? $"Move undone: “{DisplayNameOf(back[0].From)}” is back in “{FolderName(back[0].From)}”."
+            : $"Move undone: {back.Count} items are back where they were.";
         return Outcome.Done(done + LeftAlone(step.Items.Count - back.Count));
     }
 
@@ -1377,7 +1379,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                 if (wasInside && wentInside)
                 {
                     changed |= metadata.MoveFolder(KeyOf(item.To), KeyOf(item.From));
-                    // A row of «Generale» only since it arrived: back where it was, it is what it was there.
+                    // A row of «General» only since it arrived: back where it was, it is what it was there.
                     if (item.BecameRow)
                         changed |= metadata.SetItem(KeyOf(item.From), false);
                 }
@@ -1398,16 +1400,16 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Undoes copies and shortcuts made by Inlay: they go to the Recycle Bin, never deleted for good.</summary>
-    /// <param name="them">With the article, as in "le copie".</param>
-    /// <param name="many">As in "3 copie sono nel Cestino".</param>
+    /// <param name="them">With the article, as in "the copies".</param>
+    /// <param name="many">As in "3 copies are in the Recycle Bin".</param>
     private async Task<Outcome?> RecycleCreated(UndoStep step, IReadOnlyList<string> created, string undone, string them, string many)
     {
         var existing = created.Where(Path.Exists).ToList();
         if (existing.Count == 0)
-            return Outcome.Refused($"Non c'è niente da annullare: {them} non ci sono più.");
+            return Outcome.Refused($"There is nothing to undo: {them} are gone.");
         // Without a Recycle Bin, deleting is for good, changes made since included: not something an undo may do.
         if (!existing.All(RecycleBin.IsAvailableFor))
-            return Outcome.Refused($"Annullamento non fatto: su questo disco non c'è il Cestino, quindi non si potrebbe più recuperare niente. Se {them} non servono, usa Canc.");
+            return Outcome.Refused($"Not undone: this drive has no Recycle Bin, so nothing could be restored afterwards. If you don't need {them}, press Del.");
         var folders = existing.Where(Directory.Exists).Where(IsInsideArchive).ToList();
         var owner = OwnerWindow;
         await RunShell(() => ShellFileOperations.Recycle(existing, owner));
@@ -1417,11 +1419,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (removed.Count == 0)
         {
             KeepForRetry(step);
-            return Outcome.Failed($"Annullamento non riuscito: {them} sono ancora lì. Riprova con Ctrl+Z.");
+            return Outcome.Failed($"The undo didn't work: {them} are still there. Try again with Ctrl+Z.");
         }
         var done = removed.Count == 1
-            ? $"{undone}: «{DisplayNameOf(removed[0])}» è nel Cestino."
-            : $"{undone}: {removed.Count} {many} sono nel Cestino.";
+            ? $"{undone}: “{DisplayNameOf(removed[0])}” is in the Recycle Bin."
+            : $"{undone}: {removed.Count} {many} are in the Recycle Bin.";
         return Outcome.Done(done + LeftAlone(created.Count - removed.Count));
     }
 
@@ -1429,21 +1431,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var newName = DisplayNameOf(step.To);
         if (!Path.Exists(step.To))
-            return Outcome.Refused($"La rinomina non si può annullare: «{newName}» non c'è più.");
+            return Outcome.Refused($"The rename can't be undone: “{newName}” is gone.");
         var onlyTheCaseChanged = string.Equals(step.From, step.To, StringComparison.OrdinalIgnoreCase);
         if (!onlyTheCaseChanged && Path.Exists(step.From))
-            return Outcome.Refused($"La rinomina non si può annullare: nella cartella c'è già «{DisplayNameOf(step.From)}».");
+            return Outcome.Refused($"The rename can't be undone: the folder already has a “{DisplayNameOf(step.From)}”.");
         if (!RenameNow(step.To, step.From))
         {
             KeepForRetry(step);
-            return Outcome.Failed($"Impossibile rinominare «{newName}»: forse è aperto in un altro programma. Riprova con Ctrl+Z.");
+            return Outcome.Failed($"Couldn't rename “{newName}”: it may be open in another program. Try again with Ctrl+Z.");
         }
         // The metadata follows the folder back, and so does the selection of a topic.
         KeepPlace(step.To, step.From);
         if (IsInsideArchive(step.From))
             FollowFolder(KeyOf(step.To), KeyOf(step.From));
         SelectAfterReload([step.From]);
-        return Outcome.Done($"Rinomina annullata: si chiama di nuovo «{DisplayNameOf(step.From)}».");
+        return Outcome.Done($"Rename undone: it is called “{DisplayNameOf(step.From)}” again.");
     }
 
     private Outcome? UndoCreate(CreateStep step)
@@ -1452,27 +1454,27 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             if (!Directory.Exists(step.Folder))
-                return Outcome.Refused($"«{name}» non c'è più.");
+                return Outcome.Refused($"“{name}” is gone.");
             // Only an empty folder goes away for good: anything put in it since stays.
             if (Directory.EnumerateFileSystemEntries(step.Folder).Any())
-                return Outcome.Refused($"«{name}» non è più vuota, quindi resta. Se non ti serve, spostala nel Cestino con Canc.");
+                return Outcome.Refused($"“{name}” is no longer empty, so it stays. If you don't need it, move it to the Recycle Bin with Del.");
             Directory.Delete(step.Folder);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             KeepForRetry(step);
-            return Outcome.Failed($"Impossibile togliere «{name}»: {e.Message}");
+            return Outcome.Failed($"Couldn't remove “{name}”: {e.Message}");
         }
         // What it got meanwhile, like the mark of a topic, goes with it.
         if (IsInsideArchive(step.Folder))
             ForgetFolder(KeyOf(step.Folder));
-        return Outcome.Done($"Annullata la creazione di «{name}».");
+        return Outcome.Done($"Creation of “{name}” undone.");
     }
 
     private Outcome? UndoRecycle(RecycleStep step)
     {
         if (step.Items.Count == 0)
-            return Outcome.Refused("Non si può ripristinare: Windows l'ha eliminato definitivamente, senza passare dal Cestino.");
+            return Outcome.Refused("It can't be restored: Windows deleted it for good, without going through the Recycle Bin.");
         var restored = new List<RecycledItem>();
         var failed = new List<RecycledItem>();
         // A folder before what was inside it, in case both were deleted together.
@@ -1497,20 +1499,20 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (restored.Count == 0)
         {
             return failed.Count > 0
-                ? Outcome.Failed("Il ripristino non è riuscito: forse una cartella è aperta in un altro programma. Riprova con Ctrl+Z.")
-                : Outcome.Refused("Nel Cestino non c'è più, oppure al suo posto c'è già un altro elemento.");
+                ? Outcome.Failed("The restore didn't work: a folder may be open in another program. Try again with Ctrl+Z.")
+                : Outcome.Refused("It is no longer in the Recycle Bin, or another item already took its place.");
         }
         ShellNotify.RecycleBinChanged();
         RestoreMetadata(step.Forgotten.Restrict(ArchiveKeys(restored.Select(item => item.OriginalPath))));
         SelectAfterReload(restored.Select(item => item.OriginalPath));
         var done = restored.Count == 1
-            ? $"«{DisplayNameOf(restored[0].OriginalPath)}» è tornato dal Cestino in «{FolderName(restored[0].OriginalPath)}»."
-            : $"{restored.Count} elementi sono tornati dal Cestino.";
+            ? $"“{DisplayNameOf(restored[0].OriginalPath)}” is back from the Recycle Bin in “{FolderName(restored[0].OriginalPath)}”."
+            : $"{restored.Count} items are back from the Recycle Bin.";
         var lost = step.NotInBin switch
         {
             0 => "",
-            1 => " Un elemento era stato eliminato definitivamente.",
-            var count => $" {count} elementi erano stati eliminati definitivamente.",
+            1 => " One item had been deleted for good.",
+            var count => $" {count} items had been deleted for good.",
         };
         return Outcome.Done(done + LeftAlone(step.Items.Count - restored.Count - failed.Count) + lost);
     }
@@ -1532,45 +1534,45 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private Outcome? UndoArrange(ArrangeStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return Outcome.Refused($"«{step.Name}» non c'è più.");
+            return Outcome.Refused($"“{step.Name}” is gone.");
         if (!UpdateMetadata(metadata => metadata.SetArrangement(step.Key, step.Sort, step.Items)))
             return null;
-        return Outcome.Done($"«{step.Name}» è di nuovo nell'ordine di prima.");
+        return Outcome.Done($"“{step.Name}” is back in the order it had.");
     }
 
     private Outcome? UndoSize(SizeStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return Outcome.Refused($"«{step.Name}» non c'è più.");
+            return Outcome.Refused($"“{step.Name}” is gone.");
         if (!UpdateMetadata(metadata => metadata.SetSize(step.Key, step.Previous)))
             return null;
-        return Outcome.Done($"«{step.Name}» ha di nuovo la misura di prima.");
+        return Outcome.Done($"“{step.Name}” is back to the size it had.");
     }
 
     private Outcome? UndoTopic(TopicStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return Outcome.Refused($"«{step.Name}» non c'è più.");
+            return Outcome.Refused($"“{step.Name}” is gone.");
         if (!UpdateMetadata(metadata => metadata.SetTopic(step.Key, step.WasTopic)))
             return null;
-        return Outcome.Done(step.WasTopic ? $"«{step.Name}» è di nuovo un argomento." : $"«{step.Name}» è di nuovo un riquadro.");
+        return Outcome.Done(step.WasTopic ? $"“{step.Name}” is a space again." : $"“{step.Name}” is a tile again.");
     }
 
     private Outcome? UndoItem(ItemStep step)
     {
         if (!Directory.Exists(Path.Combine(_root, step.Key)))
-            return Outcome.Refused($"«{step.Name}» non c'è più.");
+            return Outcome.Refused($"“{step.Name}” is gone.");
         if (!UpdateMetadata(metadata => metadata.SetItem(step.Key, step.WasItem)))
             return null;
-        return Outcome.Done(step.WasItem ? $"«{step.Name}» è di nuovo in «Generale»." : $"«{step.Name}» è di nuovo un riquadro.");
+        return Outcome.Done(step.WasItem ? $"“{step.Name}” is back in “General”." : $"“{step.Name}” is a tile again.");
     }
 
     /// <summary>For the items an undo could not put back: something else took their place, or they are gone.</summary>
     private static string LeftAlone(int count) => count switch
     {
         0 => "",
-        1 => " Un elemento è cambiato nel frattempo ed è rimasto com'era.",
-        _ => $" {count} elementi sono cambiati nel frattempo e sono rimasti com'erano.",
+        1 => " One item changed meanwhile and was left as it is.",
+        _ => $" {count} items changed meanwhile and were left as they are.",
     };
 
     private static string FolderName(string path) => Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
@@ -1606,7 +1608,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Reconciler.Reconcile(Tiles, board.Tiles, tile => TileViewModel.KeyOf(tile.FolderPath, tile.IsGeneral), tile => tile.Key,
             tile => new TileViewModel(tile, _root, _cutPaths), (viewModel, tile) => viewModel.Update(tile));
         EmptyMessage = board.Tiles.Count == 0 && topic.Children.Count == 0
-            ? "Questo argomento è vuoto. Trascina qui dei file, oppure crea un riquadro con Ctrl+Maiusc+N."
+            ? "This space is empty. Drop files here, or create a tile with Ctrl+Shift+N."
             : "";
         OnPropertyChanged(nameof(BoardFolder));
         OnPropertyChanged(nameof(SelectedTopic));
@@ -1638,8 +1640,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         RootFilesText = _reader.ReadRootFiles().Count switch
         {
             0 => null,
-            1 => "1 file sciolto nella radice",
-            var count => $"{count:N0} file sciolti nella radice",
+            1 => "1 loose file in the vault",
+            var count => string.Create(English, $"{count:N0} loose files in the vault"),
         };
 
         if ((FindTopicOrParent(_selectedTopicPath) ?? Topics.FirstOrDefault()) is { } shown)
@@ -1695,11 +1697,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     private void ShowEmptyArchive()
     {
-        BoardTitle = "Archivio vuoto";
+        BoardTitle = "Empty vault";
         BoardPath = "";
         SubTopics.Clear();
         Tiles.Clear();
-        EmptyMessage = "Crea il primo argomento con il pulsante + accanto ad «Argomenti».";
+        EmptyMessage = "Create your first space with the + button next to “Spaces”.";
         OnPropertyChanged(nameof(BoardFolder));
         OnPropertyChanged(nameof(SelectedTopic));
     }
@@ -1784,7 +1786,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Tell(ToastKind.Danger, $"Impossibile creare la cartella «{name}»", e.Message);
+            Tell(ToastKind.Danger, $"Couldn't create the folder “{name}”", e.Message);
             return null;
         }
     }
@@ -1846,7 +1848,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(UndoLabel));
-        // «Annulla» on a toast stays only while its operation is the one Ctrl+Z would undo.
+        // «Undo» on a toast stays only while its operation is the one Ctrl+Z would undo.
         foreach (var toast in Toasts)
             toast.CanUndo = toast.UndoStep is not null && ReferenceEquals(toast.UndoStep, _history.Last);
     }
@@ -1945,7 +1947,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Write($"Could not save the archive metadata: {e}");
-            Tell(ToastKind.Danger, "Impossibile salvare le impostazioni dell'archivio", e.Message);
+            Tell(ToastKind.Danger, "Couldn't save the vault settings", e.Message);
             return false;
         }
     }
@@ -2018,12 +2020,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         var activity = running[^1].Activity + (running.Count - 1) switch
         {
             0 => "",
-            1 => " · un'altra in corso",
-            var others => $" · altre {others:N0} in corso",
+            var others => string.Create(English, $" · {others:N0} more running"),
         };
-        Activity = waiting > 0 ? $"{activity} · {waiting:N0} in attesa" : activity;
+        Activity = waiting > 0 ? string.Create(English, $"{activity} · {waiting:N0} waiting") : activity;
         ActivityDetails = string.Join(Environment.NewLine,
-            _fileWork.Select(work => work.IsRunning ? work.Activity : $"In attesa: {work.Activity}"));
+            _fileWork.Select(work => work.IsRunning ? work.Activity : $"Waiting: {work.Activity}"));
     }
 
     /// <summary>A file operation that asked for its turn: what it touches, what the status bar says of it, the room it takes.</summary>
@@ -2052,7 +2053,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         /// <summary>Two operations get in each other's way when one of them touches everything, or when what they touch overlaps.</summary>
         public bool Overlaps(FileWork other) => Touches is null || other.Touches is null || Touches.Overlaps(other.Touches);
 
-        /// <summary>What it is doing now, as "Rimetto 3 elementi dov'erano…".</summary>
+        /// <summary>What it is doing now, as "Putting 3 items back…".</summary>
         public void Say(string activity)
         {
             Activity = activity;
@@ -2148,22 +2149,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Toasts.RemoveAt(0);
     }
 
-    /// <summary>What an operation just did: «Annulla» takes back <paramref name="step"/>, «Mostra» goes where the items went.</summary>
+    /// <summary>What an operation just did: «Undo» takes back <paramref name="step"/>, «Show» goes where the items went.</summary>
     private void Report(string message, StatusNotice notice, UndoStep? step, ToastKind kind = ToastKind.Success) =>
         Tell(new ToastViewModel(kind, message, notice: notice.ShowFolder is null ? null : notice, undoStep: step)
         {
             CanUndo = step is not null && ReferenceEquals(step, _history.Last),
         });
 
-    /// <summary>«Mostra» on a toast.</summary>
+    /// <summary>«Show» on a toast.</summary>
     public void ShowFrom(ToastViewModel toast)
     {
         if (toast.Notice is { } notice)
             ShowNotice(notice);
     }
 
-    /// <summary>«Annulla» on a toast: the operation it tells about, while it is still the last one done.</summary>
-    /// <summary>«Annulla» on a toast: its own operation, even if another one ended after it meanwhile.</summary>
+    /// <summary>«Undo» on a toast: its own operation, even if another one ended after it meanwhile.</summary>
     public Task UndoFrom(ToastViewModel toast) => toast is { CanUndo: true, UndoStep: { } step } ? Undo(step) : Task.CompletedTask;
 
     public void DismissToast(ToastViewModel toast) => Toasts.Remove(toast);
@@ -2179,7 +2179,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
         // As in Explorer, the size of the files: that of folders would take a count of everything inside them.
         var bytes = selected.Sum(item => item.Item.Size ?? 0);
-        var count = Count(selected.Count, "elemento selezionato", "elementi selezionati");
+        var count = Count(selected.Count, "item", "items") + " selected";
         SelectionSummary = bytes > 0 ? $"{count} · {ByteSize.Format(bytes)}" : count;
     }
 
@@ -2196,7 +2196,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return;
         if (_index is null)
         {
-            ResultsHeader = "Indicizzazione in corso…";
+            ResultsHeader = "Indexing…";
             return;
         }
         var hits = _index.Search(query, MaxResults);
@@ -2205,25 +2205,25 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         ResultsHeader = (query.Words.Count, hits.Count) switch
         {
             // Only filters: what passes them, the newest first.
-            (0, 0) => "Niente passa questi filtri.",
-            (0, 1) => "1 elemento",
-            (0, MaxResults) => $"I {MaxResults} più recenti",
-            (0, var count) => $"{count} elementi, i più recenti prima",
+            (0, 0) => "Nothing matches these filters.",
+            (0, 1) => "1 item",
+            (0, MaxResults) => $"The {MaxResults} most recent",
+            (0, var count) => $"{count} items, most recent first",
             (_, 0) => query.HasFilters
-                ? "Nessun risultato. Prova con una parte del nome, o togli un filtro."
-                : "Nessun risultato. Prova con una parte del nome, o con il nome della cartella.",
-            (_, 1) => "1 risultato",
-            (_, MaxResults) => $"Primi {MaxResults} risultati",
-            (_, var count) => $"{count} risultati",
+                ? "No results. Try part of the name, or remove a filter."
+                : "No results. Try part of the name, or the name of the folder.",
+            (_, 1) => "1 result",
+            (_, MaxResults) => $"First {MaxResults} results",
+            (_, var count) => $"{count} results",
         };
     }
 
-    /// <summary>A filter above the results, or in the menu of the search box: adds or takes away its "tipo:…".</summary>
+    /// <summary>A filter above the results, or in the menu of the search box: adds or takes away its "type:…".</summary>
     public void ToggleKindFilter(SearchKind kind) => Query = SearchQuery.ToggleKind(Query, kind);
 
     /// <summary>
     /// Only in this topic, or everywhere with null: "in:…" in the search box, in the place of those there. From the root
-    /// ("in:/Lavoro"): a folder with the same name deeper down is another place.
+    /// ("in:/Work"): a folder with the same name deeper down is another place.
     /// </summary>
     public void SetSearchPlace(TopicViewModel? topic) => Query = SearchQuery.WithPlace(Query, topic is null ? null : PlaceOf(topic));
 
@@ -2258,7 +2258,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         catch (Exception e)
         {
             Log.Write($"Indexing failed: {e}");
-            Tell(ToastKind.Danger, "Ricerca non disponibile", e.Message);
+            Tell(ToastKind.Danger, "Search is not available", e.Message);
         }
     }
 
@@ -2296,7 +2296,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         ArchiveSummary = _index is null
             ? ""
-            : $"{Count(_index.ArchiveCount, "elemento", "elementi")} · {ByteSize.Format(_index.ArchiveBytes)}";
+            : $"{Count(_index.ArchiveCount, "item", "items")} · {ByteSize.Format(_index.ArchiveBytes)}";
         UpdateDisk();
     }
 
@@ -2305,14 +2305,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var disk = DiskOf(_root);
         IsDiskLow = disk?.IsLow ?? false;
-        DiskText = disk is null ? null : disk.IsLow ? $"Poco spazio: {disk.FreeText}" : disk.FreeText;
+        DiskText = disk is null ? null : disk.IsLow ? $"Low on space: {disk.FreeText}" : disk.FreeText;
         DiskToolTip = disk is null
             ? null
             : string.Join(Environment.NewLine, new[]
             {
                 disk.Description,
-                _index is null ? null : $"L'archivio occupa {ByteSize.Format(_index.ArchiveBytes)}.",
-                disk.IsLow ? "Resta poco spazio: le copie più grandi non ci stanno." : null,
+                _index is null ? null : $"The vault takes {ByteSize.Format(_index.ArchiveBytes)}.",
+                disk.IsLow ? "Space is running low: the biggest copies won't fit." : null,
             }.OfType<string>());
     }
 
@@ -2326,10 +2326,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         catch (Exception e) when (e is Win32Exception or InvalidOperationException or IOException)
         {
             Log.Write($"Could not open {name}: {e}");
-            Tell(ToastKind.Danger, $"Impossibile aprire «{name}»", e.Message);
+            Tell(ToastKind.Danger, $"Couldn't open “{name}”", e.Message);
             return false;
         }
     }
 
-    private static string Count(int count, string one, string many) => count == 1 ? $"1 {one}" : $"{count:N0} {many}";
+    private static string Count(int count, string one, string many) => count == 1 ? $"1 {one}" : string.Create(English, $"{count:N0} {many}");
 }

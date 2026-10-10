@@ -37,13 +37,13 @@ Un'app dedicata che **sostituisce il desktop** come posto dove tenere e ritrovar
 
 - Un archivio è una cartella normale. La cartella nascosta `.inlay` dentro la segna come archivio e ne tiene i metadati, così l'archivio si porta dietro la sua disposizione dovunque vada.
 - Se ne possono avere più di uno. Le impostazioni del PC tengono l'elenco e quello in uso.
-- La pagina **Archivi** della finestra Impostazioni li gestisce:
+- La pagina **Vaults** della finestra **Settings** li gestisce:
   - al primo avvio dà il benvenuto e chiede di crearne uno o di usare una cartella che si ha già;
-  - poi si apre dal nome dell'archivio in alto nel pannello o dal menu della tray;
+  - poi si apre dal nome dell'archivio in alto nel pannello, accanto alla sua icona, o dal menu della tray;
   - permette di passare da un archivio all'altro, rinominarli, spostarli e toglierli dall'elenco, senza toccare i file.
 - Spostare un archivio sullo stesso disco è un attimo: cambia solo il percorso della cartella. Su un altro disco Inlay lo copia, confronta la copia con l'originale byte per byte e passa alla copia solo se sono identiche. La cartella vecchia va nel Cestino solo se lo dice l'utente.
 - Non possono essere archivi un disco intero, il Desktop (Inlay ne prende il posto), la cartella dell'utente, quelle di Windows e dei programmi. Un archivio non sta dentro un altro né ne contiene uno.
-- Il posto consigliato è sullo stesso disco del Desktop, per esempio `C:\Users\<utente>\Archivio`. Così spostare nell'archivio i file del Desktop è istantaneo, senza copie.
+- Il posto consigliato è sullo stesso disco del Desktop, per esempio `C:\Users\<utente>\Vault`, il nome che Inlay propone. Così spostare nell'archivio i file del Desktop è istantaneo, senza copie.
 
 ### Struttura
 
@@ -59,8 +59,8 @@ D:\Archivio\
 │  │  │  │  └─ Commessa 2026\   ← elemento cartella
 │  │  │  ├─ Programmi\          ← riquadro
 │  │  │  │  └─ SolidWorks.lnk   ← programma (collegamento)
-│  │  │  ├─ Foto\               ← cartella lasciata sull'argomento: riga di "Generale"
-│  │  │  └─ Note.md             ← file sciolto: riquadro "Generale"
+│  │  │  ├─ Foto\               ← cartella lasciata sull'argomento: riga di "General"
+│  │  │  └─ Note.md             ← file sciolto: riquadro "General"
 │  │  └─ Bianchi\
 │  └─ Interni\
 ├─ Personale\
@@ -72,8 +72,8 @@ D:\Archivio\
 ### Regole (albero libero)
 
 - **Argomento**: una cartella che compare nel menu laterale. Le cartelle direttamente nella radice sono argomenti. Più in basso una cartella diventa argomento solo se la si "promuove". Gli argomenti si annidano su quanti livelli si vuole (Lavoro → Clienti → Rossi).
-- **Riquadro**: ogni altra sottocartella di un argomento, tranne quelle che stanno in «Generale». Compare come riquadro sulla bacheca dell'argomento. Una cartella creata da Explorer è un riquadro finché non la si promuove ad argomento.
-- **Generale**: riquadro automatico con i file sciolti che stanno direttamente nella cartella dell'argomento, e con le cartelle che ci stanno come righe: quelle lasciate, incollate o mandate con «Sposta in…» sull'argomento, quelle create in «Generale» e i riquadri messi lì con «Metti in Generale». «Promuovi a riquadro» ne fa di nuovo un riquadro; le cartelle non si spostano, cambia solo come Inlay le mostra.
+- **Riquadro**: ogni altra sottocartella di un argomento, tranne quelle che stanno in «General». Compare come riquadro sulla bacheca dell'argomento. Una cartella creata da Explorer è un riquadro finché non la si promuove ad argomento.
+- **General**: riquadro automatico con i file sciolti che stanno direttamente nella cartella dell'argomento, e con le cartelle che ci stanno come righe: quelle lasciate, incollate o mandate con «Move to…» sull'argomento, quelle create in «General» e i riquadri messi lì con «Fold into General». «Unfold as tile» ne fa di nuovo un riquadro; le cartelle non si spostano, cambia solo come Inlay le mostra.
 - **Elemento**: tutto ciò che sta dentro un riquadro: file, cartelle (si aprono in Explorer, in seguito anche dentro l'app) e collegamenti.
 - Un argomento che contiene solo sotto-argomenti mostra sulla bacheca le loro schede, per navigarci dentro.
 - I file lasciati direttamente nella radice non sono in nessun argomento: la barra di stato dice quanti sono, e la ricerca li trova.
@@ -113,28 +113,28 @@ Quello che le cartelle non possono memorizzare sta in `<radice>\.inlay\archive.j
 ```
 
 - `"kind": "topic"` serve solo sotto il primo livello, perché le cartelle nella radice sono già argomenti.
-- `"kind": "item"`: una cartella di un argomento che sta in «Generale» come riga, invece di essere un riquadro. Una cartella è argomento, riga o riquadro, mai due cose insieme.
+- `"kind": "item"`: una cartella di un argomento che sta in «General» come riga, invece di essere un riquadro. Una cartella è argomento, riga o riquadro, mai due cose insieme.
 - `"order"`: il posto di un riquadro nella sua bacheca, o di un argomento tra quelli accanto, dato trascinandolo. Chi non ce l'ha segue in ordine di nome.
 - `"size"`: le colonne della bacheca che il riquadro occupa (da 1 a 3) e le righe che mostra prima di scorrere (da 2 a 40; senza, segue i suoi elementi fino a circa dieci).
 - `"sort"`: come sono ordinati gli elementi del riquadro: per nome (`name`, quello di sempre, che non ha bisogno di voce), data di modifica (`modified`), tipo (`type`) o dimensione (`size`), ognuno nei due versi. Le cartelle vengono prima, come in Explorer.
 - `"items"`: l'ordine dato agli elementi trascinandoli, per nome. Quelli arrivati dopo seguono; un elemento rinominato da Inlay tiene il suo posto. Ordine a mano e `"sort"` si sostituiscono a vicenda.
 - `"color"`: il colore di un riquadro o di un argomento. Un argomento della radice lo riceve da Inlay la prima volta che lo vede, il meno usato dagli altri, con `"autoColor": true`; scelto a mano, il segno non c'è. `"none"` è un argomento lasciato senza colore apposta, che non ne riceve più. Un sotto-argomento senza un colore scelto per lui usa quello del suo argomento, e un riquadro non mostra il colore dato da Inlay quando era un argomento. Una versione di Inlay che non conosce `"autoColor"` lo perde al primo salvataggio e tiene il colore, come se fosse scelto.
-- Il riquadro «Generale» usa la voce del suo argomento, perché ne contiene i file.
+- Il riquadro «General» usa la voce del suo argomento, perché ne contiene i file.
 - Se una cartella viene rinominata o spostata dall'app, i metadati la seguono subito. Se succede da Explorer, i metadati restano sotto il nome di prima: la cartella perde posizione, misura e colore, mai i file.
 - Un `archive.json` rovinato, che non è più JSON valido, viene messo da parte com'era, in `archive.json.corrupt`, e l'archivio riparte con i metadati vuoti: i file non cambiano.
 
-Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, finestra) stanno in `%APPDATA%\Inlay\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Impostazioni**: le pagine sono Archivi, Scorciatoia e Avvio ed Explorer, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Inlay la prova all'istante e la tiene solo se Windows gliela dà. Anche un `settings.json` rovinato viene messo da parte, in `settings.json.corrupt`, e Inlay riparte dalle impostazioni predefinite.
+Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorciatoia, finestra) stanno in `%APPDATA%\Inlay\settings.json`, fuori dall'archivio, e si cambiano dalla finestra **Settings**: le pagine sono **Vaults**, **Hotkey** e **Startup & Explorer**, e ogni cambiamento vale subito. La scorciatoia si registra premendola in un campo: Inlay la prova all'istante e la tiene solo se Windows gliela dà. Anche un `settings.json` rovinato viene messo da parte, in `settings.json.corrupt`, e Inlay riparte dalle impostazioni predefinite.
 
 ## 5. Interfaccia
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ ▣ Inlay   [ Cerca in tutto l'archivio          ]                 ✕ │
+│ ▣ Inlay   [ Search the vault           ]              ⛁ Archivio  ✕ │
 ├────────────────┬────────────────────────────────────────────────────┤
-│ Argomenti    + │ Lavoro › Clienti                                   │
-│ ▾ Lavoro       │ Rossi                           [+ Nuovo riquadro] │
+│ Spaces       + │ Lavoro › Clienti                                   │
+│ ▾ Lavoro       │ Rossi              [ Board | Mosaic ] [+ New tile] │
 │   ▾ Clienti    │                                                    │
-│       Bianchi  │ ┌ Generale  1 …┐ ┌ Documenti 2 …┐ ┌ Programmi 2 …┐ │
+│       Bianchi  │ ┌ General   1 …┐ ┌ Documenti 2 …┐ ┌ Programmi 2 …┐ │
 │     ▌ Rossi    │ │ Note.md      │ │ Commessa 2026│ │ SolidWorks   │ │
 │     Interni    │ └──────────────┘ │ Offerta_v3   │ │ TeamViewer   │ │
 │   Personale    │                  └──────────────┘ └──────────────┘ │
@@ -143,16 +143,17 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 │                │                                                    │
 │                │                                                    │
 ├────────────────┴────────────────────────────────────────────────────┤
-│ D:\Archivio · 1.240 elementi             Invio apri  F2 rinomina  … │
+│ ⛁ 1,240 items · 2.3 GB                     Enter open  F2 rename  … │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-- **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso (apre le Impostazioni sulla pagina **Archivi**) e il pulsante per chiudere.
-- **Ricerca**: scrivendo, in qualunque punto del pannello, i risultati prendono il posto della bacheca. Cerca nei nomi di file e cartelle e in quelli delle cartelle che li contengono, senza maiuscole né accenti; ogni parola deve esserci, e i nomi che cominciano così vengono prima. Sopra i risultati, i filtri: dove cercare (ovunque, o in un argomento) e i tipi, che scrivono nella casella `in:Lavoro` e `tipo:pdf`; si possono anche scrivere a mano, `tipo:` anche con un'estensione, come `tipo:dwg`. Con i soli filtri l'elenco è dei più recenti. Il pulsante a imbuto nella casella offre gli stessi filtri prima di scrivere, e il **?** della barra di stato ricorda come si scrivono.
+- **Lingua**: dalla 0.3.4 l'interfaccia è in inglese, con parole sue legate all'intarsio: l'archivio è il **vault**, gli argomenti gli **spaces**, i riquadri i **tiles**, «Generale» è **General**, la bacheca **Board** e la tela **Mosaic**; gli otto colori hanno i nomi delle pietre di un intarsio (Amber, Lapis, Amethyst, Rose, Jade, Citrine, Coral, Pearl). Questo documento usa le parole italiane, e scrive le voci dell'interfaccia come le mostra Inlay.
+- **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso con l'icona dell'archivio, perché si capisca cos'è (apre **Settings** sulla pagina **Vaults**), e il pulsante per chiudere.
+- **Ricerca**: scrivendo, in qualunque punto del pannello, i risultati prendono il posto della bacheca. Cerca nei nomi di file e cartelle e in quelli delle cartelle che li contengono, senza maiuscole né accenti; ogni parola deve esserci, e i nomi che cominciano così vengono prima. Sopra i risultati, i filtri: dove cercare (ovunque, o in un argomento) e i tipi, che scrivono nella casella `in:Lavoro` e `type:pdf`; si possono anche scrivere a mano, `type:` anche con un'estensione, come `type:dwg`. Con i soli filtri l'elenco è dei più recenti. Il pulsante a imbuto nella casella offre gli stessi filtri prima di scrivere, e il **?** della barra di stato ricorda come si scrivono.
 - **Barra laterale**: l'albero degli argomenti, con + per crearne uno. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale. Si chiude e si riapre con il pulsante accanto al nome di Inlay, nella barra del titolo, o con `Ctrl+B`: chiusa non occupa spazio, e Inlay ricorda com'era (dalla 0.3.1).
-- **Bacheca**: il percorso e il nome dell'argomento, il pulsante **Nuovo riquadro**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica. Un riquadro può occupare fino a tre colonne: se non ci sta in quello che resta della riga, va a capo.
-- **Barra di stato**, come in Explorer e come br-statusbar di Brace: a sinistra l'archivio, quanti elementi contiene e quanto occupano, oppure le operazioni in corso con i LED di br-activity: l'ultima partita, e quante altre sono in corso o in attesa; a destra la selezione e quanto pesa, lo spazio libero sul disco dell'archivio (in giallo sotto il 10 % o sotto 5 GB) e **?** con i tasti da sapere.
-- **Avvisi** (br-toast di Brace), in basso a destra: l'esito di un'operazione con **Annulla** e **Mostra**, e i problemi. Gli esiti si chiudono da soli dopo sei secondi, non mentre il puntatore è sopra; i problemi restano finché non si chiudono, e vanno anche nel log.
+- **Bacheca**: il percorso e il nome dell'argomento, l'interruttore **Board | Mosaic**, il pulsante **New tile**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica. Un riquadro può occupare fino a tre colonne: se non ci sta in quello che resta della riga, va a capo.
+- **Barra di stato**, come in Explorer e come br-statusbar di Brace: a sinistra, con l'icona dell'archivio, quanti elementi contiene e quanto occupano (il nome è in alto, una volta sola), oppure le operazioni in corso con i LED di br-activity: l'ultima partita, e quante altre sono in corso o in attesa; a destra la selezione e quanto pesa, lo spazio libero sul disco dell'archivio (in giallo sotto il 10 % o sotto 5 GB) e **?** con i tasti da sapere.
+- **Avvisi** (br-toast di Brace), in basso a destra: l'esito di un'operazione con **Undo** e **Show**, e i problemi. Gli esiti si chiudono da soli dopo sei secondi, non mentre il puntatore è sopra; i problemi restano finché non si chiudono, e vanno anche nel log.
 
 ### Aspetto
 
@@ -160,12 +161,12 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Icone dei file**: cartelle e tipi comuni hanno l'icona di Brace del loro concetto, dal suo dizionario «un concetto, un'icona». Ci sono PDF, Word, fogli di calcolo, presentazioni, immagini, video, audio, archivi compressi, codice, posta, pagine web e modelli 3D. Le icone sono monocromatiche come tutte quelle di Brace; quelle che mancavano sono state aggiunte a Brace stesso. I file che nessun programma del PC apre hanno il documento di Brace. I programmi, i collegamenti e i file dei programmi installati tengono l'icona di Windows, che per loro è un logo.
 - **Icona**: una bacheca con tre riquadri, uno dei quali ambra come un riquadro selezionato. È disegnata in `scripts/genera-icona.py`; il logo nella barra del titolo è lo stesso disegno, in `Themes/Inlay.xaml`.
 - **Barra del titolo** (dalla 0.2.2): la disegna Inlay, come `br-titlebar` dell'AppShell di Brace, perché Brace per WPF non ha ancora la sua.
-  - Alta `titlebar-height` (32 px), su `surface-base`: il logo e il nome, il pulsante della barra degli argomenti, la ricerca al centro (280 × 24), l'archivio come badge, il pin, poi riduci, ingrandisci e chiudi, larghi 46 px e alti quanto la barra. Chiudi diventa `danger` al passaggio, con l'icona in `text-on-accent`.
+  - Alta `titlebar-height` (32 px), su `surface-base`: il logo e il nome, il pulsante della barra degli argomenti, la ricerca al centro (280 × 24), l'archivio come badge con la sua icona, il pin, poi riduci, ingrandisci e chiudi, larghi 46 px e alti quanto la barra. Chiudi diventa `danger` al passaggio, con l'icona in `text-on-accent`.
   - Si trascina dove non ci sono controlli, e il doppio clic ingrandisce, come chiede Brace.
-  - Il pin è quello di Pulse su Brace: un `Brace.IconButton` da 24 px che, attivo, ha l'icona in `accent` su `accent-subtle`, con l'icona `Pin16` normale in tutti e due gli stati. Dice «Sempre in primo piano: attivo» o «disattivato». C'è anche nel menu della tray, come in Hive e Pulse.
+  - Il pin è quello di Pulse su Brace: un `Brace.IconButton` da 24 px che, attivo, ha l'icona in `accent` su `accent-subtle`, con l'icona `Pin16` normale in tutti e due gli stati. Dice «Always on top: on» o «off». C'è anche nel menu della tray, come in Hive e Pulse.
   - Il badge dell'archivio è neutro, perché la barra tiene il suo unico ambra per il pin attivo.
   - L'icona per ripristinare una finestra ingrandita manca in Brace: è disegnata in `Themes/Inlay.xaml` e va portata in Brace, insieme a una barra del titolo per WPF.
-  - La finestra Impostazioni ha la stessa barra, con il solo pulsante chiudi.
+  - La finestra **Settings** ha la stessa barra, con il solo pulsante chiudi.
 
 ### Due modalità, stessa interfaccia
 
@@ -180,39 +181,39 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 | `Alt+E` (scorciatoia globale) | porta Inlay davanti, o lo rimette nell'area di notifica se è già davanti |
 | scrivere | cerca in tutto l'archivio |
 | frecce, `Tab` | spostarsi tra argomenti, riquadri ed elementi |
-| `Invio` | apre (anche più elementi insieme) |
-| `Ctrl+Invio` | mostra l'elemento in Explorer |
+| `Enter` | apre (anche più elementi insieme) |
+| `Ctrl+Enter` | mostra l'elemento in Explorer |
 | `F2` | rinomina sul posto |
-| `Canc` | sposta nel Cestino |
+| `Del` | sposta nel Cestino |
 | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | copia, taglia, incolla, anche con Explorer |
 | `Ctrl+A` | seleziona tutto il riquadro |
-| `Ctrl+Maiusc+N` | nuovo riquadro |
+| `Ctrl+Shift+N` | nuovo riquadro |
 | `Ctrl+B` | chiude o riapre la barra degli argomenti |
-| `Ctrl+Maiusc+C` | copia il percorso |
-| `Alt+Invio` | proprietà |
+| `Ctrl+Shift+C` | copia il percorso |
+| `Alt+Enter` | proprietà |
 | `Ctrl+Z` | annulla l'ultima operazione, anche più volte di seguito |
 | `Esc` | cancella la ricerca, poi chiude il pannello |
 
 ### Mouse: come sul desktop
 
-- Un clic seleziona; con `Ctrl` e `Maiusc` se ne selezionano altri, con `Ctrl` anche da riquadri diversi. Un clic sul vuoto deseleziona; trascinando sul vuoto si disegna un rettangolo che seleziona quello che tocca, anche in più riquadri.
+- Un clic seleziona; con `Ctrl` e `Shift` se ne selezionano altri, con `Ctrl` anche da riquadri diversi. Un clic sul vuoto deseleziona; trascinando sul vuoto si disegna un rettangolo che seleziona quello che tocca, anche in più riquadri.
 - Doppio clic per aprire.
 - Un secondo clic lento su un elemento già selezionato lo rinomina. Mentre si scrive il nome, un clic altrove lo conferma.
-- Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre Apri, Apri con…, Mostra in Explorer, Sposta in…, Taglia, Copia, Copia percorso, Rinomina, Proprietà e Sposta nel Cestino. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
-- **Sposta in…** apre, sopra la bacheca, l'elenco dei riquadri e degli argomenti con i recenti in cima: si scrive una parte del nome e si conferma con un clic o con Invio. È lo stesso elenco che compare con **Invia a Inlay** dal menu «Invia a» di Explorer.
-- Dopo un'operazione, nel suo avviso ci sono **Annulla** e **Mostra**: la via per tornare indietro e quella per andare a vedere, senza tastiera.
+- Il tasto destro agisce sulla selezione, se l'elemento ne fa parte, altrimenti solo su quell'elemento. Il menu offre **Open**, **Open with…**, **Show in Explorer**, **Move to…**, **Cut**, **Copy**, **Copy path**, **Rename**, **Properties** e **Move to Recycle Bin**. Il menu completo di Windows (7-Zip e simili) è per la v0.2.
+- **Move to…** apre, sopra la bacheca, l'elenco dei riquadri e degli argomenti con i recenti in cima: si scrive una parte del nome e si conferma con un clic o con `Enter`. È lo stesso elenco che compare con **Invia a Inlay** dal menu «Invia a» di Explorer.
+- Dopo un'operazione, nel suo avviso ci sono **Undo** e **Show**: la via per tornare indietro e quella per andare a vedere, senza tastiera.
 - Mentre si trascina, un'etichetta accanto al puntatore dice cosa si ha in mano; un riquadro, una riga o un argomento che cambia posto mostra con una riga dove andrà.
 - Drag & drop:
   - in entrata, da Explorer, dalla posta (allegati e messaggi di Outlook) o dal browser (link e immagini);
   - tra riquadri e argomenti: tenendo fermo l'elemento sopra un argomento, l'argomento si apre e lo si lascia nel riquadro giusto;
-  - una cartella lasciata su un argomento diventa una riga del suo «Generale», non un riquadro con tutto il suo contenuto; un riquadro preso per il titolo e lasciato su un altro argomento resta un riquadro;
+  - una cartella lasciata su un argomento diventa una riga del suo «General», non un riquadro con tutto il suo contenuto; un riquadro preso per il titolo e lasciato su un altro argomento resta un riquadro;
   - in uscita, per esempio per allegare un file a una mail;
   - i riquadri si riordinano trascinandoli per il titolo; al passaggio del mouse una maniglia a puntini mostra dove prenderli;
   - gli elementi si mettono nell'ordine voluto trascinandoli dentro il loro riquadro;
   - gli argomenti si riordinano trascinandoli sopra o sotto un altro; lasciati al centro di un altro argomento ci entrano come sotto-argomenti, con la loro cartella. Due argomenti con lo stesso nome non si uniscono: Inlay chiede di rinominarne uno.
-- L'angolo in basso a destra di un riquadro, al passaggio del mouse, ne cambia la misura: in larghezza scatta a una, due o tre colonne, in altezza a righe. Il doppio clic sull'angolo, o «Misura automatica» nel menu, torna alla misura che segue gli elementi. Le righe sono misurate sullo schermo, non supposte: con la scala al 125 % Windows arrotonda una riga da 22 a 22,4 punti.
-- Il menu … del riquadro ha **Ordina per**: nome, data di modifica, tipo o dimensione, crescente o decrescente. Prende il posto dell'ordine dato a mano, e viceversa.
-- Spostare, copiare o collegare segue le regole di Explorer: sullo stesso disco si sposta, tra dischi diversi si copia; `Ctrl` copia, `Maiusc` sposta, `Alt` o `Ctrl+Maiusc` crea un collegamento. Con un'eccezione, coerente con i principi: quello che ha già un suo posto (programmi `.exe`, cartelle e file in rete) entra come collegamento. Fino alla 0.3.2 ce n'era un'altra: quello che stava in «Da smistare» veniva spostato anche su un altro disco.
+- L'angolo in basso a destra di un riquadro, al passaggio del mouse, ne cambia la misura: in larghezza scatta a una, due o tre colonne, in altezza a righe. Il doppio clic sull'angolo, o «Auto size» nel menu, torna alla misura che segue gli elementi. Le righe sono misurate sullo schermo, non supposte: con la scala al 125 % Windows arrotonda una riga da 22 a 22,4 punti.
+- Il menu … del riquadro ha **Sort by**: nome, data di modifica, tipo o dimensione (**Name**, **Date modified**, **Type**, **Size**), crescente o decrescente. Prende il posto dell'ordine dato a mano, e viceversa.
+- Spostare, copiare o collegare segue le regole di Explorer: sullo stesso disco si sposta, tra dischi diversi si copia; `Ctrl` copia, `Shift` sposta, `Alt` o `Ctrl+Shift` crea un collegamento. Con un'eccezione, coerente con i principi: quello che ha già un suo posto (programmi `.exe`, cartelle e file in rete) entra come collegamento. Fino alla 0.3.2 ce n'era un'altra: quello che stava in «Da smistare» veniva spostato anche su un altro disco.
 
 ## 6. Funzioni e versioni
 
@@ -220,7 +221,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 - Prima configurazione: scelta o creazione della radice dell'archivio.
 - Pannello con scorciatoia globale, icona nella tray, avvio con Windows.
-- Albero degli argomenti e bacheca con riquadri (disposti in colonne, nell'ordine scelto trascinandoli) e "Generale".
+- Albero degli argomenti e bacheca con riquadri (disposti in colonne, nell'ordine scelto trascinandoli) e "General".
 - Icone vere di file, cartelle e programmi, con la data di modifica.
 - Apri, Apri con…, mostra in Explorer, Proprietà, ricerca istantanea per nome.
 - Selezione come sul desktop, anche di più elementi.
@@ -234,7 +235,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - Inbox: `_Da smistare`, il Desktop e, se si vuole, Download. Ci finiscono anche i collegamenti che gli installer mettono sul desktop, così un programma appena installato si aggiunge con un gesto.
   - **Fatto**: «Da smistare» mostra un riquadro per ogni provenienza, il Desktop comprende quello comune a tutti gli utenti, Download si attiva dalle impostazioni e la ricerca trova anche questi file.
   - **Tolto** dopo la 0.3.2, con il Desktop e Download: i file sciolti nella radice li segnala la barra di stato, e una cartella `_Da smistare` è un argomento come gli altri.
-  - **Fatto**: «Sposta in…» dal tasto destro manda la selezione nel riquadro o nell'argomento scelto per nome, con le destinazioni recenti in cima (tenute per PC in `%APPDATA%\Inlay\recenti.json`); «Invia a Inlay» nel menu «Invia a» di Explorer fa lo stesso con i file scelti lì, passandoli all'istanza aperta con `--sort`.
+  - **Fatto**: «Move to…» dal tasto destro manda la selezione nel riquadro o nell'argomento scelto per nome, con le destinazioni recenti in cima (tenute per PC in `%APPDATA%\Inlay\recenti.json`); «Invia a Inlay» nel menu «Invia a» di Explorer fa lo stesso con i file scelti lì, passandoli all'istanza aperta con `--sort`.
 - **Fatto**: annulla (`Ctrl+Z`) per spostamenti, copie, collegamenti, rinomine, nuove cartelle, ordine dei riquadri e degli argomenti, ordinamenti, misure, promozioni ed eliminazioni. Quello che è andato nel Cestino torna al suo posto.
 - Menu contestuale completo di Windows (7-Zip e simili).
 - **Fatto**: riquadri con dimensione personalizzata, dall'angolo: da una a tre colonne e da due a quaranta righe.
@@ -243,12 +244,12 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Fatto**: selezione con il rettangolo, trascinando sul vuoto della bacheca, anche attraverso più riquadri; con `Ctrl` si aggiunge.
 - **Fatto**: aggiunta di collegamenti a programmi, cartelle esterne e siti:
   - trascinando: i programmi e quello che è in rete diventano collegamenti da soli, con `Alt` qualunque cosa;
-  - con «Incolla collegamento» e con «Nuovo collegamento…», scrivendo un sito o un percorso;
+  - con «Paste shortcut» e con «New shortcut…», scrivendo un sito o un percorso;
   - da Outlook e dal browser arrivano allegati, messaggi e link.
 
 ### v0.3 — la tela
 
-- **Tela**: tutto l'archivio su una superficie da spostare e zoomare, con un argomento per zona e le zone dove le mette l'utente. Piano in §11.
+- **Tela** (nell'interfaccia **Mosaic**): tutto l'archivio su una superficie da spostare e zoomare, con un argomento per zona e le zone dove le mette l'utente. Piano in §11.
 
 ### v0.4 — trasloco e GlazeWM
 
@@ -277,7 +278,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
           - window_process: { equals: 'Inlay' }
     ```
 - **Focus**: quando nascondi Inlay con `Esc`, la X o la scorciatoia, Inlay ridà il focus alla finestra in cui stavi lavorando, invece di lasciarlo scegliere a Windows: con GlazeWM potrebbe finire su una finestra di un altro workspace, che verrebbe portato in primo piano. Le finestre nascoste da GlazeWM ("cloaked") sono escluse.
-- **Tasti già presi da GlazeWM** nel config attuale: `Alt+Invio` apre cmd, quindi in Inlay le Proprietà si aprono dal tasto destro, finché quel tasto resta a GlazeWM.
+- **Tasti già presi da GlazeWM** nel config attuale: `Alt+Enter` apre cmd, quindi in Inlay le proprietà si aprono dal tasto destro (**Properties**), finché quel tasto resta a GlazeWM.
 - **Scorciatoia**: la registra l'app; `Alt+E` è libera nel config attuale. In alternativa può gestirla GlazeWM con `shell-exec`, lanciando `Inlay.exe --toggle`.
 - **Interfaccia di comando (IPC)**: GlazeWM espone un WebSocket su `127.0.0.1:6123` con messaggi JSON. Si possono inviare comandi (es. `focus --workspace 3`), fare interrogazioni (workspace attivo, finestre) e ricevere eventi (cambio di focus, workspace attivato). L'app lo usa per sapere qual è il workspace attivo, per passare al workspace di un argomento prima di aprirlo e, in modalità Home, per tornare al workspace precedente.
 - **Workspace Home** (indicativo, da provare): un workspace dedicato con una sua scorciatoia e una regola che ci manda la finestra principale dell'app.
@@ -307,17 +308,17 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Istanza unica**: se l'app viene lanciata una seconda volta (`Inlay.exe --toggle`, o `--sort` con i file di «Invia a Inlay»), passa il comando e i percorsi all'istanza già aperta tramite una named pipe, una riga per ciascuno, e si chiude.
 - **Cornice della finestra**: `WindowChrome` con `CaptionHeight` 32 e senza vetro, come Pulse su Brace: Windows tiene la sua cornice invisibile per i bordi da trascinare, l'ombra, gli angoli piccoli (`DWMWCP_ROUNDSMALL`) e l'aggancio ai lati. Da ingrandita, la cornice resta 8 px fuori dallo schermo (a 100 %): il contenuto rientra di altrettanto, calcolato per lo schermo su cui sta.
   - Costo noto: in Reticle (TacticalUI) `WindowChrome` è stato misurato a 4K su una GPU integrata, con una finestra che scorre immagini: 60 fps senza, 32 con vetro 0, e circa 70 MB di memoria della GPU in più. Reticle 0.6.0 l'ha sostituito con la gestione diretta dei messaggi della cornice. Se Inlay dovesse risultare pesante, quella è la strada.
-- **Finestra creata una volta sola**: chiuderla, con la X, Alt+F4 o dalla barra delle applicazioni, la nasconde soltanto; si chiude davvero solo con **Esci** o quando Windows si spegne.
+- **Finestra creata una volta sola**: chiuderla, con la X, Alt+F4 o dalla barra delle applicazioni, la nasconde soltanto; si chiude davvero solo con **Quit** o quando Windows si spegne.
 - **Movimento**: il contenuto del pannello e le domande sopra la bacheca entrano con una dissolvenza e uno scorrimento di pochi pixel, con le durate e le curve di Brace (`Views/Motion.cs`); niente si muove se Windows ha le animazioni disattivate. Durante un trascinamento due adorner disegnano l'etichetta che segue il puntatore e la riga dove andrà un riquadro.
 - **Operazioni sui file**: passano tutte dalla shell di Windows, con le sue finestre di avanzamento e di conflitto, e usano il Cestino. Ognuna lascia un passo nel registro per annullarla, con quello che serve a rifarla al contrario, metadati compresi: dove sono finiti gli elementi, come si chiamavano, quando sono andati nel Cestino.
   - Spostamenti, copie, eliminazioni e i loro annullamenti girano ognuno su un thread STA suo (`ShellThread`): durante una copia lunga la finestra resta usabile, con i LED di `br-activity` e quello che si sta facendo nella barra di stato.
   - Le operazioni su file diversi vanno avanti insieme, ognuna con la sua finestra di avanzamento, come in Explorer. Una che tocca gli stessi file di una chiesta prima, o mette cose nella stessa cartella, aspetta il suo turno e parte dai file come li ha lasciati l'altra (`FileTouches`). Due copie che ci stanno una alla volta ma non insieme non partono insieme: lo spazio che serve a quelle in corso conta come già usato.
-  - `Ctrl+Z` aspetta che finiscano tutte, poi annulla l'ultima chiesta, anche se una chiesta prima è finita dopo; **Annulla** su un avviso annulla quella dell'avviso. Quelle chieste dopo `Ctrl+Z` aspettano lui. Fino alla 0.3.2 andavano tutte in fila, una dopo l'altra.
+  - `Ctrl+Z` aspetta che finiscano tutte, poi annulla l'ultima chiesta, anche se una chiesta prima è finita dopo; **Undo** su un avviso annulla quella dell'avviso. Quelle chieste dopo `Ctrl+Z` aspettano lui. Fino alla 0.3.2 andavano tutte in fila, una dopo l'altra.
   - Le rinomine restano immediate: sono brevi, e il campo del nome aspetta la risposta.
-  - Mentre i file arrivano la bacheca non si rilegge e l'indice della ricerca aspetta: tutti e due si aggiornano una volta, alla fine. **Esci** aspetta che finiscano le operazioni in corso, per non lasciare un file copiato a metà.
+  - Mentre i file arrivano la bacheca non si rilegge e l'indice della ricerca aspetta: tutti e due si aggiornano una volta, alla fine. **Quit** aspetta che finiscano le operazioni in corso, per non lasciare un file copiato a metà.
   - A operazione finita la finestra si riprende il focus che le finestre della shell le hanno tolto, ma solo se nel frattempo non si è passati a un altro programma.
   - Fino alla 0.2.2 le operazioni giravano nel thread dell'interfaccia, che restava bloccata finché la shell non finiva.
-  - Anche la copia di un archivio su un altro disco (Impostazioni › Archivi › **Sposta…**) gira su un thread a parte, dopo la 0.3.2: intanto Inlay resta usabile, la finestra Impostazioni non si chiude e **Esci** aspetta la fine della copia.
+  - Anche la copia di un archivio su un altro disco (**Settings** › **Vaults** › **Move…**) gira su un thread a parte, dopo la 0.3.2: intanto Inlay resta usabile, la finestra **Settings** non si chiude e **Quit** aspetta la fine della copia.
 - **Ripristino dal Cestino**: il Cestino di ogni disco tiene ogni elemento come due file, `$R…` con il contenuto e `$I…` con il percorso originale e la data.
   - Subito dopo un'eliminazione, Inlay annota quali `$I…` sono i suoi.
   - `Ctrl+Z` rimette al loro posto esattamente quegli elementi, anche se nel frattempo ne sono stati eliminati altri con lo stesso percorso, e toglie i `$I…`, come fa «Ripristina».
@@ -328,12 +329,12 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
   - Dopo l'installazione Inlay parte con Windows; alla disinstallazione l'avvio automatico si toglie.
   - Il runtime .NET 10 Desktop, se manca, lo scarica l'installer.
   - `Program.Main` fa passare prima Velopack, che durante installazione e disinstallazione chiude il processo prima di qualunque finestra.
-  - Le release stanno su GitHub, con le note in `novita\<versione>.md`, nel repository pubblico (dal 10 ottobre 2026; prima era privato, e per leggere le release sarebbe servito un token). Inlay si aggiorna da lì con Velopack: un minuto dopo l'avvio e poi ogni sei ore cerca una versione nuova, la scarica in sottofondo e lo dice con un avviso della tray e nella barra di stato. Un clic su «Riavvia e aggiorna» la applica appena finiscono le operazioni sui file; se no, si applica quando Inlay esce. Non all'avvio: un secondo `Inlay.exe`, come `--toggle` da GlazeWM, la applicherebbe sotto l'Inlay in esecuzione. Le pre-release non vengono offerte.
+  - Le release stanno su GitHub, con le note in `novita\<versione>.md`, nel repository pubblico (dal 10 ottobre 2026; prima era privato, e per leggere le release sarebbe servito un token). Inlay si aggiorna da lì con Velopack: un minuto dopo l'avvio e poi ogni sei ore cerca una versione nuova, la scarica in sottofondo e lo dice con un avviso della tray e nella barra di stato. Un clic su «Restart to update» la applica appena finiscono le operazioni sui file; se no, si applica quando Inlay esce. Non all'avvio: un secondo `Inlay.exe`, come `--toggle` da GlazeWM, la applicherebbe sotto l'Inlay in esecuzione. Le pre-release non vengono offerte.
   - Lo script pubblica solo da un commit già su GitHub, senza modifiche fuori dal commit, e lega il tag della release a quel commit: l'installer e il codice della release coincidono.
 - **Ricarica**: a ogni apertura del pannello e a ogni modifica vista dal watcher, la bacheca viene riletta. I view model di argomenti, riquadri ed elementi ancora presenti restano gli stessi, aggiornati sul posto (`Reconciler`): selezione, nome in modifica, rami aperti e focus sopravvivono, e la vista riceve solo gli inserimenti, gli spostamenti e le rimozioni.
 - **Icone di Windows**: programmi, collegamenti e file senza un'icona di Brace chiedono la loro icona a Windows su un thread dedicato, perché un collegamento a una risorsa di rete che non risponde può bloccare per secondi; nel frattempo mostrano il documento di Brace. Nelle anteprime da riga di comando le icone si leggono subito, sullo stesso thread.
 - **Obiettivi di prestazioni**: pannello visibile in meno di 100 ms dalla scorciatoia (la finestra è già creata e solo nascosta); ricerca su 50.000 file in meno di 50 ms; meno di 100 MB di memoria a riposo.
-- **Convenzioni**: codice e commenti in inglese; interfaccia in italiano. I testi per ora sono scritti nel XAML e nel codice: se servirà tradurli, andranno spostati in file di risorse. Le altre regole sono in `docs/convenzioni.md`.
+- **Convenzioni**: codice, commenti e interfaccia in inglese (l'interfaccia dalla 0.3.4: fino alla 0.3.3 era in italiano); documenti, commit e note di versione in italiano. I testi sono scritti nel XAML e nel codice: se servirà più di una lingua, andranno spostati in file di risorse. Le altre regole sono in `docs/convenzioni.md`.
 
 ## 9. Rischi e punti aperti
 
@@ -342,7 +343,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Focus**: Windows limita le app che si portano in primo piano da sole. Una scorciatoia registrata dall'app lo consente, ma va provato bene con GlazeWM e con più monitor.
 - **Archivio su più PC**: possibili conflitti su `archive.json` e programmi installati in percorsi diversi. Per ora è rimandato.
 - **Installer non firmato**: Windows avvisa al primo avvio (SmartScreen). Una firma del codice costa e per ora non serve.
-- **Da decidere**: se rinominare la cartella `aaa` in `Inlay`. Dove mettere l'archivio lo sceglie l'utente nella finestra Archivi; il consiglio è lo stesso disco del Desktop.
+- **Da decidere**: se rinominare la cartella `aaa` in `Inlay`. Dove mettere l'archivio lo sceglie l'utente nella pagina **Vaults**; il consiglio è lo stesso disco del Desktop.
 
 ## 10. Prossimi passi
 
@@ -370,9 +371,9 @@ Fatto:
 - sempre il 10 ottobre, su richiesta: il repository su GitHub è pubblico, e Inlay si aggiorna da solo dalle sue release con Velopack, con un avviso e «Riavvia e aggiorna» nella tray e nella barra di stato, o all'uscita; **Cerca aggiornamenti** nel menu dell'icona. Prima di renderlo pubblico la storia è stata controllata: nessun token, chiave o password. Provato anche dal vero, con le versioni da 0.9.0 a 0.9.3 in una copia portatile e un archivio fatto da Quiver: l'archivio passa da `.quiver` a `.inlay`, ogni versione nuova arriva un minuto dopo l'avvio, si applica all'uscita o con il pulsante della barra di stato (riavvio in 3 secondi), e archivio, metadati, impostazioni e posti recenti restano identici. La prova ha trovato un problema, corretto: Velopack applicava all'avvio una versione scaricata anche da un secondo `Inlay.exe`, sotto quello in esecuzione.
 - il 10 ottobre, la 0.3.3: tutto questo pubblicato, la prima versione con il nome Inlay. Prima di pubblicarla, l'archivio vero letto in sola lettura con il codice della 0.3.2 e con il nuovo ha dato gli stessi argomenti, riquadri ed elementi nello stesso ordine, e le anteprime della bacheca e della tela su di esso sono come prima. Da Quiver si passa uscendo da Quiver e disinstallandolo prima di installare Inlay: l'installer lo avvia subito, e insieme si contenderebbero la scorciatoia e la cartella nascosta dell'archivio. Poi installata così sul PC, dalla release: tolto Quiver, l'archivio vero e le impostazioni sono rimasti; al primo avvio Inlay ha preso le impostazioni di Quiver, la cartella nascosta è passata a `.inlay` con `archive.json` identico, nessuno dei 21.063 file dell'archivio è cambiato, e il controllo degli aggiornamenti su GitHub, un minuto dopo, è andato senza errori.
 
-1. Provare dal vivo la 0.2.3: le copie lunghe, gli argomenti trascinati, l'angolo dei riquadri, «Ordina per» e l'ordine a mano.
+1. Provare dal vivo la 0.2.3: le copie lunghe, gli argomenti trascinati, l'angolo dei riquadri, «Sort by» e l'ordine a mano.
 2. Provare dal vivo le impostazioni, i gesti nuovi e l'installer, poi Inlay con GlazeWM: focus, più monitor. E la copia di un archivio su un altro disco, che ora lascia Inlay usabile.
-3. Provare dal vivo la tela; poi finire la fase 2: buona parte funziona già, mancano lo spostamento di un riquadro in un'altra zona e il rettangolo con `Maiusc`.
+3. Provare dal vivo la tela; poi finire la fase 2: buona parte funziona già, mancano lo spostamento di un riquadro in un'altra zona e il rettangolo con `Shift`.
 4. Della v0.2 resta il menu completo di Windows; poi la v0.4 con GlazeWM.
 
 ## 11. Piano: la tela
@@ -387,7 +388,7 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 
 ### Come si usa
 
-- **Bacheca | Tela**: un interruttore in alto a destra, accanto a «Nuovo riquadro». Inlay ricorda l'ultima vista usata. La barra degli argomenti resta: un clic su un argomento vola sulla sua zona.
+- **Board | Mosaic**: un interruttore in alto a destra, accanto a «New tile». Inlay ricorda l'ultima vista usata. La barra degli argomenti resta: un clic su un argomento vola sulla sua zona.
 - **Zoom**: la rotella zooma attorno al puntatore, dal 10 % al 200 % (al 100 % un riquadro è grande come sulla bacheca). Al livello vicino, sopra un riquadro che scorre la rotella lo fa scorrere; con `Ctrl` zooma sempre. `Ctrl+0` mostra tutto, `+` e `-` zoomano.
 - **Spostare la vista**: trascinando sul vuoto, oppure con la rotella premuta, dovunque. Doppio clic sul vuoto: tutto in vista; sul titolo di una zona: la zona inquadrata.
 - **Tre livelli**, secondo lo zoom:
@@ -396,9 +397,9 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
   - vicino: i riquadri veri, come sulla bacheca: selezione, doppio clic, tasto destro, rinomina, trascinamenti, `Ctrl+Z`.
 
   Ai livelli lontano e medio un doppio clic su un riquadro ci vola sopra. Tra un livello e l'altro le soglie hanno un po' di margine, perché lo zoom lento non faccia sfarfallare.
-- **Selezione a rettangolo**: `Maiusc` + trascinare sul vuoto, perché trascinare sul vuoto sposta la vista.
+- **Selezione a rettangolo**: `Shift` + trascinare sul vuoto, perché trascinare sul vuoto sposta la vista.
 - **Le zone** si spostano trascinandone il titolo e si allargano a colonne dall'angolo, come i riquadri. Dentro, riquadri e sotto-argomenti si dispongono a righe nelle colonne della zona, come sulla bacheca.
-- **Ricerca**: come oggi; un clic su un risultato vola al suo riquadro con l'elemento selezionato, doppio clic o `Invio` lo aprono.
+- **Ricerca**: come oggi; un clic su un risultato vola al suo riquadro con l'elemento selezionato, doppio clic o `Enter` lo aprono.
 - Per ogni archivio Inlay ricorda dov'era la vista.
 
 ### Dove vanno le zone
@@ -436,7 +437,7 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 
 0. **Preparazione**, senza niente di nuovo da vedere: `MainViewModel` con più bacheche insieme, il modello del riquadro condiviso. Tutti i test di oggi devono passare.
 1. **La tela da guardare**: l'interruttore, le zone disposte da Inlay (i sotto-argomenti dentro), zoom e spostamento, i tre livelli, i voli dalla barra laterale e dalla ricerca, aprire e tasto destro al livello vicino. Più la misura delle prestazioni.
-2. **Smistare sulla tela**: trascinare tra riquadri di argomenti diversi, il rettangolo con `Maiusc`, gli appunti, la rinomina, `Ctrl+Z`, le righe che mostrano dove va un riquadro o un elemento. Da vicino buona parte funziona già, perché i riquadri della tela sono quelli della bacheca; mancano lo spostamento di un riquadro in un'altra zona e il rettangolo.
+2. **Smistare sulla tela**: trascinare tra riquadri di argomenti diversi, il rettangolo con `Shift`, gli appunti, la rinomina, `Ctrl+Z`, le righe che mostrano dove va un riquadro o un elemento. Da vicino buona parte funziona già, perché i riquadri della tela sono quelli della bacheca; mancano lo spostamento di un riquadro in un'altra zona e il rettangolo.
 3. **La tua scrivania**: zone da spostare e allargare, i posti nell'archivio, i nuovi argomenti sistemati da soli, le zone che scendono invece di coprirsi, la vista ricordata.
 4. **Dopo**: la minimappa, la tastiera tra le zone e la modalità Home a schermo intero per il workspace di GlazeWM, con la tela dentro (§7). Il colore delle zone, previsto qui, è arrivato prima, con la 0.3.0.
 
@@ -446,5 +447,5 @@ Ogni fase si chiude con i test e le anteprime e, prima di pubblicare, con la pro
 
 - **Prestazioni a 4K** su una GPU integrata: per questo la misura è nella prima fase, prima di costruirci sopra.
 - **Il passaggio a più bacheche** tocca il cuore di `MainViewModel`: i test di oggi fanno da rete, e la fase 0 non cambia niente di visibile.
-- **Gesti del mouse**: trascinare sul vuoto sposta la vista e il rettangolo vuole `Maiusc`. Va provato dal vivo se viene naturale.
+- **Gesti del mouse**: trascinare sul vuoto sposta la vista e il rettangolo vuole `Shift`. Va provato dal vivo se viene naturale.
 - **Compatibilità**: le versioni senza la tela non conoscono `"canvas"`. Tornando indietro, i posti delle zone si perderebbero alla prima modifica dei metadati; i file mai.
