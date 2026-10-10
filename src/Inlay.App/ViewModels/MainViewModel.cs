@@ -232,6 +232,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public TopicViewModel? SelectedTopic => _selectedTopic;
 
+    /// <summary>«New tile», on the board and on the mosaic: which topic the tile goes in, as "New tile in “Lavoro” (Ctrl+Shift+N)".</summary>
+    public string NewTileToolTip => _selectedTopic is { } topic ? $"New tile in “{topic.Name}” (Ctrl+Shift+N)" : "New tile (Ctrl+Shift+N)";
+
     public bool IsSearching => !string.IsNullOrWhiteSpace(Query);
 
     public bool IsBoardVisible => !IsSearching && !IsCanvasShown;
@@ -1612,6 +1615,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             : "";
         OnPropertyChanged(nameof(BoardFolder));
         OnPropertyChanged(nameof(SelectedTopic));
+        OnPropertyChanged(nameof(NewTileToolTip));
     }
 
     partial void OnQueryChanged(string value) => RunSearch();
@@ -1704,6 +1708,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         EmptyMessage = "Create your first space with the + button next to “Spaces”.";
         OnPropertyChanged(nameof(BoardFolder));
         OnPropertyChanged(nameof(SelectedTopic));
+        OnPropertyChanged(nameof(NewTileToolTip));
     }
 
     private void SelectAfterReload(IEnumerable<string> paths) => _selectAfterReload = ToPathSet(paths);

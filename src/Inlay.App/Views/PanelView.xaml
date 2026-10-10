@@ -729,16 +729,16 @@
                                       IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
                             <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Pin16}" />
                         </ToggleButton>
-                        <!-- The archive in use, the vault as in Obsidian: a badge in two parts, «Vault» and its name, so that it reads
-                             as what it is. A click opens the page of the vaults in the settings. -->
-                        <Button DockPanel.Dock="Right" Padding="0" Style="{StaticResource Inlay.ProjectBadge}"
+                        <!-- The archive in use, the vault as in Obsidian: the neutral badge of Brace with «Vault» as its label, a hairline,
+                             then the name, so that it reads as what it is. Neutral: the colors of states are for states, and the bar
+                             keeps its one amber for the pin. A click opens the page of the vaults in the settings. -->
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.ProjectBadge}"
                                 ToolTip="The vault in use: click to switch, create, rename or move vaults" AutomationProperties.Name="Vault"
                                 Click="Archives_Click">
                             <StackPanel Orientation="Horizontal">
-                                <Border Padding="6,0" CornerRadius="2,0,0,2" Background="{DynamicResource Brace.InfoSubtle}">
-                                    <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource Brace.Info}" Text="Vault" />
-                                </Border>
-                                <TextBlock Margin="6,0" MaxWidth="200" VerticalAlignment="Center" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource Brace.TextTertiary}" Text="Vault" />
+                                <Rectangle Width="1" Height="10" Margin="6,0" VerticalAlignment="Center" Fill="{DynamicResource Brace.TextTertiary}" Opacity="0.5" />
+                                <TextBlock MaxWidth="200" VerticalAlignment="Center" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                         </Button>
                         <!-- The search in the middle of the bar, 280 wide and control-sm tall as in br-titlebar; narrower when the
@@ -959,7 +959,7 @@
                         <DockPanel Visibility="{Binding IsBoardVisible, Converter={StaticResource Visible}}">
                             <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
                                 <Button DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Primary}"
-                                        ToolTip="New tile (Ctrl+Shift+N)" Click="NewTile_Click"
+                                        ToolTip="{Binding NewTileToolTip}" Click="NewTile_Click"
                                         Visibility="{Binding SelectedTopic, Converter={StaticResource NullToVisibility}}">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Add16}" />
@@ -1025,12 +1025,14 @@
                         <!-- The canvas: the whole archive at once, a zone for each topic, seen through a camera that zooms and moves. -->
                         <DockPanel Visibility="{Binding IsCanvasVisible, Converter={StaticResource Visible}}">
                             <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
-                                <!-- Where the board has «New tile»: on the mosaic, made of spaces, a new space, which becomes a zone. -->
+                                <!-- «New tile», as on the board and in the same place: in the topic chosen in the sidebar, which the
+                                     tooltip names, and the view flies to it. -->
                                 <Button DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Primary}"
-                                        ToolTip="New space, in the vault" Click="NewTopic_Click">
+                                        ToolTip="{Binding NewTileToolTip}" Click="NewTile_Click"
+                                        Visibility="{Binding SelectedTopic, Converter={StaticResource NullToVisibility}}">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Add16}" />
-                                        <TextBlock VerticalAlignment="Center" Text="New space" />
+                                        <TextBlock VerticalAlignment="Center" Text="New tile" />
                                     </StackPanel>
                                 </Button>
                                 <ListBox DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"

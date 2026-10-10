@@ -83,8 +83,8 @@ L'interfaccia è in inglese, con parole sue: l'archivio è il **vault**, gli arg
   - Il tasto destro sul nome di una zona apre il menu del suo argomento, come nella barra laterale: **New tile**, **New space inside**, **Rename**, **Color**…
   - Un clic su un argomento nella barra laterale vola alla sua zona; il doppio clic sul nome di una zona la inquadra, quello su un riquadro visto da lontano ci vola sopra. Un clic su un risultato della ricerca vola al suo riquadro, con l'elemento selezionato.
 - **Creare**:
-  - un argomento: il pulsante + accanto a **Spaces**, o **New space** in alto a destra sul mosaico; dentro un altro argomento, tasto destro su quello, o sul nome della sua zona (**New space inside**). Il nome si scrive nella barra degli argomenti, che si apre se era chiusa, e il mosaico vola sulla zona nuova;
-  - un riquadro: **New tile**, `Ctrl+Shift+N` o tasto destro sulla bacheca; sul mosaico, tasto destro sul nome di una zona, e la vista vola sul riquadro nuovo, abbastanza vicino da scriverne il nome;
+  - un argomento: il pulsante + accanto a **Spaces**; dentro un altro argomento, tasto destro su quello, o sul nome della sua zona (**New space inside**). Il nome si scrive nella barra degli argomenti, che si apre se era chiusa, e il mosaico vola sulla zona nuova;
+  - un riquadro: **New tile**, in alto a destra sulla bacheca e sul mosaico, `Ctrl+Shift+N`, o tasto destro sulla bacheca o sul nome di una zona. Va nell'argomento scelto nella barra a sinistra, che il suggerimento del pulsante nomina («New tile in “Lavoro”»); sul mosaico la vista vola sul riquadro nuovo, abbastanza vicino da scriverne il nome;
   - una cartella in un riquadro: **New folder**, dal tasto destro sul riquadro o dal pulsante … accanto al titolo; in **General** è una delle sue righe;
   - un collegamento: **New shortcut…** dal tasto destro sul riquadro o sulla bacheca. Si scrive l'indirizzo di un sito, anche solo `rossi.it`, oppure il percorso di un programma, di un file o di una cartella.
 

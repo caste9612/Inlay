@@ -345,6 +345,18 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
+    public void NewTile_SaysWhichSpaceItGoesIn_OnTheBoardAndOnTheMosaic() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        Assert.Equal("New tile in “Lavoro” (Ctrl+Shift+N)", viewModel.NewTileToolTip);
+
+        viewModel.IsCanvasShown = true;
+        viewModel.SelectTopicByPath("Personale");
+
+        Assert.Equal("New tile in “Personale” (Ctrl+Shift+N)", viewModel.NewTileToolTip);
+    });
+
+    [Fact]
     public void TilesKeepThePlaceTheyWereMovedTo() => StaThread.Run(() =>
     {
         using var viewModel = Open();
