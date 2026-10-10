@@ -2,7 +2,7 @@
 
 Questi documenti spiegano com'è fatto il codice di Inlay e come ci si lavora. Cosa fa Inlay e come si usa è nel [README](../README.md); perché esiste, le sue regole e dove sta andando sono in [PROGETTO.md](../PROGETTO.md); cosa porta ogni versione è in [novita/](../novita).
 
-Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2, poi controllati contro il codice e aggiornati con le correzioni fatte in quei giorni ([PROGETTO.md §10](../PROGETTO.md#10-prossimi-passi)).
+Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2, poi controllati contro il codice e aggiornati con le correzioni e le novità di quei giorni, uscite con la 0.3.3 ([PROGETTO.md §10](../PROGETTO.md#10-prossimi-passi)).
 
 ## Da dove cominciare
 

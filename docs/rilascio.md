@@ -6,7 +6,7 @@ Come si numera una versione, come si scrive la nota e come si pubblica l'install
 
 - **Dove sta**: `<Version>` in `src/Inlay.App/Inlay.App.csproj`. Lo script dell'installer la legge da lì.
 - **Come si numera**: la seconda cifra segue le versioni del piano ([PROGETTO.md §6](../PROGETTO.md#6-funzioni-e-versioni)): 0.1 il prototipo, 0.2 la gestione completa, 0.3 la tela, 0.4 trasloco e GlazeWM. La terza cresce a ogni rilascio dentro quel piano, novità o correzioni.
-- **Le release su GitHub** (`caste9612/Inlay`, repository privato; fino alla 0.3.2 era `caste9612/Quiver`, e GitHub manda i vecchi indirizzi al nuovo): dalla 0.2.0 alla 0.2.2 pre-release, dalla 0.2.3 release normali («da qui niente più pre-release», PROGETTO.md §10). L'ultima è la 0.3.2. Ogni release ha il suo tag `vX.Y.Z` sul commit da cui è stata costruita.
+- **Le release su GitHub** (`caste9612/Inlay`, repository pubblico dal 10 ottobre 2026; fino alla 0.3.2 era `caste9612/Quiver`, e GitHub manda i vecchi indirizzi al nuovo): dalla 0.2.0 alla 0.2.2 pre-release, dalla 0.2.3 release normali («da qui niente più pre-release», PROGETTO.md §10). L'ultima è la 0.3.3, la prima con il nome Inlay. Ogni release ha il suo tag `vX.Y.Z` sul commit da cui è stata costruita.
 
 ## La nota di versione (`novita/<versione>.md`)
 
@@ -15,7 +15,7 @@ Come si numera una versione, come si scrive la nota e come si pubblica l'install
 1. `# Inlay X.Y.Z`, poi una frase su cosa porta la versione e come installarla: «Scarica **Inlay-win-Setup.exe** e lancialo: se hai già Inlay, prima esci…».
 2. Il paragrafo sull'avviso di Windows per l'installer non firmato.
 3. `## Novità` e/o `## Corretto`: una voce per cosa, con il nome in grassetto come lo vede l'utente.
-4. `## Da sapere`: per la prima versione con il nome Inlay, come si passa da Quiver (installare Inlay, disinstallare Quiver, cosa viene preso al primo avvio); poi cosa cambia nell'archivio (se la versione lo legge come la precedente, cosa scrive in `.inlay\archive.json`, cosa succede tornando alla versione prima) e quanti test ci sono, e che passano tutti.
+4. `## Da sapere`: per la prima versione con il nome Inlay, come si passa da Quiver (uscire da Quiver e disinstallarlo prima di installare Inlay, che l'installer avvia subito; cosa viene preso al primo avvio); poi cosa cambia nell'archivio (se la versione lo legge come la precedente, cosa scrive in `.inlay\archive.json`, cosa succede tornando alla versione prima) e quanti test ci sono, e che passano tutti.
 
 ## La prassi dei commit
 
@@ -59,7 +59,7 @@ In `artifacts\installer`, `Inlay-win-Setup.exe` è l'installer da lanciare; gli 
 - **Dove si installa**: per l'utente, senza amministratore, in `%LOCALAPPDATA%\Inlay`, con il collegamento nel menu Start. Si disinstalla da Impostazioni › App; l'archivio resta dov'è.
 - **`Program.Main`** passa prima da Velopack: dopo l'installazione accende l'avvio con Windows e «Invia a», dopo un aggiornamento riscrive la voce di «Invia a» per il nuovo `Inlay.exe`, se c'è ancora, prima della disinstallazione li toglie ([windows.md](windows.md#lavvio-program-app)).
 - **Aggiornare** (`Services/Updater.cs`, `GitHubUpdater`): Inlay legge le release del repository pubblico con `GithubSource`, senza token, e solo quelle normali: le pre-release no. `App.StartUpdates` controlla un minuto dopo l'avvio e poi ogni sei ore; `CheckForUpdates` scarica la versione nuova (`PrepareAsync`) e la mette nella barra di stato (`MainViewModel.UpdateReady`) e nel menu della tray (`TrayIcon.ShowUpdateReady`), con un avviso della tray una volta per versione. «Riavvia e aggiorna» aspetta le operazioni sui file, come **Esci**, chiude la finestra e chiama `ApplyUpdatesAndRestart`; **Esci** con una versione pronta chiama `WaitExitThenApplyUpdates`; una versione scaricata e mai applicata, per esempio se Windows si spegne prima, la ritrova il controllo dopo il prossimo avvio, e la offre di nuovo. Velopack non la applica all'avvio (`SetAutoApplyOnStartup(false)` in `Program.Main`): un secondo `Inlay.exe`, come `--toggle` da GlazeWM o «Invia a», la applicherebbe sotto l'Inlay in esecuzione. Dopo il riavvio `Program.UpdatedTo` fa dire alla tray a che versione è arrivato. Lanciato dal codice (`dotnet run`) Inlay non è installato, e non cerca niente.
-- **Ogni release pubblicata è un aggiornamento**: arriva a tutti gli Inlay installati entro qualche ora. Per questo vanno pubblicati tutti i file di `artifacts\installer`, `releases.win.json` compreso, e una release non si cancella. La prima versione di Inlay deve essere più alta della 0.3.2, l'ultima di Quiver; chi aveva Quiver la installa a mano, perché Quiver non sapeva aggiornarsi.
+- **Ogni release pubblicata è un aggiornamento**: arriva a tutti gli Inlay installati entro qualche ora. Per questo vanno pubblicati tutti i file di `artifacts\installer`, `releases.win.json` compreso, e una release non si cancella. La prima versione di Inlay è la 0.3.3, dopo la 0.3.2, l'ultima di Quiver; chi aveva Quiver la installa a mano, perché Quiver non sapeva aggiornarsi.
 - **Firma**: l'installer non è firmato, quindi Windows (SmartScreen) avvisa la prima volta: **Ulteriori informazioni**, poi **Esegui comunque**.
 
 ## Provare un aggiornamento prima di pubblicarlo
