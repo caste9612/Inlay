@@ -808,6 +808,7 @@
                     <!-- A new version of Inlay, downloaded and ready: a click restarts into it; otherwise it applies on exit. -->
                     <StatusBarItem DockPanel.Dock="Right" Margin="0,0,8,0" Visibility="{Binding UpdateText, Converter={StaticResource NullToVisibility}}">
                         <Button Style="{StaticResource Brace.StatusBar.Button}" Click="RestartToUpdate_Click"
+                                AutomationProperties.Name="{Binding UpdateText}"
                                 ToolTip="Un clic riavvia Inlay aggiornato, appena finiscono le operazioni sui file in corso. Altrimenti si aggiorna quando esci.">
                             <StackPanel Orientation="Horizontal">
                                 <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.ArrowDownload16}" />

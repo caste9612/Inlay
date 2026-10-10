@@ -26,7 +26,8 @@ internal interface IUpdater
 /// <summary>
 /// The new versions from the releases of the public repository on GitHub, through Velopack, without a token: each release
 /// has the files Velopack reads (releases.win.json and the package). Pre-releases are not offered. A version downloaded
-/// and never applied, as when Windows shuts down first, Velopack applies by itself at the next start.
+/// and never applied, as when Windows shuts down first, is found again by the check after the next start and offered
+/// again: Velopack does not apply it at the start (see Program.Main).
 /// </summary>
 internal sealed class GitHubUpdater : IUpdater
 {
@@ -61,11 +62,21 @@ internal sealed class GitHubUpdater : IUpdater
             _manager.WaitExitThenApplyUpdates(pending, silent: true, restart: false);
     }
 
+    /// <summary>
+    /// The releases on GitHub; or, with the environment variable INLAY_UPDATES, a folder or an address with the files of
+    /// vpk pack, to try an update before publishing it (docs/rilascio.md).
+    /// </summary>
     private static UpdateManager? Create()
     {
         try
         {
-            return new UpdateManager(new GithubSource(Repository, accessToken: null, prerelease: false));
+            var other = Environment.GetEnvironmentVariable("INLAY_UPDATES");
+            IUpdateSource source = string.IsNullOrWhiteSpace(other)
+                ? new GithubSource(Repository, accessToken: null, prerelease: false)
+                : Directory.Exists(other)
+                    ? new SimpleFileSource(new DirectoryInfo(other))
+                    : new SimpleWebSource(other);
+            return new UpdateManager(source);
         }
         catch (InvalidOperationException)
         {

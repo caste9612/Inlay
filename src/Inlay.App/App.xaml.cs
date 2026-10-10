@@ -107,7 +107,10 @@ public partial class App : Application, ISettingsHost
         _singleInstance.StartListening(_stopping.Token);
         Log.Write($"Started. Archive: {root}. Shortcut: {_settings.Hotkey}. Version: {_updater.CurrentVersion ?? "not installed"}.");
         if (Program.UpdatedTo is { } updated)
+        {
+            Log.Write($"Updated to {updated}");
             _tray.ShowInfo($"Inlay è aggiornato alla versione {updated}. Le novità sono nelle release su GitHub.");
+        }
         StartUpdates();
 
         if (options.SortPaths.Count > 0)
@@ -169,7 +172,7 @@ public partial class App : Application, ISettingsHost
         {
             Log.Write($"Could not apply the update: {e}");
         }
-        // Still here: the update could not start. Inlay closes as with «Esci», and the version downloaded applies at the next start.
+        // Still here: the update could not start. Inlay closes as with «Esci», and the version downloaded is offered again next time.
         Shutdown();
     }
 

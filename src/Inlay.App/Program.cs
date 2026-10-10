@@ -16,6 +16,10 @@ public static class Program
     public static void Main()
     {
         VelopackApp.Build()
+            // Not at the start: a second Inlay.exe, as --toggle from GlazeWM or «Invia a», would apply a version downloaded
+            // under the Inlay running. That one applies it itself, on exit or with «Riavvia e aggiorna», and tells about
+            // it at its next check, a minute after it starts.
+            .SetAutoApplyOnStartup(false)
             // Started again after «Riavvia e aggiorna».
             .OnRestarted(version => UpdatedTo = version.ToString())
             // Installed: Inlay starts with Windows, as an app of the tray should, and Explorer gets «Invia a Inlay».
