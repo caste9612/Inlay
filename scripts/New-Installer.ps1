@@ -34,7 +34,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$gitHubRepo = 'caste9612/Quiver'
+$gitHubRepo = 'caste9612/Inlay'
 $repo = Split-Path $PSScriptRoot -Parent
 $project = Join-Path $repo 'src\Inlay.App\Inlay.App.csproj'
 

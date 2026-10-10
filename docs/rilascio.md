@@ -6,7 +6,7 @@ Come si numera una versione, come si scrive la nota e come si pubblica l'install
 
 - **Dove sta**: `<Version>` in `src/Inlay.App/Inlay.App.csproj`. Lo script dell'installer la legge da lì.
 - **Come si numera**: la seconda cifra segue le versioni del piano ([PROGETTO.md §6](../PROGETTO.md#6-funzioni-e-versioni)): 0.1 il prototipo, 0.2 la gestione completa, 0.3 la tela, 0.4 trasloco e GlazeWM. La terza cresce a ogni rilascio dentro quel piano, novità o correzioni.
-- **Le release su GitHub** (`caste9612/Quiver`, repository privato, che ha ancora il nome di prima di Inlay): dalla 0.2.0 alla 0.2.2 pre-release, dalla 0.2.3 release normali («da qui niente più pre-release», PROGETTO.md §10). L'ultima è la 0.3.2. Ogni release ha il suo tag `vX.Y.Z` sul commit da cui è stata costruita.
+- **Le release su GitHub** (`caste9612/Inlay`, repository privato; fino alla 0.3.2 era `caste9612/Quiver`, e GitHub manda i vecchi indirizzi al nuovo): dalla 0.2.0 alla 0.2.2 pre-release, dalla 0.2.3 release normali («da qui niente più pre-release», PROGETTO.md §10). L'ultima è la 0.3.2. Ogni release ha il suo tag `vX.Y.Z` sul commit da cui è stata costruita.
 
 ## La nota di versione (`novita/<versione>.md`)
 

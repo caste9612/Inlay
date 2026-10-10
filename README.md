@@ -5,7 +5,7 @@ Idea, regole dell'archivio e piano delle versioni sono in [PROGETTO.md](PROGETTO
 
 ## Installazione
 
-Scarica **Inlay-win-Setup.exe** dalle [release](https://github.com/caste9612/Quiver/releases) e lancialo.
+Scarica **Inlay-win-Setup.exe** dalle [release](https://github.com/caste9612/Inlay/releases) e lancialo.
 - Inlay si installa per il tuo utente, senza permessi di amministratore, in `%LOCALAPPDATA%\Inlay`, con il collegamento nel menu Start.
 - Parte con Windows; si disattiva da **Impostazioni**, nel menu dell'icona nella tray.
 - Mette **Inlay** nel menu **Invia a** del tasto destro di Explorer: i file scelti vengono mandati nell'archivio. Anche questo si toglie da Impostazioni.
