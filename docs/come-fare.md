@@ -6,7 +6,7 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 
 1. **Il passo**, in `src/Quiver.Core/UndoHistory.cs`: un `sealed record XxxStep(…) : UndoStep` con tutto quello che serve per tornare indietro: i percorsi di prima e di dopo, i valori di prima, un `MetadataSnapshot` se delle cartelle escono dall'archivio.
 2. **L'operazione**, in `MainViewModel`:
-   - se tocca i file: `using var turn = await BeginFileWork("Faccio questo…")`, la shell con `RunShell(…)`, i metadati che seguono (`FollowFolder`, `ForgetFolder`), poi `Remember(step)`, `Report(…)` per l'avviso con **Annulla** e **Mostra**, `SelectAfterReload(…)` e `ReloadUnlessEditing()`;
+   - se tocca i file: `using var turn = await BeginFileWork("Faccio questo…", touches)`, con quello che l'operazione cambia (`FileTouches`, per sapere quali altre possono andare insieme), la shell con `RunShell(…)`, i metadati che seguono (`FollowFolder`, `ForgetFolder`), poi `Remember(step, turn)`, che mette il passo al posto dell'operazione nel registro, `Report(…)` per l'avviso con **Annulla** e **Mostra**, `SelectAfterReload(…)` e `ReloadUnlessEditing()`;
    - se tocca solo i metadati: `ChangeMetadata(m => m.SetXxx(…), new XxxStep(…))`.
 3. **L'annullamento**, sempre in `MainViewModel`:
    - un caso nello `switch` di `Undo()`: un passo che non è lì fa partire un'eccezione («Unknown undo step»);

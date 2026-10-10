@@ -38,9 +38,19 @@ public sealed class FileTouchesTests
         var intoTheCopy = FileTouches.Transfer([@"E:\b.jpg"], $@"{Lavoro}\Foto");
 
         Assert.False(copy.Overlaps(betweenTiles));
-        // Taking a file out of the folder where the copy lands changes none of the names it adds there.
-        Assert.False(copy.Overlaps(outOfTheTopic));
+        Assert.True(copy.Overlaps(outOfTheTopic));
         Assert.True(copy.Overlaps(intoTheCopy));
+    }
+
+    [Fact]
+    public void ACopyNextToItsOriginal_WaitsForADeletionThere_WhoseNameItCouldTake()
+    {
+        // The shell names the copy «a - Copia.txt» once that name is free: it would look like the file deleted.
+        var copy = FileTouches.Transfer([$@"{Lavoro}\a.txt"], Lavoro);
+        var deletion = new FileTouches([$@"{Lavoro}\a - Copia.txt"]);
+
+        Assert.True(copy.Overlaps(deletion));
+        Assert.True(deletion.Overlaps(copy));
     }
 
     [Fact]

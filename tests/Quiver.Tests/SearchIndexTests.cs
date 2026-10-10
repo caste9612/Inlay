@@ -152,6 +152,18 @@ public sealed class SearchIndexTests : IDisposable
     }
 
     [Fact]
+    public void APlaceFromTheRoot_LeavesOutTheFoldersWithItsNameDeeperDown()
+    {
+        _archive.AddFile("Lavoro/Offerta.pdf");
+        _archive.AddFile("Personale/Lavoro/Offerta.pdf");
+        var index = SearchIndex.Build(_archive.Root);
+
+        Assert.Equal(2, index.Search("offerta in:lavoro").Count);
+        Assert.Equal(["Lavoro"], index.Search("offerta in:/lavoro").Select(hit => hit.RelativeDirectory));
+        Assert.Equal([Path.Combine("Personale", "Lavoro")], index.Search("offerta in:/personale/lavoro").Select(hit => hit.RelativeDirectory));
+    }
+
+    [Fact]
     public void FiltersWithoutWords_ListWhatPassesThem_TheNewestFirst()
     {
         var older = _archive.AddFile("Lavoro/Vecchio.pdf");

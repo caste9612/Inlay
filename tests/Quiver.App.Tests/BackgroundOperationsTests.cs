@@ -163,6 +163,39 @@ public sealed class BackgroundOperationsTests : IDisposable
     });
 
     [Fact]
+    public void CtrlZ_TakesBackTheOperationAskedForLast_EvenIfAnOlderOneEndsAfterIt() => RunOnDispatcher(async () =>
+    {
+        using var viewModel = Open();
+        var shell = new HeldShell();
+        viewModel.ShellRunner = shell.Run;
+        var documents = Path.Combine(_root, "Lavoro", "Documenti");
+        var archive = Path.Combine(_root, "Lavoro", "Archivio");
+        var casa = Directory.CreateDirectory(Path.Combine(_root, "Personale", "Casa")).FullName;
+
+        // A long copy, then a quick move of other files that ends first.
+        var copy = viewModel.Transfer([Path.Combine(documents, "a.txt")], archive, TransferKind.Copy);
+        await shell.WaitFor(1);
+        var move = viewModel.Transfer([Path.Combine(documents, "b.txt")], casa, TransferKind.Move);
+        await shell.WaitFor(2);
+        shell.Release(1);
+        await move;
+        Assert.Equal("Annulla lo spostamento", viewModel.UndoLabel);
+
+        // Ctrl+Z while the copy still runs: it waits for it, and then takes back the move all the same.
+        var undo = viewModel.Undo();
+        shell.Release(0);
+        await copy;
+        await shell.WaitFor(3);
+        shell.Release(2);
+        await undo;
+
+        Assert.True(File.Exists(Path.Combine(documents, "b.txt")));
+        Assert.False(File.Exists(Path.Combine(casa, "b.txt")));
+        Assert.True(File.Exists(Path.Combine(archive, "a.txt")));
+        Assert.Equal("Annulla la copia", viewModel.UndoLabel);
+    });
+
+    [Fact]
     public void TwoCopiesThatFitOneAtATime_DoNotRunTogether_WhenTogetherTheyWouldNot() => RunOnDispatcher(async () =>
     {
         var outside = Directory.CreateDirectory(_root + "-fuori").FullName;

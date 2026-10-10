@@ -279,6 +279,26 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
+    public void ATopicOfTheRoot_DroppedOnAnotherTopic_IsATopicThereToo_AndCtrlZPutsItBack() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var personale = Path.Combine(_root, "Personale");
+
+        // As from the search results or from Explorer: its folder, not the topic dragged in the sidebar.
+        viewModel.Transfer([personale], Path.Combine(_root, "Lavoro"), TransferKind.Move);
+
+        var lavoro = viewModel.Topics.Single(topic => topic.Name == "Lavoro");
+        Assert.Equal(["Personale"], lavoro.Children.Select(child => child.Name));
+        Assert.True(MetadataStore.Load(_root).IsTopic("Lavoro/Personale"));
+        Assert.DoesNotContain(viewModel.Tiles, tile => tile.IsGeneral);
+
+        viewModel.Undo();
+
+        Assert.True(Directory.Exists(personale));
+        Assert.Equal(["Lavoro", "Personale"], viewModel.Topics.Select(topic => topic.Name));
+    });
+
+    [Fact]
     public void ARowMovedToAnotherTopic_StaysARow_AlsoWhenCtrlZBringsItBack() => StaThread.Run(() =>
     {
         using var viewModel = Open();
@@ -354,7 +374,7 @@ public sealed class MainViewModelTests : IDisposable
 
         viewModel.SetSearchPlace(lavoro);
 
-        Assert.Equal("offerta tipo:pdf in:Lavoro", viewModel.Query);
+        Assert.Equal("offerta tipo:pdf in:/Lavoro", viewModel.Query);
         Assert.Equal("In: Lavoro", viewModel.PlaceFilterText);
         Assert.True(viewModel.IsSearchPlace(lavoro));
         Assert.Equal(Path.Combine(_root, "Lavoro", "Documenti", "offerta.pdf"), Assert.Single(viewModel.Results).Item.FullPath);

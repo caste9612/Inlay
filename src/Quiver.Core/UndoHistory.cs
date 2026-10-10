@@ -3,34 +3,60 @@ namespace Quiver.Core;
 /// <summary>
 /// What Quiver did to the files, newest last, so that Ctrl+Z can take it back one step at a time, as in Explorer.
 /// Each step remembers where things went: undoing it checks that they are still there and leaves alone what changed since.
+/// The newest is the one asked for last: operations on different files run together, and a long copy that ends after a
+/// quick move asked later does not take its place.
 /// </summary>
 public sealed class UndoHistory
 {
     /// <summary>How many steps back Ctrl+Z can go.</summary>
     public const int Capacity = 50;
 
-    private readonly List<UndoStep> _steps = [];
+    // Oldest first, by when their operations were asked for.
+    private readonly List<Entry> _steps = [];
 
-    public UndoStep? Last => _steps.Count > 0 ? _steps[^1] : null;
+    public UndoStep? Last => _steps.Count > 0 ? _steps[^1].Step : null;
 
-    public void Record(UndoStep step)
+    /// <summary>Keeps a step in the place of its operation among the others.</summary>
+    /// <param name="order">When its operation was asked for: a number that grows with each one.</param>
+    public void Record(UndoStep step, long order)
     {
-        _steps.Add(step);
+        var index = _steps.Count;
+        while (index > 0 && _steps[index - 1].Order > order)
+            index--;
+        _steps.Insert(index, new Entry(step, order));
         if (_steps.Count > Capacity)
             _steps.RemoveAt(0);
     }
 
-    /// <summary>Takes the newest step out of the history; null when there is nothing to undo.</summary>
-    public UndoStep? Pop()
+    /// <summary>When the operation of a step was asked for; null when the step is not in the history.</summary>
+    public long? OrderOf(UndoStep step) => IndexOf(step) is var index and >= 0 ? _steps[index].Order : null;
+
+    /// <summary>Takes a step out, wherever it is: the one a toast offers to undo. False when it is no longer there.</summary>
+    public bool Remove(UndoStep step)
     {
-        if (_steps.Count == 0)
-            return null;
-        var step = _steps[^1];
-        _steps.RemoveAt(_steps.Count - 1);
-        return step;
+        var index = IndexOf(step);
+        if (index < 0)
+            return false;
+        _steps.RemoveAt(index);
+        return true;
+    }
+
+    /// <summary>Puts a step in the place of another, in its turn: a move that turns out to be that of a topic.</summary>
+    public bool Replace(UndoStep step, UndoStep replacement)
+    {
+        var index = IndexOf(step);
+        if (index < 0)
+            return false;
+        _steps[index] = _steps[index] with { Step = replacement };
+        return true;
     }
 
     public void Clear() => _steps.Clear();
+
+    // The same step, not an equal one: two moves of the same file are two steps.
+    private int IndexOf(UndoStep step) => _steps.FindIndex(entry => ReferenceEquals(entry.Step, step));
+
+    private sealed record Entry(UndoStep Step, long Order);
 }
 
 /// <summary>Something Quiver did, with what it takes to undo it.</summary>

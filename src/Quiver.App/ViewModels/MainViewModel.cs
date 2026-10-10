@@ -30,6 +30,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private readonly HashSet<string> _cutPaths = new(StringComparer.OrdinalIgnoreCase);
     // The file operations running or waiting for their turn, in the order they asked for it.
     private readonly List<FileWork> _fileWork = [];
+    // How many operations and steps were asked for so far: the order of each step in the history.
+    private long _asked;
+    // That of the step being undone, to put it back in its place if the undo fails.
+    private long _undoneOrder;
     private TaskCompletionSource? _idle;
     private bool _renaming;
     private bool _indexPending;
@@ -649,7 +653,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             var inBin = _recycleBin.FindDeleted(gone, since);
             var step = new RecycleStep(inBin, gone.Count - inBin.Count, forgotten.Restrict(ArchiveKeys(gone)));
-            Remember(step);
+            Remember(step, turn);
             var where = inBin.Count == gone.Count ? "nel Cestino" : "stat{0} eliminat{0} definitivamente, senza passare dal Cestino";
             Report(gone.Count == 1
                     ? $"«{DisplayNameOf(gone[0])}» è {string.Format(where, "o")}."
@@ -740,8 +744,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// then; meanwhile the operations on other files go on.
     /// </summary>
     /// <param name="foldersAsRows">
-    /// Folders that land in a topic become rows of its «Generale» (see <see cref="MakeRows"/>); false for a tile dragged
-    /// by its title, which stays a tile.
+    /// Folders that land in a topic become rows of its «Generale» (see <see cref="MarkArrivals"/>); false for a tile
+    /// dragged by its title, which stays a tile.
     /// </param>
     public async Task Transfer(IReadOnlyList<string> paths, string destinationFolder, TransferKind kind, bool foldersAsRows = true)
     {
@@ -754,23 +758,23 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>The transfer itself, by whoever holds its turn among the file operations.</summary>
     /// <param name="reload">False when the caller changes something more first, and reads the board again itself.</param>
     /// <param name="foldersAsRows">As in <see cref="Transfer"/>.</param>
-    /// <returns>Whether the shell did all it was asked.</returns>
-    private async Task<bool> TransferNow(FileWork turn, IReadOnlyList<string> paths, string destinationFolder, TransferKind kind,
-        bool reload = true, bool foldersAsRows = true)
+    /// <returns>Whether the shell did all it was asked, and the step that undoes it, if any.</returns>
+    private async Task<(bool Done, UndoStep? Step)> TransferNow(FileWork turn, IReadOnlyList<string> paths, string destinationFolder,
+        TransferKind kind, bool reload = true, bool foldersAsRows = true)
     {
         if (!EnsureFolder(destinationFolder))
-            return false;
+            return (false, null);
         if (kind == TransferKind.Link)
         {
-            CreateLinks(paths, destinationFolder);
-            return true;
+            CreateLinks(turn, paths, destinationFolder);
+            return (true, null);
         }
         // Files copied, or moved from another disk, need room where they go: better said now than a copy stopped halfway.
         if (await NotEnoughRoom(turn, paths, destinationFolder, kind) is { } shortage)
         {
             Tell(ToastKind.Warning, shortage.Title, shortage.Body);
             UpdateDisk();
-            return false;
+            return (false, null);
         }
 
         List<string> movedFolders = kind == TransferKind.Move
@@ -810,8 +814,10 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             var moved = landings.Where(item => !Path.Exists(item.From) && Path.Exists(item.To)).ToList();
             if (moved.Count > 0)
             {
-                var rows = foldersAsRows ? MakeRows(moved.Select(item => item.To), destinationFolder) : [];
-                Remember(step = new MoveStep(moved.Select(item => item with { BecameRow = rows.Contains(item.To) }).ToList(), forgotten));
+                // A topic of the root is one by its place alone: in another topic it stays one, with the mark.
+                var rootTopics = moved.Where(item => Directory.Exists(item.To) && IsInRoot(item.From)).Select(item => item.To).ToList();
+                var rows = foldersAsRows ? MarkArrivals(moved.Select(item => item.To), destinationFolder, rootTopics) : [];
+                Remember(step = new MoveStep(moved.Select(item => item with { BecameRow = rows.Contains(item.To) }).ToList(), forgotten), turn);
             }
         }
         // The copies are the new names, each starting like an original: "a.txt", or "a - Copia.txt" next to it.
@@ -827,8 +833,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             {
                 // Ctrl+Z takes the copies to the Recycle Bin, and what they became with them.
                 if (foldersAsRows)
-                    MakeRows(arrived, destinationFolder);
-                Remember(step = new CopyStep(arrived));
+                    MarkArrivals(arrived, destinationFolder, rootTopics: []);
+                Remember(step = new CopyStep(arrived), turn);
             }
         }
 
@@ -846,15 +852,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         SelectAfterReload(arrived);
         if (reload)
             ReloadUnlessEditing();
-        return done;
+        return (done, step);
     }
 
     /// <summary>
     /// Folders that arrive in a topic are rows of its «Generale», like files, not tiles of their own: a folder of photos
     /// dropped on a topic shows as one row, not as all its photos. One that comes as a topic, or as a row, stays so.
     /// </summary>
+    /// <param name="rootTopics">
+    /// Those that were topics of the root, where every folder is one without a mark: here they get it, and stay topics.
+    /// </param>
     /// <returns>The folders that became rows, which Ctrl+Z turns back.</returns>
-    private HashSet<string> MakeRows(IEnumerable<string> arrived, string destinationFolder)
+    private HashSet<string> MarkArrivals(IEnumerable<string> arrived, string destinationFolder, IReadOnlyCollection<string> rootTopics)
     {
         var rows = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!IsInsideArchive(destinationFolder) || FindTopic(KeyOf(destinationFolder)) is null)
@@ -864,16 +873,28 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             return rows;
         UpdateMetadata(metadata =>
         {
+            var changed = false;
             foreach (var folder in folders)
             {
                 var key = KeyOf(folder);
-                if (!metadata.IsTopic(key) && metadata.SetItem(key, true))
+                if (rootTopics.Contains(folder, StringComparer.OrdinalIgnoreCase))
+                {
+                    changed |= metadata.SetTopic(key, true);
+                }
+                else if (!metadata.IsTopic(key) && metadata.SetItem(key, true))
+                {
                     rows.Add(folder);
+                    changed = true;
+                }
             }
-            return rows.Count > 0;
+            return changed;
         });
         return rows;
     }
+
+    /// <summary>Whether a file or folder sits right in the root of the archive, as its topics do.</summary>
+    private bool IsInRoot(string path) =>
+        Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path))) is { } parent && SamePath(parent, _root);
 
     /// <summary>"Sposto «a.txt» in «Casa»…", while the shell works.</summary>
     private static string Doing(IReadOnlyList<string> paths, TransferKind kind, string folder)
@@ -962,7 +983,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void CreateLinks(IReadOnlyList<string> targets, string destinationFolder)
+    private void CreateLinks(FileWork turn, IReadOnlyList<string> targets, string destinationFolder)
     {
         var links = new List<string>();
         foreach (var target in targets)
@@ -980,7 +1001,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (links.Count > 0)
         {
             var step = new LinkStep(links);
-            Remember(step);
+            Remember(step, turn);
             SelectAfterReload(links);
             Report(links.Count == 1
                     ? $"Collegamento «{DisplayNameOf(links[0])}» creato in «{Path.GetFileName(destinationFolder)}»."
@@ -1039,21 +1060,23 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             Tell(ToastKind.Warning, $"In «{parent?.Name ?? ArchiveName}» c'è già «{topic.Name}»: rinominane uno, poi riprova.");
             return;
         }
-        if (!await TransferNow(turn, [topic.Topic.FullPath], destination, TransferKind.Move, reload: false, foldersAsRows: false) ||
-            !Directory.Exists(newPath))
+        var (done, step) = await TransferNow(turn, [topic.Topic.FullPath], destination, TransferKind.Move, reload: false,
+            foldersAsRows: false);
+        if (!done || !Directory.Exists(newPath))
         {
             Reload();
             return;
         }
-        // Ctrl+Z puts it back where it was among the topics it left, not in the place it takes here.
-        if (_history.Last is MoveStep move)
+        // Ctrl+Z puts it back where it was among the topics it left, not in the place it takes here. Its own step: one of
+        // another operation may have ended meanwhile.
+        if (step is MoveStep move)
         {
-            _history.Pop();
             var topicMove = new TopicMoveStep(move, previousOrder);
+            _history.Replace(move, topicMove);
             // The toast of the move takes back all of it.
             foreach (var toast in Toasts.Where(toast => ReferenceEquals(toast.UndoStep, move)))
                 toast.UndoStep = topicMove;
-            Remember(topicMove);
+            NotifyHistoryChanged();
         }
         var newKey = KeyOf(newPath);
         var order = (parent?.Children ?? Topics).Select(sibling => sibling.Topic.RelativePath)
@@ -1218,17 +1241,25 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Takes back the last thing done in Quiver, as Ctrl+Z does in Explorer. During moves or copies it waits for all of
-    /// them to end, and then takes back the last one done; the operations asked meanwhile wait for it.
+    /// them to end, and then takes back the one asked for last, even if another ended after it; the operations asked
+    /// meanwhile wait for it.
     /// </summary>
-    public async Task Undo()
+    public Task Undo() => Undo(only: null);
+
+    /// <param name="only">The step a toast offers to undo: that one, even if others were recorded since.</param>
+    private async Task Undo(UndoStep? only)
     {
         CommitAllEdits();
         using var turn = await BeginFileWork("Annullo l'ultima operazione…", touches: null);
-        if (_history.Pop() is not { } step)
+        var step = only ?? _history.Last;
+        if (step is null || _history.OrderOf(step) is not { } stepOrder)
         {
-            Tell(ToastKind.Info, "Non c'è niente da annullare.");
+            Tell(ToastKind.Info, only is null ? "Non c'è niente da annullare." : "Questa operazione non si può più annullare.");
             return;
         }
+        _history.Remove(step);
+        // Put back in its place if the undo fails, as if never taken.
+        _undoneOrder = stepOrder;
         // Its toast offered «Annulla»: now it is done, and what the undo did takes its place.
         foreach (var toast in Toasts.Where(toast => ReferenceEquals(toast.UndoStep, step)).ToList())
             Toasts.Remove(toast);
@@ -1276,7 +1307,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>The undo did not happen, most likely because a file is open in another program: Ctrl+Z can try again.</summary>
-    private void KeepForRetry(UndoStep step) => Remember(step);
+    private void KeepForRetry(UndoStep step) => Remember(step, _undoneOrder);
 
     private async Task<Outcome?> UndoMove(FileWork turn, MoveStep step)
     {
@@ -1779,9 +1810,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     // ---- Undo history ----
 
-    private void Remember(UndoStep step)
+    /// <summary>A step done here and now: the newest of all.</summary>
+    private void Remember(UndoStep step) => Remember(step, ++_asked);
+
+    /// <summary>
+    /// A step of a file operation, in the place of when the operation was asked for: a long copy that ends after a move
+    /// asked later stays before it, and Ctrl+Z takes back the move first.
+    /// </summary>
+    private void Remember(UndoStep step, FileWork work) => Remember(step, work.Order);
+
+    private void Remember(UndoStep step, long order)
     {
-        _history.Record(step);
+        _history.Record(step, order);
         NotifyHistoryChanged();
     }
 
@@ -1904,7 +1944,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// </param>
     private async Task<FileWork> BeginFileWork(string activity, FileTouches? touches)
     {
-        var work = new FileWork(this, activity, touches);
+        var work = new FileWork(this, activity, touches, ++_asked);
         _fileWork.Add(work);
         if (_fileWork.Count == 1)
             OnPropertyChanged(nameof(IsBusy));
@@ -1970,12 +2010,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>A file operation that asked for its turn: what it touches, what the status bar says of it, the room it takes.</summary>
-    private sealed class FileWork(MainViewModel owner, string activity, FileTouches? touches) : IDisposable
+    /// <param name="order">When it was asked for, among the operations and the other steps: that of its undo step.</param>
+    private sealed class FileWork(MainViewModel owner, string activity, FileTouches? touches, long order) : IDisposable
     {
         private readonly TaskCompletionSource _turn = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _ended;
 
         public string Activity { get; private set; } = activity;
+
+        public long Order { get; } = order;
 
         /// <summary>Null for everything, as Ctrl+Z.</summary>
         public FileTouches? Touches { get; } = touches;
@@ -2103,7 +2146,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>«Annulla» on a toast: the operation it tells about, while it is still the last one done.</summary>
-    public Task UndoFrom(ToastViewModel toast) => toast.CanUndo ? Undo() : Task.CompletedTask;
+    /// <summary>«Annulla» on a toast: its own operation, even if another one ended after it meanwhile.</summary>
+    public Task UndoFrom(ToastViewModel toast) => toast is { CanUndo: true, UndoStep: { } step } ? Undo(step) : Task.CompletedTask;
 
     public void DismissToast(ToastViewModel toast) => Toasts.Remove(toast);
 
@@ -2160,15 +2204,20 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>A filter above the results, or in the menu of the search box: adds or takes away its "tipo:…".</summary>
     public void ToggleKindFilter(SearchKind kind) => Query = SearchQuery.ToggleKind(Query, kind);
 
-    /// <summary>Only in this topic, or everywhere with null: "in:…" in the search box, in the place of those there.</summary>
-    public void SetSearchPlace(TopicViewModel? topic) => Query = SearchQuery.WithPlace(Query, topic?.Topic.RelativePath);
+    /// <summary>
+    /// Only in this topic, or everywhere with null: "in:…" in the search box, in the place of those there. From the root
+    /// ("in:/Lavoro"): a folder with the same name deeper down is another place.
+    /// </summary>
+    public void SetSearchPlace(TopicViewModel? topic) => Query = SearchQuery.WithPlace(Query, topic is null ? null : PlaceOf(topic));
 
     /// <summary>Whether the search looks only in this topic, or everywhere for null: the menu of the places checks it.</summary>
     public bool IsSearchPlace(TopicViewModel? topic)
     {
         var places = SearchQuery.Parse(Query).Places;
-        return topic is null ? places.Count == 0 : places.Any(place => SearchQuery.SamePlace(place, topic.Topic.RelativePath));
+        return topic is null ? places.Count == 0 : places.Any(place => SearchQuery.SamePlace(place, PlaceOf(topic)));
     }
+
+    private static string PlaceOf(TopicViewModel topic) => "/" + topic.Topic.RelativePath;
 
     private async void RebuildIndex()
     {

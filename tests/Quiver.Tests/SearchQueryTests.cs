@@ -55,10 +55,37 @@ public sealed class SearchQueryTests
     [Fact]
     public void APlace_TakesThePlaceOfThoseWrittenBefore_InQuotesWhenItHasSpaces()
     {
-        Assert.Equal("offerta in:Lavoro/Clienti", SearchQuery.WithPlace("offerta in:Personale", "Lavoro/Clienti"));
+        Assert.Equal("offerta in:/Lavoro/Clienti", SearchQuery.WithPlace("offerta in:Personale", "/Lavoro/Clienti"));
         Assert.Equal("in:\"Foto vacanze\"", SearchQuery.WithPlace("", "Foto vacanze"));
         Assert.Equal("offerta", SearchQuery.WithPlace("offerta in:\"Foto vacanze\"", null));
         Assert.True(SearchQuery.SamePlace("Lavoro/Clienti", "lavoro › clienti"));
-        Assert.Equal("Lavoro › Clienti", SearchQuery.Display("Lavoro/Clienti"));
+        // From the root it is another place: a folder with that name deeper down does not count.
+        Assert.False(SearchQuery.SamePlace("/Lavoro", "Lavoro"));
+        Assert.Equal("Lavoro › Clienti", SearchQuery.Display("/Lavoro/Clienti"));
+    }
+
+    [Fact]
+    public void AFilterAddedAfterAQuoteLeftOpen_ClosesItFirst()
+    {
+        var pdf = SearchQuery.Parse("tipo:pdf").Kinds.Single();
+
+        var text = SearchQuery.ToggleKind("in:\"Foto vacanze", pdf);
+
+        Assert.Equal("in:\"Foto vacanze\" tipo:pdf", text);
+        var query = SearchQuery.Parse(text);
+        Assert.Equal(["Foto vacanze"], query.Places);
+        Assert.Equal(["pdf"], query.Kinds.Select(kind => kind.Name));
+        Assert.Equal("tipo:\"pd\" in:/Lavoro", SearchQuery.WithPlace("tipo:\"pd", "/Lavoro"));
+    }
+
+    [Fact]
+    public void TakingAKindAway_FromAValueThatStoodForMore_LeavesTheOthersWrittenOut()
+    {
+        var posta = SearchQuery.Parse("tipo:posta").Kinds.Single();
+
+        var text = SearchQuery.ToggleKind("offerta tipo:p", posta);
+
+        Assert.Equal("offerta tipo:pdf tipo:presentazioni tipo:collegamenti", text);
+        Assert.DoesNotContain(posta, SearchQuery.Parse(text).Kinds);
     }
 }

@@ -33,16 +33,19 @@ public sealed class FileTouches
 
     /// <summary>
     /// Whether the two would get in each other's way: an item of one is, or holds, or is inside an item of the other; both
-    /// put things in the same folder; or one moves or deletes the folder where the other puts things. Taking an item out
-    /// of a folder where the other puts things does not count: the names that arrive there are told apart all the same.
+    /// put things in the same folder; or one changes the folder where the other puts things: moves or deletes it, or
+    /// something right inside it. That too, because the shell may give a copy the name of something just taken away, as
+    /// «a - Copia.txt», and then the copy could no longer be told from what was there before.
     /// </summary>
     public bool Overlaps(FileTouches other) =>
         Items.Any(mine => other.Items.Any(theirs => TransferRules.IsSameOrInside(mine, theirs) || TransferRules.IsSameOrInside(theirs, mine))) ||
-        Folders.Any(folder => other.Folders.Contains(folder, StringComparer.OrdinalIgnoreCase) || other.Takes(folder)) ||
-        other.Folders.Any(Takes);
+        Folders.Any(folder => other.Folders.Contains(folder, StringComparer.OrdinalIgnoreCase) || other.Changes(folder)) ||
+        other.Folders.Any(Changes);
 
-    /// <summary>Whether it moves or deletes this folder, or one around it.</summary>
-    private bool Takes(string folder) => Items.Any(item => TransferRules.IsSameOrInside(folder, item));
+    /// <summary>Whether it moves or deletes this folder, one around it, or something right inside it.</summary>
+    private bool Changes(string folder) =>
+        Items.Any(item => TransferRules.IsSameOrInside(folder, item) ||
+                          string.Equals(Path.GetDirectoryName(item), folder, StringComparison.OrdinalIgnoreCase));
 
     private static string Normalize(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
 }

@@ -150,28 +150,44 @@ public sealed class SearchQuery
     {
         var tokens = Tokens(text);
         var filtering = tokens.Where(token => token.Key == KindKey && SearchKind.For(token.Value).Contains(kind)).ToList();
-        return filtering.Count > 0 ? Without(text, tokens, filtering) : With(text, $"{KindKey}:{kind.Name}");
+        if (filtering.Count == 0)
+            return With(text, tokens, $"{KindKey}:{kind.Name}");
+        // A value that stood for several kinds, as "tipo:p" while it is written, leaves the others written out.
+        return Rebuilt(text, tokens, token => filtering.Contains(token)
+            ? string.Join(' ', SearchKind.For(token.Value).Where(other => other != kind).Select(other => $"{KindKey}:{other.Name}"))
+            : null);
     }
 
     /// <summary>The text looking only in this place, or everywhere with null: the places written before go.</summary>
-    /// <param name="place">A path relative to the root, as "Lavoro/Clienti".</param>
+    /// <param name="place">
+    /// A folder, or a path of folders, as "Lavoro/Clienti"; starting with "/", from the root of the archive only, as the
+    /// topics chosen from the menu.
+    /// </param>
     public static string WithPlace(string text, string? place)
     {
         var tokens = Tokens(text);
-        var rest = Without(text, tokens, tokens.Where(token => token.Key == PlaceKey).ToList());
-        return place is null ? rest : With(rest, $"{PlaceKey}:{(place.Any(char.IsWhiteSpace) ? $"\"{place}\"" : place)}");
+        var rest = Rebuilt(text, tokens, token => token.Key == PlaceKey ? "" : null);
+        return place is null ? rest : With(rest, Tokens(rest), $"{PlaceKey}:{(place.Any(char.IsWhiteSpace) ? $"\"{place}\"" : place)}");
     }
 
-    /// <summary>Whether two places are the same, however written: "Lavoro/Clienti" and "lavoro › clienti".</summary>
+    /// <summary>Whether two places are the same, however written: "Lavoro/Clienti" and "lavoro › clienti", but not "/Lavoro".</summary>
     public static bool SamePlace(string a, string b) => KeyOfPlace(a) == KeyOfPlace(b);
 
     /// <summary>A place as the user reads it: "Lavoro › Clienti".</summary>
     public static string Display(string place) =>
         string.Join(ArchiveReader.PathSeparator, place.Split(PlaceSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
-    /// <summary>Whether a folder, or one around it, is the place: whole names, as "clienti" in "lavoro\clienti\rossi".</summary>
+    /// <summary>
+    /// Whether a folder, or one around it, is the place: whole names, as "clienti" in "lavoro\clienti\rossi"; from the
+    /// root only for a place written from it, as "\lavoro".
+    /// </summary>
     private static bool IsIn(string pathKey, string placeKey)
     {
+        if (placeKey[0] == Path.DirectorySeparatorChar)
+        {
+            var fromRoot = placeKey[1..];
+            return pathKey == fromRoot || pathKey.StartsWith(fromRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+        }
         for (var index = pathKey.IndexOf(placeKey, StringComparison.Ordinal); index >= 0;
              index = pathKey.IndexOf(placeKey, index + 1, StringComparison.Ordinal))
         {
@@ -183,9 +199,15 @@ public sealed class SearchQuery
         return false;
     }
 
-    private static string KeyOfPlace(string place) =>
-        string.Join(Path.DirectorySeparatorChar,
-            SearchText.Normalize(place).Split(PlaceSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    /// <summary>"lavoro\clienti" for "Lavoro › Clienti"; "\lavoro" for "/Lavoro", from the root; empty for no folder at all.</summary>
+    private static string KeyOfPlace(string place)
+    {
+        var names = SearchText.Normalize(place).Split(PlaceSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (names.Length == 0)
+            return "";
+        var fromRoot = place.TrimStart().StartsWith('/') || place.TrimStart().StartsWith('\\');
+        return (fromRoot ? Path.DirectorySeparatorChar.ToString() : "") + string.Join(Path.DirectorySeparatorChar, names);
+    }
 
     /// <summary>"dwg" for "dwg" or ".DWG": letters and digits only, as the ends of file names.</summary>
     private static string? ExtensionOf(string value)
@@ -194,10 +216,19 @@ public sealed class SearchQuery
         return extension.Length is > 0 and <= 10 && extension.All(char.IsLetterOrDigit) ? extension : null;
     }
 
-    private static string Without(string text, List<Token> tokens, List<Token> removed) =>
-        string.Join(' ', tokens.Except(removed).Select(token => text.Substring(token.Start, token.Length)));
+    /// <summary>The text again, piece by piece, one space between them.</summary>
+    /// <param name="replace">What takes the place of a piece: empty to drop it, null to keep it as it was.</param>
+    private static string Rebuilt(string text, List<Token> tokens, Func<Token, string?> replace) =>
+        string.Join(' ', tokens.Select(token => replace(token) ?? text.Substring(token.Start, token.Length)).Where(piece => piece.Length > 0));
 
-    private static string With(string text, string filter) => text.TrimEnd() is { Length: > 0 } rest ? $"{rest} {filter}" : filter;
+    /// <summary>A filter after the rest of the text; a quote left open there is closed first, or the filter would go inside it.</summary>
+    private static string With(string text, List<Token> tokens, string filter)
+    {
+        var rest = text.TrimEnd();
+        if (tokens.Count > 0 && tokens[^1].IsOpen)
+            rest += "\"";
+        return rest.Length > 0 ? $"{rest} {filter}" : filter;
+    }
 
     /// <summary>The pieces of the text, each where it is: words, and filters with their key and value.</summary>
     private static List<Token> Tokens(string text)
@@ -225,12 +256,14 @@ public sealed class SearchQuery
             }
             i++;
             string value;
+            var isOpen = false;
             if (i < text.Length && text[i] == '"')
             {
                 // In quotes, spaces and all; a quote left open goes to the end.
                 var close = text.IndexOf('"', i + 1);
-                value = close < 0 ? text[(i + 1)..] : text[(i + 1)..close];
-                i = close < 0 ? text.Length : close + 1;
+                isOpen = close < 0;
+                value = isOpen ? text[(i + 1)..] : text[(i + 1)..close];
+                i = isOpen ? text.Length : close + 1;
             }
             else
             {
@@ -239,7 +272,7 @@ public sealed class SearchQuery
                     i++;
                 value = text[valueStart..i];
             }
-            tokens.Add(new Token(start, i - start, key, value));
+            tokens.Add(new Token(start, i - start, key, value, isOpen));
         }
         return tokens;
     }
@@ -253,5 +286,6 @@ public sealed class SearchQuery
     };
 
     /// <param name="Key">Null for a word.</param>
-    private sealed record Token(int Start, int Length, string? Key, string Value);
+    /// <param name="IsOpen">Its value is in quotes never closed: it runs to the end of the text.</param>
+    private sealed record Token(int Start, int Length, string? Key, string Value, bool IsOpen = false);
 }

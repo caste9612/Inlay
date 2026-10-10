@@ -104,11 +104,12 @@ Cosa cambia un'operazione sui file, per sapere quali possono andare avanti insie
 
 - `Items`: gli elementi spostati, copiati o eliminati, e dove arriva ognuno con il suo nome, ciascuno con tutto quello che contiene.
 - `Folders`: le cartelle dove arrivano cose, di cui cambia l'elenco dei nomi. `FileTouches.Transfer(paths, destinationFolder)` dà tutti e due per uno spostamento, una copia o un collegamento.
-- `Overlaps(other)`: due operazioni si intralciano se un elemento dell'una è, contiene o sta dentro un elemento dell'altra; se mettono cose nella stessa cartella, perché i nomi nuovi di una copia non si distinguerebbero più; o se una sposta o elimina la cartella dove l'altra mette cose. Togliere un elemento da una cartella dove l'altra mette cose non conta: i nomi che arrivano si riconoscono lo stesso.
+- `Overlaps(other)`: due operazioni si intralciano se un elemento dell'una è, contiene o sta dentro un elemento dell'altra; se mettono cose nella stessa cartella, perché i nomi nuovi di una copia non si distinguerebbero più; o se una cambia la cartella dove l'altra mette cose: la sposta o la elimina, o sposta o elimina qualcosa che ci sta direttamente dentro. Anche questo, perché la shell può dare a una copia il nome appena liberato dall'altra, come «a - Copia.txt», e allora la copia non si distinguerebbe da quello che c'era.
 
 ## Annullare (`UndoHistory`)
 
 - Una pila di al massimo 50 passi (`Capacity`), solo in memoria: chiudendo Quiver si perde.
+- In ordine di richiesta, non di fine: `Record(step, order)` mette ogni passo al posto della sua operazione, così una copia lunga che finisce dopo uno spostamento chiesto più tardi resta prima di lui, e `Ctrl+Z` annulla lo spostamento. `Remove` toglie un passo dovunque sia (quello offerto da un avviso), `Replace` ne mette un altro al suo posto; tutti e due lo trovano per identità, non per uguaglianza.
 - Ogni passo è un `record` che deriva da `UndoStep` e ricorda quello che serve per tornare indietro:
 
 | Passo | Cosa ricorda |
@@ -147,9 +148,9 @@ Il Cestino di ogni disco tiene ogni elemento come due file: `$R…` è l'element
 - `SearchText.Normalize` toglie maiuscole e accenti: «perche» trova «Perché».
 - **`SearchQuery.Parse(text)`** separa le parole dai filtri: `tipo:valore` e `in:valore`, con le virgolette se il valore ha spazi (`in:"Foto vacanze"`), chiavi e valori senza maiuscole né accenti. Un filtro ancora vuoto (`tipo:`) non filtra; altri due punti fanno parte di una parola (`ore:10`).
 - **`tipo:`** vale per i tipi di `SearchKind.All` (cartelle, documenti, pdf, fogli, presentazioni, immagini, video, audio, collegamenti, compressi, posta, codice, 3d) il cui nome, o un altro modo di dirlo (`foto`, `excel`, `zip`), comincia con il valore: mentre si scrive `tipo:p` valgono tutti quelli possibili. Un valore che non è un tipo è un'estensione: `tipo:dwg`. I tipi seguono `FileKinds`, che l'indice calcola una volta per elemento; i collegamenti sono i `.lnk` e gli `.url`.
-- **`in:`** vale per gli elementi che stanno dentro una cartella con quel nome, intero e a qualunque profondità, o dentro un percorso di nomi (`in:Lavoro/Clienti`, anche con ` › `): `in:clienti` trova «Lavoro › Clienti › Rossi», non «Clienti fedeli».
+- **`in:`** vale per gli elementi che stanno dentro una cartella con quel nome, intero e a qualunque profondità, o dentro un percorso di nomi (`in:Lavoro/Clienti`, anche con ` › `): `in:clienti` trova «Lavoro › Clienti › Rossi», non «Clienti fedeli». Con la `/` davanti il posto parte dalla radice: `in:/Lavoro` non trova «Personale › Lavoro». È così che scrive il menu dei posti.
 - Più tipi, o più posti, valgono uno o l'altro; parole, tipi e posti tutti insieme (`Admits`). Con i soli filtri l'elenco è dei più recenti, poi in ordine di nome.
-- `ToggleKind` e `WithPlace` scrivono i filtri nel testo, lasciando com'è il resto: sono quello che fanno i pulsanti sopra i risultati. `SamePlace` e `Display` confrontano e mostrano un posto («Lavoro › Clienti»).
+- `ToggleKind` e `WithPlace` scrivono i filtri nel testo, lasciando com'è il resto: sono quello che fanno i pulsanti sopra i risultati. Chiudono prima le virgolette lasciate aperte, perché il filtro non finisca dentro; togliere un tipo da un valore che ne valeva più d'uno, come `tipo:p`, scrive per esteso gli altri. `SamePlace` e `Display` confrontano e mostrano un posto («Lavoro › Clienti»).
 
 ## Ordine degli elementi (`ItemArrangement`, `NaturalStringComparer`)
 

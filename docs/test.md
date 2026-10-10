@@ -17,7 +17,7 @@ dotnet test tests/Quiver.Tests
 dotnet test tests/Quiver.App.Tests --filter "FullyQualifiedName~MainViewModelTests"
 ```
 
-Il 10 ottobre 2026 passano tutti: 171 in `Quiver.Tests` (meno di un decimo di secondo) e 144 in `Quiver.App.Tests` (4-5 secondi), 315 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, se ne sono andati quelli di «Da smistare», tolto, ne sono arrivati 10 con le righe di «Generale» 8 in più con le operazioni che vanno insieme e 10 con i filtri della ricerca. Ogni nota di versione riporta quanti sono i test e che passano tutti.
+Il 10 ottobre 2026 passano tutti: 177 in `Quiver.Tests` (meno di un decimo di secondo) e 146 in `Quiver.App.Tests` (4-5 secondi), 323 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, se ne sono andati quelli di «Da smistare», tolto, e ne sono arrivati 10 con le righe di «Generale», 8 in più con le operazioni che vanno insieme, 10 con i filtri della ricerca e 8 con le correzioni della rilettura che ne è seguita. Ogni nota di versione riporta quanti sono i test e che passano tutti.
 
 I test sono scritti con xUnit. I nomi dicono, come frasi, cosa deve succedere: `Undo_LeavesAloneWhatChangedSince`, `ATopicDroppedInsideAnother_TakesItsFolderThere_StillATopic_AndCtrlZBringsItBack`.
 
@@ -31,6 +31,7 @@ Lavora su archivi veri in cartelle temporanee: `TempArchive` crea una cartella i
 | `MetadataStoreTests`, `MetadataSnapshotTests` | lettura e scrittura di `archive.json`, chiavi senza maiuscole, voci che seguono le cartelle, copie per annullare, file rovinato messo da parte |
 | `TransferRulesTests` | spostare, copiare o collegare, con i tasti e senza |
 | `FileTouchesTests` | quali operazioni sui file vanno insieme e quali aspettano quella prima |
+| `UndoHistoryTests` | il registro in ordine di richiesta, e i passi trovati per identità |
 | `RecycleBinTests` | il ripristino dal Cestino, su un Cestino finto costruito dal test con i suoi `$I…` e `$R…` |
 | `SearchIndexTests`, `SearchTextTests`, `SearchQueryTests` | ricerca, punteggi, accenti, nascosti esclusi; i filtri `tipo:` e `in:`, scritti e tolti, e i più recenti con i soli filtri |
 | `ArchiveFoldersTests` | quali cartelle possono essere archivi, e il confronto byte per byte di una copia |
@@ -45,7 +46,7 @@ Vede le parti interne dell'app (`InternalsVisibleTo`). Gli archivi stanno in `%T
 
 | File | Cosa controlla |
 |---|---|
-| `MainViewModelTests` (63 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, cartelle che diventano righe di «Generale» e tornano riquadri, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Sposta in…», i filtri della ricerca, avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
+| `MainViewModelTests` (64 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, cartelle che diventano righe di «Generale» e tornano riquadri, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Sposta in…», i filtri della ricerca, avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
 | `BackgroundOperationsTests` | le operazioni sui thread a parte, con un dispatcher come quello della finestra: la finestra resta libera; con le operazioni trattenute (`ShellRunner`), quelle su file diversi vanno insieme, le altre aspettano, `Ctrl+Z` aspetta tutte, e due copie che insieme non ci starebbero non partono insieme |
 | `ShellThreadTests` | ogni operazione su un thread STA suo, insieme alle altre |
 | `ShellFileOperationsTests` | spostare, copiare e rinominare con la shell vera, senza finestre (`interactive: false`); eliminare no, perché riempirebbe il Cestino |
