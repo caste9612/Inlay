@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- The process is Inlay.exe: GlazeWM window rules match on this name. -->
+    <AssemblyName>Inlay</AssemblyName>
+    <RootNamespace>Inlay.App</RootNamespace>
+    <ApplicationIcon>Assets\inlay.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Required by the [LibraryImport] source generator. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Program.Main, not the one WPF generates: Velopack must run before anything else. -->
+    <StartupObject>Inlay.App.Program</StartupObject>
+    <Version>0.3.2</Version>
+    <Product>Inlay</Product>
+    <Authors>Antonio Castellucci</Authors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WPF projects leave System.IO out of the implicit usings because of System.Windows.Shapes.Path,
+         which this project never imports. -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\inlay.ico" />
+  </ItemGroup>
+
+  <!-- Brace: the theme in Brace\ and its fonts in Fonts\, copied from the design system (Brace\PROVENIENZA.md). -->
+  <ItemGroup>
+    <None Remove="Fonts\*.ttf" />
+    <Resource Include="Fonts\*.ttf" />
+    <None Update="Fonts\licenze\*.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Brace\LICENSE-FluentSystemIcons.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Inlay.App.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inlay.Core\Inlay.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
+</Project>

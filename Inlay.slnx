@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Inlay.App/Inlay.App.csproj" />
+    <Project Path="src/Inlay.Core/Inlay.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Inlay.App.Tests/Inlay.App.Tests.csproj" />
+    <Project Path="tests/Inlay.Tests/Inlay.Tests.csproj" />
+  </Folder>
+</Solution>

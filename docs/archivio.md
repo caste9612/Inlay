@@ -1,6 +1,6 @@
-# Il modello dell'archivio (`Quiver.Core`)
+# Il modello dell'archivio (`Inlay.Core`)
 
-`Quiver.Core` contiene tutto quello che riguarda l'archivio e non ha bisogno di un'interfaccia: come si legge, cosa c'è nei metadati, le regole per spostare, copiare o collegare, il registro per annullare, il Cestino, la ricerca, il posto delle zone sulla tela. È una libreria `net10.0` senza pacchetti esterni, con i suoi test in `tests/Quiver.Tests`.
+`Inlay.Core` contiene tutto quello che riguarda l'archivio e non ha bisogno di un'interfaccia: come si legge, cosa c'è nei metadati, le regole per spostare, copiare o collegare, il registro per annullare, il Cestino, la ricerca, il posto delle zone sulla tela. È una libreria `net10.0` senza pacchetti esterni, con i suoi test in `tests/Inlay.Tests`.
 
 Le regole dell'archivio, viste da chi lo usa, sono in [PROGETTO.md §4](../PROGETTO.md#4-come-è-organizzato-larchivio). Qui c'è come sono scritte nel codice.
 
@@ -17,12 +17,12 @@ Sono tutti `record` immutabili, letti dal disco a ogni ricarica. L'app li avvolg
 | `Destination` | un posto dove mandare file, per «Sposta in…» | `ArchiveReader.cs` |
 
 - `ArchiveItem.DisplayName` toglie `.lnk` e `.url`, come Explorer. `Size` è null per le cartelle; le date sono in ora locale.
-- `Topic.Color` è il colore tenuto nei metadati, e `ColorIsAutomatic` dice se l'ha dato Quiver. Cosa si vede lo decide l'app (`TopicViewModel.Color`): un sotto-argomento senza un colore scelto per lui, nessuno o solo quello automatico che aveva quando stava nella radice, mostra quello del suo argomento.
+- `Topic.Color` è il colore tenuto nei metadati, e `ColorIsAutomatic` dice se l'ha dato Inlay. Cosa si vede lo decide l'app (`TopicViewModel.Color`): un sotto-argomento senza un colore scelto per lui, nessuno o solo quello automatico che aveva quando stava nella radice, mostra quello del suo argomento.
 
 ## Nomi e chiavi (`ArchiveLayout`)
 
-- `.quiver` (la cartella dei metadati) e `archive.json` sono costanti di `ArchiveLayout`.
-- I nomi che iniziano con un punto (`.quiver`, `.git`) non si mostrano mai, e nemmeno i file con l'attributo Nascosto o di Sistema (`TopLevelOnly`).
+- `.inlay` (la cartella dei metadati) e `archive.json` sono costanti di `ArchiveLayout`.
+- I nomi che iniziano con un punto (`.inlay`, `.git`) non si mostrano mai, e nemmeno i file con l'attributo Nascosto o di Sistema (`TopLevelOnly`).
 - **La chiave dei metadati** di una cartella è il suo percorso relativo alla radice, con le barre `/`: `Lavoro/Clienti/Rossi`. Le chiavi si confrontano senza badare a maiuscole e minuscole, come i percorsi di Windows. `IsKeyAtOrBelow` dice se una chiave è una cartella o qualcosa che sta dentro.
 - `IsLinkToElsewhere`: junction e collegamenti simbolici non si seguono, né nella ricerca né nel calcolo delle dimensioni, perché potrebbero girare in tondo o uscire dall'archivio. I segnaposto di OneDrive invece sono cartelle normali.
 
@@ -33,7 +33,7 @@ Sono tutti `record` immutabili, letti dal disco a ogni ricarica. L'app li avvolg
 - `ReadTopics()`: le cartelle della radice sono argomenti, anche una `_Da smistare` lasciata dalle versioni che l'avevano; più in basso lo sono solo quelle con `"kind": "topic"`. Vengono prima quelle con un `"order"`, poi le altre per nome (l'ordinamento è stabile).
 - `ReadBoard(topic)`: prima «Generale», se l'argomento ha file sciolti o cartelle segnate `"kind": "item"`, che ci stanno come righe prima dei file, come le cartelle in ogni riquadro; poi un riquadro per ogni sottocartella che non è né un argomento né una riga, nello stesso ordine.
   - «Generale» usa la chiave del suo argomento per misura, ordinamento e ordine a mano, ma non ne mostra il colore.
-  - Il colore di un riquadro è `ChosenColorOf`: quello dato da Quiver quando la cartella era un argomento della radice non conta.
+  - Il colore di un riquadro è `ChosenColorOf`: quello dato da Inlay quando la cartella era un argomento della radice non conta.
   - Gli elementi passano da `ItemArrangement.Arrange` ([più sotto](#ordine-degli-elementi-itemarrangement-naturalstringcomparer)).
 - `ReadRootFiles()`: i file lasciati sciolti nella radice, che nessun argomento mostra: la barra di stato dice quanti sono.
 - `ReadDestinations()`: per «Sposta in…», nell'ordine della barra laterale: ogni argomento (per i suoi file sciolti), i suoi riquadri, poi i sotto-argomenti. `Location` è il percorso da mostrare, come «Lavoro › Clienti». Le righe di «Generale» non ci sono: sono elementi, come le cartelle dentro un riquadro.
@@ -49,7 +49,7 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 - `FolderMetadata` ha `Kind`, `Workspace`, `Color`, `AutoColor`, `Size`, `Order`, `Sort` e `Items`. Una voce che resta vuota (`IsEmpty`) viene tolta: il file tiene solo quello che serve.
 - `Kind` è `"topic"` per un argomento sotto la radice (`IsTopic`, `SetTopic`) e `"item"` per una cartella di un argomento che sta in «Generale» come riga (`IsItem`, `SetItem`). Darne uno toglie l'altro; toglierne uno lascia stare l'altro. Una riga che diventa riquadro, o argomento, tiene il resto della sua voce: colore, misura, ordine.
 - Ogni metodo che cambia qualcosa (`SetTopic`, `SetItem`, `SetColor`, `SetOrder`, `SetSize`, `SetSort`, `SetItemOrder`, `SetArrangement`, `RenameItem`, `MoveFolder`, `RemoveFolder`, `Restore`) restituisce `true` solo se è cambiato davvero: chi lo chiama salva solo allora.
-- `MoveFolder(oldKey, newKey)` sposta la voce e tutte quelle sotto: così i metadati seguono una cartella rinominata o spostata da Quiver. Se succede da Explorer nessuno lo sa, e le voci restano sotto il nome vecchio.
+- `MoveFolder(oldKey, newKey)` sposta la voce e tutte quelle sotto: così i metadati seguono una cartella rinominata o spostata da Inlay. Se succede da Explorer nessuno lo sa, e le voci restano sotto il nome vecchio.
 - `Snapshot(keys)` e `Restore(snapshot)` copiano e rimettono le voci di alcune cartelle e di tutto quello che c'è sotto. È così che una cartella mandata nel Cestino, o portata fuori dall'archivio, ritrova colore, misura e ordine quando torna con `Ctrl+Z`. `MetadataSnapshot.Restrict` ne tiene solo una parte.
 - `TileSize`: da 1 a 3 colonne e da 2 a 40 righe, o righe automatiche (null). La misura di sempre (una colonna, righe automatiche) non si scrive.
 - `ItemSort` con `SortKey` (`Name`, `Modified`, `Type`, `Size`): per nome dalla A è l'ordine di sempre e non si scrive. `ItemSort.For(key)` dà il verso di un ordinamento appena scelto: data e dimensione partono dal più grande.
@@ -57,16 +57,18 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 - `Workspace` è già nel formato, per l'argomento legato a un workspace di GlazeWM (v0.4), ma il codice non lo usa ancora.
 - Il posto delle zone sulla tela (`"canvas"`, [PROGETTO.md §11](../PROGETTO.md#11-piano-la-tela)) non c'è ancora: arriva con la fase 3.
 
-`MetadataStore` legge e scrive `<radice>\.quiver\archive.json`:
+`MetadataStore` legge e scrive `<radice>\.inlay\archive.json`:
 
 - JSON indentato, proprietà in camelCase, valori null omessi, enum come stringhe (`"modified"`, non `1`).
-- Salva scrivendo prima `archive.json.tmp` e poi spostandolo sopra il file vero, così un crash non lascia mai un file a metà. La cartella `.quiver` viene segnata come nascosta.
+- Salva scrivendo prima `archive.json.tmp` e poi spostandolo sopra il file vero, così un crash non lascia mai un file a metà. La cartella `.inlay` viene segnata come nascosta.
 - Un file che non è JSON valido viene copiato in `archive.json.corrupt` e l'archivio parte con metadati vuoti: il file rovinato non va perso al salvataggio successivo. Un errore del disco invece arriva a chi ha chiamato: `MainViewModel` lo scrive nel log e, in lettura, parte da metadati vuoti, in scrittura lo dice in un avviso.
-- Un campo sconosciuto viene ignorato in lettura, e quindi perso al primo salvataggio. Per questo una versione vecchia di Quiver perde i campi nuovi, come dicono le note di versione. `Version` vale 1 e non c'è ancora una migrazione.
+- Se `.inlay\archive.json` non c'è ma c'è `.quiver\archive.json`, `Load` legge quello: così un'anteprima vede i metadati di un archivio di Quiver senza toccarlo.
+- Un campo sconosciuto viene ignorato in lettura, e quindi perso al primo salvataggio. Per questo una versione vecchia di Inlay perde i campi nuovi, come dicono le note di versione. `Version` vale 1 e non c'è ancora una migrazione.
 
 ## Gli archivi (`ArchiveFolders`)
 
-- Un archivio è una cartella che contiene `.quiver` (`IsArchive`).
+- Un archivio è una cartella che contiene `.inlay`, o la `.quiver` delle versioni che si chiamavano Quiver (`IsArchive`).
+- `TakeOverOldMetadata` rinomina la `.quiver` di un archivio in `.inlay`, con tutto quello che contiene, se `.inlay` non c'è ancora. Se la cartella non si può rinominare, perché un altro programma la tiene aperta, copia `archive.json` e lascia la vecchia dov'è. La chiamano `MainViewModel.LoadArchive`, tranne nelle anteprime, che non scrivono niente, e `Adopt`.
 - `Check(folder, reserved, otherArchives)` dà il motivo, in italiano, per cui una cartella non può fare da archivio, o null. Non può essere un disco intero, né una cartella riservata (`ReservedFolder`) o una che ne contiene una, né stare dentro un altro archivio o contenerne uno. Le cartelle riservate le elenca l'app ([windows.md](windows.md#cartelle-di-windows-windowsfolders)); dentro la cartella dell'utente, l'unica con `InsideAllowed`, un archivio può stare.
 - `Adopt` rende archivio una cartella esistente, `Create` ne fa una nuova (errore se il nome è preso), `IsSameDrive` dice se uno spostamento è una semplice rinomina.
 
@@ -108,7 +110,7 @@ Cosa cambia un'operazione sui file, per sapere quali possono andare avanti insie
 
 ## Annullare (`UndoHistory`)
 
-- Una pila di al massimo 50 passi (`Capacity`), solo in memoria: chiudendo Quiver si perde.
+- Una pila di al massimo 50 passi (`Capacity`), solo in memoria: chiudendo Inlay si perde.
 - In ordine di richiesta, non di fine: `Record(step, order)` mette ogni passo al posto della sua operazione, così una copia lunga che finisce dopo uno spostamento chiesto più tardi resta prima di lui, e `Ctrl+Z` annulla lo spostamento. `Remove` toglie un passo dovunque sia (quello offerto da un avviso), `Replace` ne mette un altro al suo posto; tutti e due lo trovano per identità, non per uguaglianza.
 - Ogni passo è un `record` che deriva da `UndoStep` e ricorda quello che serve per tornare indietro:
 

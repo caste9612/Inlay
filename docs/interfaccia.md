@@ -71,7 +71,7 @@ I tasti, gestiti quasi tutti in `OnPreviewKeyDown` (`Invio` nelle liste in `Item
 | `Ctrl+Maiusc+N` | nuovo riquadro |
 | `Ctrl+B` | chiude o apre la barra degli argomenti |
 | `Ctrl+0`, `Ctrl++`, `Ctrl+-` | sulla tela: tutto in vista, avvicina, allontana |
-| `Esc` | svuota la ricerca; senza ricerca, rimette Quiver nella tray |
+| `Esc` | svuota la ricerca; senza ricerca, rimette Inlay nella tray |
 | `Ctrl+Z` | annulla |
 | `F2` | rinomina l'argomento con il focus o l'unico elemento selezionato |
 | `Canc` | Cestino per l'argomento con il focus o la selezione |
@@ -129,13 +129,13 @@ Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che rest
 
 ## La barra laterale
 
-- Larga 264 punti; chiusa (`Ctrl+B` o il pulsante nella barra del titolo) non occupa spazio, e Quiver ricorda com'era.
+- Larga 264 punti; chiusa (`Ctrl+B` o il pulsante nella barra del titolo) non occupa spazio, e Inlay ricorda com'era.
 - **Gli argomenti** sono un `TreeView` con lo stile `TopicItem`: righe da 32 punti e nomi da 14 (`NavRowHeight`, `NavTextSize`), quelli della radice un po' più marcati, l'icona del colore dell'argomento. Quello scelto ha la cartella piena e lo sfondo `accent-subtle`, che diventa `Brace.SelectionInactive` quando il focus non è nell'albero.
 - In alto il **+** per un argomento nuovo.
 
 ## La barra del titolo
 
-Disegnata da Quiver come `br-titlebar` di Brace, perché Brace per WPF non ne ha ancora una: logo e nome, il pulsante della barra laterale, la ricerca al centro (al massimo 280 punti), il nome dell'archivio (apre Impostazioni › Archivi), il pin (legato a `Window.Topmost`), riduci, ingrandisci o ripristina, chiudi (che nasconde). Gli elementi che devono ricevere i clic dentro la zona della cornice hanno `WindowChrome.IsHitTestVisibleInChrome`.
+Disegnata da Inlay come `br-titlebar` di Brace, perché Brace per WPF non ne ha ancora una: logo e nome, il pulsante della barra laterale, la ricerca al centro (al massimo 280 punti), il nome dell'archivio (apre Impostazioni › Archivi), il pin (legato a `Window.Topmost`), riduci, ingrandisci o ripristina, chiudi (che nasconde). Gli elementi che devono ricevere i clic dentro la zona della cornice hanno `WindowChrome.IsHitTestVisibleInChrome`.
 
 ## Colori
 
@@ -153,23 +153,23 @@ Disegnata da Quiver come `br-titlebar` di Brace, perché Brace per WPF non ne ha
 
 `SettingsView` ha le pagine a sinistra (`SettingsSection`: Archivi, Scorciatoia, Avvio ed Explorer) e la pagina scelta a destra. Ogni cambiamento vale subito. La prima volta (`IsWelcome`) c'è solo la pagina degli archivi.
 
-- **Scorciatoia**: `HotkeyBox` registra la combinazione premuta (con `Ctrl`, `Alt` o `Win`; `Maiusc` da solo no; `Esc` lascia quella di prima). `UseHotkey` la prova subito tramite `ISettingsHost.TryUseHotkey` e la salva solo se Windows la dà a Quiver; se no, sotto il campo compare il motivo.
+- **Scorciatoia**: `HotkeyBox` registra la combinazione premuta (con `Ctrl`, `Alt` o `Win`; `Maiusc` da solo no; `Esc` lascia quella di prima). `UseHotkey` la prova subito tramite `ISettingsHost.TryUseHotkey` e la salva solo se Windows la dà a Inlay; se no, sotto il campo compare il motivo.
 - **Avvio ed Explorer**: avvio con Windows e voce di «Invia a», tramite `IWindowsIntegration`. Se Windows rifiuta, l'interruttore torna com'era e un messaggio lo dice.
 - **Archivi** (`ArchivesViewModel`):
   - l'elenco viene dalle impostazioni, il più recente per primo, con «In uso» o «Non trovato»; sotto ogni archivio, contato in background, quanto occupa e quanto spazio ha il suo disco;
   - **Crea** (nome e cartella, che di partenza è quella dell'utente, sullo stesso disco del Desktop), **Apri una cartella** (`ArchiveFolders.Adopt`), **Apri**, **Mostra in Explorer**, **Togli dall'elenco** (non quello in uso; la cartella resta);
   - **Rinomina** e **Sposta…** sullo stesso disco sono un `Directory.Move` della cartella, dopo aver lasciato libero l'archivio in uso (`IArchiveHost.Release`), che poi si riapre dal posto nuovo;
   - **Sposta…** su un altro disco (`MoveToOtherDriveAsync`): conta quanto occupa l'archivio e controlla lo spazio, lo copia con la shell, confronta byte per byte la copia con l'originale (`CopyCheck`) e passa alla copia solo se è identica; poi chiede se mandare la cartella vecchia nel Cestino. In ogni altro caso l'archivio resta dov'era.
-  - Il conto e il confronto girano in background. La copia gira su un thread STA a parte (`CopyAsync`, con `ShellThread`), con la finestra di avanzamento di Windows: Quiver resta usabile. Mentre la shell copia (`IsCopying`) la finestra Impostazioni non si chiude (`TryClose`) ed **Esci** aspetta (`WhenCopied`), perché una copia interrotta lascerebbe mezzo archivio sull'altro disco. Durante il confronto (`IsChecking`) compaiono l'avanzamento e «Interrompi il controllo».
+  - Il conto e il confronto girano in background. La copia gira su un thread STA a parte (`CopyAsync`, con `ShellThread`), con la finestra di avanzamento di Windows: Inlay resta usabile. Mentre la shell copia (`IsCopying`) la finestra Impostazioni non si chiude (`TryClose`) ed **Esci** aspetta (`WhenCopied`), perché una copia interrotta lascerebbe mezzo archivio sull'altro disco. Durante il confronto (`IsChecking`) compaiono l'avanzamento e «Interrompi il controllo».
   - Restano sul thread della finestra la rinomina e lo spostamento sullo stesso disco (un `Directory.Move`) e il Cestino della cartella vecchia, che di solito sono rapidi.
   - Le domande della pagina sono anche qui dei `PromptViewModel`.
 
-## Brace e il tema di Quiver
+## Brace e il tema di Inlay
 
-- `App.xaml` unisce `Brace/Brace.xaml` (che porta con sé `Brace.Controls.xaml`, e da lì i token e le icone) e poi `Themes/Quiver.xaml`.
+- `App.xaml` unisce `Brace/Brace.xaml` (che porta con sé `Brace.Controls.xaml`, e da lì i token e le icone) e poi `Themes/Inlay.xaml`.
 - **I file XAML e C# di `Brace/` sono generati** dal design system (lo dice la loro prima riga) e non si modificano qui: le correzioni vanno fatte in Brace, in `strumenti/modelli/wpf/`, e poi ricopiate. Li accompagnano la licenza delle icone Fluent e `PROVENIENZA.md`, che dice da quale commit vengono.
 - `Brace/Brace.Wpf.cs` (namespace `Brace`) ha gli aiuti in C# del design system: `Chrome.Dark` (i colori di Brace sulla cornice di Windows, messo dallo stile `Brace.Window`), `TreeIndentConverter`, `SwitchThumbMarginConverter`, `BezierEase` e altri.
-- **`Themes/Quiver.xaml`** ha quello che Quiver aggiunge a Brace: le icone che Brace non ha ancora (`Quiver.Icon.Restore16`, `Quiver.Icon.Grip16`, `Quiver.Icon.ResizeCorner16`), gli stili della barra del titolo e dei suoi pulsanti, il pin, il badge dell'archivio, la maniglia della misura dei riquadri e il logo (`Quiver.Logo`, lo stesso disegno di `Assets/quiver.ico`). L'icona per ripristinare e la barra del titolo andrebbero portate in Brace.
+- **`Themes/Inlay.xaml`** ha quello che Inlay aggiunge a Brace: le icone che Brace non ha ancora (`Inlay.Icon.Restore16`, `Inlay.Icon.Grip16`, `Inlay.Icon.ResizeCorner16`), gli stili della barra del titolo e dei suoi pulsanti, il pin, il badge dell'archivio, la maniglia della misura dei riquadri e il logo (`Inlay.Logo`, lo stesso disegno di `Assets/inlay.ico`). L'icona per ripristinare e la barra del titolo andrebbero portate in Brace.
 - I caratteri Inter e Cascadia Mono sono dentro l'eseguibile (`Fonts/*.ttf`), con le licenze copiate accanto.
-- L'icona dell'app si rigenera con `python scripts/genera-icona.py src/Quiver.App/Assets/quiver.ico`.
+- L'icona dell'app si rigenera con `python scripts/genera-icona.py src/Inlay.App/Assets/inlay.ico`.
 - Il testo del pannello è in modalità `Display`, nitido a scala 1; sulla tela è `Ideal`.

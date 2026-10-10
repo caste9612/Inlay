@@ -1,0 +1,129 @@
+<UserControl x:Class="Inlay.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Inlay.App.Views"
+             xmlns:vm="clr-namespace:Inlay.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
+             FontFamily="{StaticResource Brace.FontSans}"
+             FontSize="{DynamicResource Brace.TextSize}"
+             TextElement.Foreground="{DynamicResource Brace.TextPrimary}"
+             TextOptions.TextFormattingMode="Display"
+             UseLayoutRounding="True">
+
+    <UserControl.Resources>
+        <views:BoolToVisibilityConverter x:Key="Visible" />
+        <views:BoolToVisibilityConverter x:Key="Hidden" Invert="True" />
+        <views:SectionVisibilityConverter x:Key="SectionIs" />
+
+        <Style x:Key="Kind" TargetType="Path" BasedOn="{StaticResource Brace.Icon}">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Brace.TextSecondary}" />
+        </Style>
+
+        <!-- A row of the sidebar: icon and name of a page. -->
+        <Style x:Key="SectionRow" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Padding" Value="10,0" />
+        </Style>
+
+        <!-- A page: a title, then its fields. -->
+        <Style x:Key="Page" TargetType="StackPanel">
+            <Setter Property="Margin" Value="24,20,24,16" />
+        </Style>
+
+        <Style x:Key="Switch" TargetType="ToggleButton" BasedOn="{StaticResource Brace.Switch}">
+            <Setter Property="Margin" Value="0,6,0,0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel Background="{DynamicResource Brace.SurfaceBase}">
+    <!-- Title bar, as that of Inlay: logo and title, and close. Dragged, it moves the window. -->
+    <Border DockPanel.Dock="Top" Style="{StaticResource Inlay.TitleBar}">
+        <DockPanel>
+            <Image DockPanel.Dock="Left" Width="24" Height="24" Source="{StaticResource Inlay.Logo}"
+                   RenderOptions.BitmapScalingMode="HighQuality" />
+            <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarCloseButton}" ToolTip="Chiudi"
+                    AutomationProperties.Name="Chiudi" Click="Close_Click">
+                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
+            </Button>
+            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.Text.Heading}" Text="{Binding Heading}" />
+        </DockPanel>
+    </Border>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar: the pages. The first time there is only the welcome, with the archives. -->
+        <Border Width="196" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,0,1,0"
+                Visibility="{Binding IsWelcome, Converter={StaticResource Hidden}}">
+            <DockPanel>
+                <ListBox x:Name="SectionList" Margin="4,10,4,0" BorderThickness="0" Background="Transparent"
+                         ItemContainerStyle="{StaticResource SectionRow}" SelectedValuePath="Tag"
+                         SelectedValue="{Binding Section, Mode=TwoWay}">
+                    <ListBoxItem Tag="{x:Static vm:SettingsSection.Archives}">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Folder16}" />
+                            <TextBlock VerticalAlignment="Center" Text="Archivi" />
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="{x:Static vm:SettingsSection.Hotkey}">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Open16}" />
+                            <TextBlock VerticalAlignment="Center" Text="Scorciatoia" />
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="{x:Static vm:SettingsSection.Windows}">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Desktop16}" />
+                            <TextBlock VerticalAlignment="Center" Text="Avvio ed Explorer" />
+                        </DockPanel>
+                    </ListBoxItem>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <!-- Archivi: the vaults, as before -->
+            <views:ArchivesView x:Name="ArchivesSection" DataContext="{Binding Archives}"
+                                Visibility="{Binding DataContext.Section, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource SectionIs}, ConverterParameter=Archives}" />
+
+            <!-- Scorciatoia -->
+            <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Hotkey}">
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Scorciatoia" />
+                <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
+                           Text="La combinazione che porta Inlay davanti da qualunque programma, e lo rimette nell'area di notifica se è già davanti." />
+                <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Combinazione" />
+                <!-- The style of Brace for text boxes does not reach a subclass by itself. -->
+                <views:HotkeyBox x:Name="HotkeyField" Style="{StaticResource {x:Type TextBox}}" Width="220" HorizontalAlignment="Left"
+                                 Shortcut="{Binding Hotkey}" AutomationProperties.Name="Combinazione" ShortcutCaptured="HotkeyField_ShortcutCaptured" />
+                <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
+                           Text="Clicca nel campo e premi la combinazione: Ctrl, Alt o Win con un tasto. Vale subito, senza riavviare. Esc lascia quella di prima." />
+                <TextBlock Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding HotkeyProblem}"
+                           Visibility="{Binding HasHotkeyProblem, Converter={StaticResource Visible}}" />
+                <TextBlock Margin="0,18,0,0" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}"
+                           Text="Con GlazeWM puoi anche legare un tasto a Inlay.exe --toggle, che fa lo stesso con l'Inlay già in esecuzione." />
+            </StackPanel>
+
+            <!-- Avvio ed Explorer -->
+            <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Windows}">
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Avvio ed Explorer" />
+                <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
+                           Text="Quello che Inlay imposta in Windows per il tuo utente. L'installer li accende tutti e due, la disinstallazione li spegne." />
+                <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Autostart, Mode=TwoWay}" Content="Avvia Inlay con Windows" />
+                <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
+                           Text="Parte nell'area di notifica, pronto per la scorciatoia." />
+                <ToggleButton Style="{StaticResource Switch}" Margin="0,14,0,0" IsChecked="{Binding SendTo, Mode=TwoWay}" Content="«Inlay» nel menu Invia a di Explorer" />
+                <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
+                           Text="Tasto destro su uno o più file, Invia a, Inlay: Inlay chiede in quale riquadro metterli." />
+                <TextBlock Margin="0,14,0,0" Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding WindowsProblem}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+    </DockPanel>
+</UserControl>

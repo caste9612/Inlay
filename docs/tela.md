@@ -14,7 +14,7 @@ Tutto l'archivio su una superficie da spostare e zoomare, con una zona per argom
 
 Nel codice di oggi, quindi:
 
-- le zone le dispone sempre Quiver: nessuna ha un posto fissato (`ZoneBox` senza `X` e `Y`), e `FolderMetadata` non ha ancora `"canvas"`;
+- le zone le dispone sempre Inlay: nessuna ha un posto fissato (`ZoneBox` senza `X` e `Y`), e `FolderMetadata` non ha ancora `"canvas"`;
 - da vicino i riquadri della tela sono quelli della bacheca, quindi buona parte della fase 2 c'è già: file e cartelle trascinati su un riquadro di qualunque zona ci arrivano con le solite regole, e appunti, rinomina e `Ctrl+Z` funzionano. Un riquadro lasciato su un riquadro di un'altra zona invece non fa niente (`PlanDrop`): spostarlo in un altro argomento è quello che manca, insieme al rettangolo;
 - `Maiusc` più trascinare sul vuoto non sposta la vista, ma non disegna ancora il rettangolo: la selezione a rettangolo c'è solo sulla bacheca;
 - la vista non si ricorda tra un avvio e l'altro: la prima volta che la tela ha una misura, per ogni archivio, si mostra tutta (`_canvasFitFor` in `PanelView`). Si ricorda solo quale vista era in uso (`AppSettings.View`).

@@ -1,0 +1,1231 @@
+<UserControl x:Class="Inlay.App.Views.PanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:views="clr-namespace:Inlay.App.Views"
+             xmlns:vm="clr-namespace:Inlay.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+             AllowDrop="True"
+             FontFamily="{StaticResource Brace.FontSans}"
+             FontSize="{DynamicResource Brace.TextSize}"
+             TextElement.Foreground="{DynamicResource Brace.TextPrimary}"
+             TextOptions.TextFormattingMode="Display"
+             UseLayoutRounding="True"
+             PreviewKeyDown="OnPreviewKeyDown"
+             PreviewTextInput="OnPreviewTextInput"
+             PreviewMouseDown="OnPreviewMouseDown"
+             GotKeyboardFocus="OnGotKeyboardFocus"
+             PreviewDragOver="OnPreviewDragOver"
+             DragLeave="OnDragLeave"
+             GiveFeedback="OnGiveFeedback">
+
+    <UserControl.Resources>
+        <views:NullToVisibilityConverter x:Key="NullToVisibility" />
+        <views:BoolToVisibilityConverter x:Key="Visible" />
+        <views:BoolToVisibilityConverter x:Key="Hidden" Invert="True" />
+        <views:SameColorConverter x:Key="SameColor" />
+        <views:EqualsToVisibilityConverter x:Key="EqualsVisible" />
+        <views:QuotientConverter x:Key="Quotient" />
+
+        <!-- What the canvas shows at each level (CanvasSurface.Level, inherited by all that is on it). Close up only, keeping
+             its place from afar; from afar only; not at the farthest level. -->
+        <Style x:Key="NearOnly" TargetType="FrameworkElement">
+            <Style.Triggers>
+                <Trigger Property="views:CanvasSurface.Level" Value="Middle">
+                    <Setter Property="Visibility" Value="Hidden" />
+                </Trigger>
+                <Trigger Property="views:CanvasSurface.Level" Value="Far">
+                    <Setter Property="Visibility" Value="Hidden" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="AfarOnly" TargetType="FrameworkElement">
+            <Style.Triggers>
+                <Trigger Property="views:CanvasSurface.Level" Value="Near">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="NotFarthest" TargetType="FrameworkElement">
+            <Style.Triggers>
+                <Trigger Property="views:CanvasSurface.Level" Value="Far">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Icon of a kind of thing (folder, topic): text-secondary, like br-tree-kind. -->
+        <Style x:Key="Kind" TargetType="Path" BasedOn="{StaticResource Brace.Icon}">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Brace.TextSecondary}" />
+        </Style>
+
+        <!-- The field that replaces a name while renaming it in place. -->
+        <Style x:Key="EditBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="Margin" Value="-3,0,0,0" />
+        </Style>
+
+        <!-- The sidebar is the main navigation of Inlay, not a tree of files: rows of 32 px with 14 px names and the icons of
+             navigation (icon-md, 20 px), as an item of br-sidebar. The one chosen shows on accent-subtle with its filled
+             icon in accent: Brace keeps the filled icons for the selection of the main navigation. -->
+        <sys:Double x:Key="NavRowHeight">32</sys:Double>
+        <sys:Double x:Key="NavTextSize">14</sys:Double>
+
+        <!-- «Bacheca | Tela», as a segmented control of Brace: the same in the header of both views. -->
+        <x:Array x:Key="ViewNames" Type="sys:String">
+            <sys:String>Bacheca</sys:String>
+            <sys:String>Tela</sys:String>
+        </x:Array>
+        <Style x:Key="ViewSwitch" TargetType="ListBox" BasedOn="{StaticResource Brace.SegmentedControl}">
+            <Setter Property="ItemsSource" Value="{StaticResource ViewNames}" />
+            <Setter Property="ToolTip" Value="La bacheca di un argomento, o la tela con tutto l'archivio" />
+            <Setter Property="AutomationProperties.Name" Value="Vista" />
+        </Style>
+
+        <!-- The filters above the search results: small buttons of Brace, in the accent while they are in use. -->
+        <Style x:Key="SearchFilter" TargetType="Button" BasedOn="{StaticResource Brace.Button.Small}">
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+        <Style x:Key="SearchKindFilter" TargetType="Button" BasedOn="{StaticResource SearchFilter}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brace.Accent}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SearchPlaceFilter" TargetType="Button" BasedOn="{StaticResource SearchFilter}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasPlaceFilter}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brace.Accent}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- A topic of the sidebar: the row of Brace's tree (indent of 16 px for each level, the arrow to open it), at the size
+             of the navigation. -->
+        <Style x:Key="TopicItem" TargetType="TreeViewItem">
+            <Setter Property="Foreground" Value="{DynamicResource Brace.TextPrimary}" />
+            <Setter Property="FontSize" Value="{StaticResource NavTextSize}" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource Brace.FocusVisual.TreeItem}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <Setter Property="AllowDrop" Value="True" />
+            <Setter Property="ContextMenu" Value="{DynamicResource TopicMenu}" />
+            <EventSetter Event="DragOver" Handler="DropTarget_DragOver" />
+            <EventSetter Event="DragLeave" Handler="DropTarget_DragLeave" />
+            <EventSetter Event="Drop" Handler="DropTarget_Drop" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <StackPanel>
+                            <Border x:Name="Bd" Height="{StaticResource NavRowHeight}" Margin="6,1" CornerRadius="4" Background="Transparent"
+                                    Padding="{Binding RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource Brace.TreeIndent}}"
+                                    SnapsToDevicePixels="True">
+                                <DockPanel>
+                                    <ToggleButton x:Name="Expander" DockPanel.Dock="Left" Style="{StaticResource Brace.TreeExpander}" ClickMode="Press"
+                                                  IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                                    <ContentPresenter x:Name="PART_Header" ContentSource="Header" Margin="4,0,0,0" VerticalAlignment="Center"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                </DockPanel>
+                            </Border>
+                            <ItemsPresenter x:Name="ItemsHost" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                            </Trigger>
+                            <Trigger SourceName="Bd" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.SurfaceHover}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.AccentSubtle}" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True" />
+                                    <Condition Property="Selector.IsSelectionActive" Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brace.SelectionInactive}" />
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Items: the same commands as the desktop's right-click menu. -->
+        <ContextMenu x:Key="ItemMenu" x:Shared="False">
+            <MenuItem Header="Apri" FontWeight="SemiBold" InputGestureText="Invio" Click="ItemOpen_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Open16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Apri con…" Click="ItemOpenWith_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Apps16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Mostra in Explorer" InputGestureText="Ctrl+Invio" Click="ItemReveal_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <!-- Where the selection goes: a tile or a topic, chosen by name, the recent ones first. -->
+            <MenuItem Header="Sposta in…" Click="ItemMoveTo_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowRight16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Taglia" InputGestureText="Ctrl+X" Click="ItemCut_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Cut16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Copia" InputGestureText="Ctrl+C" Click="ItemCopy_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Copy16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Copia percorso" InputGestureText="Ctrl+Maiusc+C" Click="ItemCopyPath_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Rinomina" InputGestureText="F2" Click="ItemRename_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
+            </MenuItem>
+            <!-- A folder among the rows of «Generale», like one dropped on the topic, can have a tile of its own. -->
+            <MenuItem Header="Promuovi a riquadro" Click="ItemPromote_Click" Visibility="{Binding CanBecomeTile, Converter={StaticResource Visible}}" />
+            <MenuItem Header="Proprietà" InputGestureText="Alt+Invio" Click="ItemProperties_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Info16}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Sposta nel Cestino" InputGestureText="Canc" Style="{StaticResource Brace.MenuItem.Danger}" Click="ItemRecycle_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <ContextMenu x:Key="TileMenu" x:Shared="False" Opened="ContextMenu_Opened">
+            <MenuItem Header="Incolla" InputGestureText="Ctrl+V" Tag="paste" Click="TilePaste_Click" />
+            <MenuItem Header="Incolla collegamento" Tag="paste" Click="TilePasteLink_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Nuova cartella" Click="TileNewFolder_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Folder16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Nuovo collegamento…" Click="TileNewLink_Click" />
+            <MenuItem Header="Apri in Explorer" Click="TileOpenFolder_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Rinomina riquadro" Click="TileRename_Click" IsEnabled="{Binding IsOwnFolder}">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Promuovi ad argomento" Click="TilePromote_Click" IsEnabled="{Binding IsOwnFolder}" />
+            <MenuItem Header="Metti in Generale" Click="TileDemote_Click" IsEnabled="{Binding IsOwnFolder}" />
+            <!-- The palette of Brace: a stripe on the title, kept with the archive. -->
+            <MenuItem Header="Colore" IsEnabled="{Binding IsOwnFolder}">
+                <MenuItem Header="Nessuno" Tag="" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}}">
+                    <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Ambra" Tag="#FFA133" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Viola" Tag="#B48CFF" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Verde" Tag="#36CFB0" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosso" Tag="#FF7272" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TileColor_Click" IsChecked="{Binding Color, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <!-- As in Explorer: the items by name, date, type or size, each way. Chosen here, it takes the place of the order
+                 given by dragging the items, which the last entry tells about. -->
+            <MenuItem Header="Ordina per">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSort16}" /></MenuItem.Icon>
+                <MenuItem Header="Nome" Tag="Name" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Name}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Data di modifica" Tag="Modified" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Modified}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Tipo" Tag="Type" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Type}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Dimensione" Tag="Size" Click="TileSort_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding SortedBy, Converter={StaticResource EqualsVisible}, ConverterParameter=Size}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Crescente" Tag="ascending" Click="TileSortDirection_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding Direction, Converter={StaticResource EqualsVisible}, ConverterParameter=ascending}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Decrescente" Tag="descending" Click="TileSortDirection_Click">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding Direction, Converter={StaticResource EqualsVisible}, ConverterParameter=descending}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="A mano: trascina gli elementi nel riquadro" IsEnabled="False">
+                    <MenuItem.Icon>
+                        <Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Checkmark16}"
+                              Visibility="{Binding ByHand, Converter={StaticResource EqualsVisible}, ConverterParameter=True}" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <!-- The size given with the corner of the tile goes; the tile follows its items again. -->
+            <MenuItem Header="Misura automatica" Click="TileAutoSize_Click" IsEnabled="{Binding HasSize}" />
+            <Separator />
+            <MenuItem Header="Sposta il riquadro nel Cestino" Style="{StaticResource Brace.MenuItem.Danger}" Click="TileRecycle_Click" IsEnabled="{Binding IsOwnFolder}">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <ContextMenu x:Key="TopicMenu" x:Shared="False" Opened="ContextMenu_Opened">
+            <MenuItem Header="Apri in Explorer" Click="TopicOpenFolder_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Incolla qui" InputGestureText="Ctrl+V" Tag="paste" Click="TopicPaste_Click" />
+            <MenuItem Header="Incolla collegamento qui" Tag="paste" Click="TopicPasteLink_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Nuovo riquadro" Click="TopicNewTile_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Add16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Nuovo argomento qui dentro" Click="TopicNewTopic_Click" />
+            <Separator />
+            <MenuItem Header="Rinomina" InputGestureText="F2" Click="TopicRename_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Riporta a riquadro" Click="TopicDemote_Click" IsEnabled="{Binding CanDemote}" />
+            <!-- The color of the topic, in the sidebar and on the canvas. «Automatico» is the one Inlay gives, or for a topic
+                 inside another that of its topic. -->
+            <MenuItem Header="Colore">
+                <MenuItem Header="Automatico" Tag="auto" Click="TopicColor_Click"
+                          IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=auto}">
+                    <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowSync16}" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Nessuno" Tag="none" Click="TopicColor_Click"
+                          IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=none}">
+                    <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Circle16}" /></MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="Ambra" Tag="#FFA133" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FFA133}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FFA133" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Azzurro" Tag="#5DA9FF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#5DA9FF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#5DA9FF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Viola" Tag="#B48CFF" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#B48CFF}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#B48CFF" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosa" Tag="#FF7EB6" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7EB6}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7EB6" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Verde" Tag="#36CFB0" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#36CFB0}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#36CFB0" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Giallo" Tag="#F2D24B" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#F2D24B}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#F2D24B" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Rosso" Tag="#FF7272" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#FF7272}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#FF7272" /></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Grigio" Tag="#C3CAD3" Click="TopicColor_Click" IsChecked="{Binding ColorChoice, Mode=OneWay, Converter={StaticResource SameColor}, ConverterParameter=#C3CAD3}">
+                    <MenuItem.Icon><Ellipse Width="12" Height="12" Fill="#C3CAD3" /></MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Sposta nel Cestino" InputGestureText="Canc" Style="{StaticResource Brace.MenuItem.Danger}" Click="TopicRecycle_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Delete16}" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <ContextMenu x:Key="BoardMenu" x:Shared="False" Opened="ContextMenu_Opened">
+            <!-- As on the desktop, the last operation can be undone from here too. -->
+            <MenuItem Header="{Binding UndoLabel}" InputGestureText="Ctrl+Z" IsEnabled="{Binding CanUndo}" Click="Undo_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.ArrowUndo16}" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Nuovo riquadro" InputGestureText="Ctrl+Maiusc+N" Click="NewTile_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Add16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Nuovo collegamento…" Click="BoardNewLink_Click" />
+            <MenuItem Header="Incolla" InputGestureText="Ctrl+V" Tag="paste" Click="BoardPaste_Click" />
+            <MenuItem Header="Incolla collegamento" Tag="paste" Click="BoardPasteLink_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Apri in Explorer" Click="BoardOpenFolder_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
+            </MenuItem>
+        </ContextMenu>
+
+        <!-- One row of a tile: icon, name (or the field to rename it), date. -->
+        <DataTemplate x:Key="ItemRow" DataType="{x:Type vm:ItemViewModel}">
+            <DockPanel Background="Transparent" ToolTip="{Binding ToolTip}">
+                <DockPanel.Style>
+                    <Style TargetType="DockPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCut}" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DockPanel.Style>
+                <!-- The icon of Brace for the common kinds of file, the one of Windows for programs and the rest. -->
+                <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,0,8,0">
+                    <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <Path Style="{StaticResource Kind}" Data="{Binding Glyph}" />
+                </Grid>
+                <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="11"
+                           Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding DateText}" />
+                <Grid>
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                               Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
+                    <TextBox Style="{StaticResource EditBox}" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
+                             IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
+                             LostKeyboardFocus="EditBox_LostKeyboardFocus" />
+                </Grid>
+            </DockPanel>
+        </DataTemplate>
+
+        <!-- The menu sits on the whole row, padding included; DynamicResource gives every row its own menu. -->
+        <Style x:Key="ItemContainer" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <Setter Property="ContextMenu" Value="{DynamicResource ItemMenu}" />
+        </Style>
+
+        <!-- The rows of a tile are all row-compact tall: the height given to a tile is a number of them (TileList). Search
+             results keep two lines. -->
+        <Style x:Key="TileRow" TargetType="ListBoxItem" BasedOn="{StaticResource ItemContainer}">
+            <Setter Property="Height" Value="{StaticResource Brace.RowCompact}" />
+        </Style>
+
+        <!-- A tile: the title with its handle, color and menu, the rows, and the corner that resizes it. The same on the
+             board and, close up, on the canvas. -->
+        <DataTemplate x:Key="TileTemplate" DataType="{x:Type vm:TileViewModel}">
+            <Grid x:Name="TileRoot">
+                <GroupBox Style="{StaticResource Brace.Panel}" Padding="0" ContextMenu="{DynamicResource TileMenu}"
+                          AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                    <GroupBox.Header>
+                        <DockPanel Background="Transparent" ToolTip="Trascina il titolo per spostare il riquadro"
+                                   PreviewMouseLeftButtonDown="TileHeader_PreviewMouseLeftButtonDown"
+                                   PreviewMouseMove="TileHeader_PreviewMouseMove">
+                            <!-- The handle, under the pointer, in the margin before the title: where a tile is taken. -->
+                            <Path x:Name="Grip" DockPanel.Dock="Left" Margin="-11,0,-3,0" Style="{StaticResource Brace.Icon}"
+                                  Data="{StaticResource Inlay.Icon.Grip16}" TextElement.Foreground="{DynamicResource Brace.TextTertiary}"
+                                  Cursor="SizeAll" Visibility="Hidden" />
+                            <!-- The color of the tile, as a stripe before its title. -->
+                            <Border DockPanel.Dock="Left" Width="4" Margin="0,3,8,3" CornerRadius="2" Background="{Binding ColorBrush}"
+                                    Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}"
+                                    ToolTip="Azioni sul riquadro" AutomationProperties.Name="Azioni sul riquadro" Click="TileActions_Click">
+                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
+                            </Button>
+                            <ContentControl DockPanel.Dock="Right" Margin="6,0" VerticalAlignment="Center"
+                                            Style="{StaticResource Brace.TabCount}" Content="{Binding Count}" />
+                            <Grid>
+                                <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="{Binding Title}"
+                                           Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
+                                <TextBox Style="{StaticResource EditBox}" FontWeight="Normal"
+                                         Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                         Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
+                                         IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
+                                         LostKeyboardFocus="EditBox_LostKeyboardFocus" />
+                            </Grid>
+                        </DockPanel>
+                    </GroupBox.Header>
+                    <Grid>
+                        <TextBlock Margin="12,10" Foreground="{DynamicResource Brace.TextTertiary}" TextWrapping="Wrap"
+                                   Text="Vuoto. Trascina qui dei file, o incollali con Ctrl+V."
+                                   Visibility="{Binding IsEmpty, Converter={StaticResource Visible}}" />
+                        <!-- About ten rows, then it scrolls; as many as the corner says, when given a height. The
+                             style of Brace for lists does not reach a subclass by itself. -->
+                        <views:TileList Style="{StaticResource {x:Type ListBox}}" Rows="{Binding Rows}"
+                                 MaxHeight="{Binding ListMaxHeight}" SelectionMode="Extended"
+                                 Source="{Binding Items}" VirtualizingPanel.IsVirtualizing="False"
+                                 ItemContainerStyle="{StaticResource TileRow}" ItemTemplate="{StaticResource ItemRow}"
+                                 SelectionChanged="ItemList_SelectionChanged"
+                                 PreviewMouseLeftButtonDown="ItemList_PreviewMouseLeftButtonDown"
+                                 PreviewMouseLeftButtonUp="ItemList_PreviewMouseLeftButtonUp"
+                                 PreviewMouseRightButtonDown="ItemList_PreviewMouseRightButtonDown"
+                                 PreviewMouseMove="ItemList_PreviewMouseMove"
+                                 PreviewMouseWheel="ItemList_PreviewMouseWheel"
+                                 MouseDoubleClick="ItemList_MouseDoubleClick" KeyDown="ItemList_KeyDown" />
+                    </Grid>
+                </GroupBox>
+                <!-- The corner: dragged, the tile takes one, two or three columns, and as many rows as wanted. -->
+                <Thumb x:Name="ResizeGrip" Style="{StaticResource Inlay.ResizeGrip}" HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom" Margin="0,0,1,1" Visibility="Hidden"
+                       DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta"
+                       DragCompleted="ResizeGrip_DragCompleted" MouseDoubleClick="ResizeGrip_MouseDoubleClick" />
+            </Grid>
+            <DataTemplate.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True" />
+                        <Condition Binding="{Binding IsOwnFolder}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="Grip" Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+                <DataTrigger Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True">
+                    <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <Trigger SourceName="ResizeGrip" Property="IsDragging" Value="True">
+                    <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- A tile on the canvas. Close up, the tile itself, as on the board. From afar, a card over it with its title and
+             count, then only its block: the tile keeps its place under it, so zooming never moves the zones. -->
+        <DataTemplate x:Key="CanvasTileTemplate" DataType="{x:Type vm:TileViewModel}">
+            <views:CoverPanel>
+                <!-- Inside the tile the level stays put: a change of level does not walk down all its rows. -->
+                <Border Style="{StaticResource NearOnly}">
+                    <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource TileTemplate}" views:CanvasSurface.Level="Near" />
+                </Border>
+                <Border CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource Brace.BorderDefault}" Background="{DynamicResource Brace.SurfaceRaised}"
+                        Style="{StaticResource AfarOnly}" ToolTip="Doppio clic per avvicinarti" MouseLeftButtonDown="TileSummary_MouseLeftButtonDown">
+                    <Grid>
+                        <!-- The color of the tile, along its left edge. -->
+                        <Border Width="8" HorizontalAlignment="Left" CornerRadius="6,0,0,6" Background="{Binding ColorBrush}"
+                                Visibility="{Binding HasColor, Converter={StaticResource Visible}}" />
+                        <!-- Sized so that even the tile of a single item has room for its name under the title. -->
+                        <DockPanel Margin="18,7,14,4" ClipToBounds="True" Style="{StaticResource NotFarthest}">
+                            <DockPanel DockPanel.Dock="Top">
+                                <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" FontSize="18" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Count}" />
+                                <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                            <!-- Its items in large print, as many as fit: from afar the canvas still says what is inside. -->
+                            <TextBlock Margin="0,1,0,0" FontSize="16" LineHeight="20" LineStackingStrategy="BlockLineHeight"
+                                       Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding Preview}" TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                    </Grid>
+                </Border>
+            </views:CoverPanel>
+        </DataTemplate>
+
+        <!-- A zone of the canvas: a topic with its tiles and, side by side below them, the zones of the topics inside it.
+             Its tiles are laid out as on a board, in the columns of the zone. -->
+        <DataTemplate DataType="{x:Type vm:ZoneViewModel}">
+            <Grid>
+                <Border x:Name="ZoneFrame" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                        BorderThickness="1" CornerRadius="10" Padding="16,12,16,16">
+                    <StackPanel>
+                        <!-- The name of the zone, as the title of a board. A double click shows the zone whole. From afar the zones of
+                             the root have their name above them instead; those inside keep this one until the farthest level. -->
+                        <DockPanel Margin="2,0,2,12" Background="Transparent" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
+                            <DockPanel.Style>
+                                <Style TargetType="DockPanel">
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsNested}" Value="False" />
+                                                <Condition Binding="{Binding (views:CanvasSurface.Level), RelativeSource={RelativeSource Self}}" Value="Middle" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </MultiDataTrigger>
+                                        <Trigger Property="views:CanvasSurface.Level" Value="Far">
+                                            <Setter Property="Visibility" Value="Hidden" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DockPanel.Style>
+                            <Path x:Name="ZoneIcon" DockPanel.Dock="Left" Margin="0,0,10,0" Style="{StaticResource Brace.Icon20}"
+                                  Data="{StaticResource Brace.Icon.Folder20}" TextElement.Foreground="{DynamicResource Brace.TextSecondary}" />
+                            <TextBlock DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Brace.TextTertiary}"
+                                       Text="{Binding Summary}" />
+                            <TextBlock x:Name="ZoneTitle" VerticalAlignment="Center" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                        <ItemsControl Focusable="False" ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource CanvasTileTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <views:TileGridPanel FixedColumns="{Binding Columns}" MinColumnWidth="280" Spacing="16" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="views:TileGridPanel.Columns" Value="{Binding Columns}" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
+                        <ItemsControl Focusable="False" Margin="0,16,0,0" ItemsSource="{Binding Children}">
+                            <ItemsControl.Style>
+                                <Style TargetType="ItemsControl">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Children.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.Style>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <views:TileGridPanel FixedColumns="{Binding Columns}" MinColumnWidth="280" Spacing="16" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="views:TileGridPanel.Columns" Value="{Binding Columns}" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
+                        <TextBlock x:Name="ZoneEmpty" Margin="2,0" Foreground="{DynamicResource Brace.TextTertiary}" Visibility="Collapsed"
+                                   Text="Vuoto. Trascina qui dei file, o crea un riquadro." />
+                    </StackPanel>
+                </Border>
+                <!-- From afar the zone is lightly tinted with the color of its topic: the archive reads like a map. -->
+                <Border Margin="1" CornerRadius="9" Background="{Binding ColorBrush}" Opacity="0.08" IsHitTestVisible="False">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasColor}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <Trigger Property="views:CanvasSurface.Level" Value="Near">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+                <!-- From afar: the name of a zone of the root, above its top left corner, in the space between zones, scaled back
+                     so that it stays as big on screen at any zoom. -->
+                <Canvas HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Canvas.Style>
+                        <Style TargetType="Canvas">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsNested}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <Trigger Property="views:CanvasSurface.Level" Value="Near">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Canvas.Style>
+                    <!-- Never wider than the zone looks on screen; at the farthest level the name alone. The name comes first: in a
+                         narrow zone the numbers give way. -->
+                    <Border x:Name="ZoneLabel" Canvas.Left="0" Canvas.Bottom="8" Padding="10,5" CornerRadius="6" Background="{DynamicResource Brace.SurfaceOverlay}"
+                            BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1" RenderTransformOrigin="0,1"
+                            RenderTransform="{Binding (views:CanvasSurface.LabelScale), RelativeSource={RelativeSource Self}}"
+                            ToolTip="Doppio clic per vedere tutta la zona" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
+                        <Border.MaxWidth>
+                            <MultiBinding Converter="{StaticResource Quotient}">
+                                <Binding ElementName="ZoneFrame" Path="ActualWidth" />
+                                <Binding Path="(views:CanvasSurface.LabelScale).ScaleX" RelativeSource="{RelativeSource Self}" />
+                            </MultiBinding>
+                        </Border.MaxWidth>
+                        <DockPanel>
+                            <TextBlock x:Name="ZoneLabelTitle" DockPanel.Dock="Left" FontSize="15" FontWeight="SemiBold" Text="{Binding Title}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Brace.TextTertiary}"
+                                       Text="{Binding Summary}" TextTrimming="CharacterEllipsis" Style="{StaticResource NotFarthest}" />
+                        </DockPanel>
+                    </Border>
+                </Canvas>
+            </Grid>
+            <DataTemplate.Triggers>
+                <!-- The color of the topic: the border, the icon and the name of the zone, close up and from afar. -->
+                <DataTrigger Binding="{Binding HasColor}" Value="True">
+                    <Setter TargetName="ZoneFrame" Property="BorderBrush" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneIcon" Property="TextElement.Foreground" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneTitle" Property="Foreground" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneLabel" Property="BorderBrush" Value="{Binding ColorBrush}" />
+                    <Setter TargetName="ZoneLabelTitle" Property="Foreground" Value="{Binding ColorBrush}" />
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding Tiles.Count}" Value="0" />
+                        <Condition Binding="{Binding Children.Count}" Value="0" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="ZoneEmpty" Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <!-- No border of its own: in the window, the frame of Windows draws it in border-default (brace:Chrome.Dark). -->
+    <Border Background="{DynamicResource Brace.SurfaceBase}">
+        <Grid>
+            <DockPanel>
+
+                <!-- Title bar, as br-titlebar of Brace: logo and name, the search in the middle, the badge of the archive, the pin,
+                     then the buttons of the window. Where nothing takes the click, dragging it moves the window and a double click
+                     maximizes it. Its height is the CaptionHeight of PanelWindow. -->
+                <Border DockPanel.Dock="Top" Style="{StaticResource Inlay.TitleBar}">
+                    <DockPanel>
+                        <Image DockPanel.Dock="Left" Width="24" Height="24" Source="{StaticResource Inlay.Logo}"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <TextBlock DockPanel.Dock="Left" Margin="8,0,0,0" VerticalAlignment="Center"
+                                   Style="{StaticResource Brace.Text.Heading}" Text="Inlay" />
+                        <!-- The topics on the left, closed and opened again (Ctrl+B). A plain button: the bar keeps its one amber
+                             for the pin. -->
+                        <Button DockPanel.Dock="Left" Margin="12,0,0,0" VerticalAlignment="Center" AutomationProperties.Name="Barra degli argomenti"
+                                WindowChrome.IsHitTestVisibleInChrome="True" Click="SidebarToggle_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Brace.IconButton.Small}">
+                                    <Setter Property="ToolTip" Value="Nascondi gli argomenti (Ctrl+B)" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSidebarOpen}" Value="False">
+                                            <Setter Property="ToolTip" Value="Mostra gli argomenti (Ctrl+B)" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.PanelLeft16}" />
+                        </Button>
+                        <!-- The buttons of the window, from the right edge inwards. -->
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarCloseButton}"
+                                ToolTip="Chiudi: Inlay resta nell'area di notifica (Esc)" AutomationProperties.Name="Chiudi" Click="Close_Click">
+                            <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
+                        </Button>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.MaximizeButton}" AutomationProperties.Name="Ingrandisci"
+                                Click="Maximize_Click">
+                            <Path Style="{StaticResource Inlay.MaximizeIcon}" />
+                        </Button>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.TitleBarButton}" ToolTip="Riduci a icona"
+                                AutomationProperties.Name="Riduci a icona" Click="Minimize_Click">
+                            <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Subtract16}" />
+                        </Button>
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Inlay.PinButton}" AutomationProperties.Name="Sempre in primo piano"
+                                      IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
+                            <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Pin16}" />
+                        </ToggleButton>
+                        <!-- The archive in use, as the vault in Obsidian: a click opens the window of the archives. -->
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.ProjectBadge}"
+                                ToolTip="Archivi: cambia, crea, rinomina o sposta l'archivio" AutomationProperties.Name="Archivi"
+                                Click="Archives_Click">
+                            <TextBlock MaxWidth="200" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
+                        </Button>
+                        <!-- The search in the middle of the bar, 280 wide and control-sm tall as in br-titlebar; narrower when the
+                             window is. Either side of it the bar is free to drag the window by. -->
+                        <Grid Margin="16,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10*" MaxWidth="280" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="SearchBox" Grid.Column="1" MinHeight="0" Height="{StaticResource Brace.ControlSm}" Padding="26,0,24,0"
+                                     VerticalAlignment="Center" Tag="Cerca in tutto l'archivio" AutomationProperties.Name="Cerca in tutto l'archivio"
+                                     WindowChrome.IsHitTestVisibleInChrome="True"
+                                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                                     PreviewKeyDown="SearchBox_PreviewKeyDown" />
+                            <Path Grid.Column="1" Margin="8,0,0,0" HorizontalAlignment="Left" IsHitTestVisible="False"
+                                  Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Search16}"
+                                  TextElement.Foreground="{DynamicResource Brace.TextTertiary}" />
+                            <!-- The filters in a menu, also with nothing typed yet: kinds and places, written as "tipo:…" and "in:…". -->
+                            <Button Grid.Column="1" Width="20" Height="20" Margin="0,0,2,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Style="{StaticResource Brace.IconButton.Small}" ToolTip="Filtri: per tipo e per argomento"
+                                    AutomationProperties.Name="Filtri della ricerca" WindowChrome.IsHitTestVisibleInChrome="True"
+                                    Click="SearchFilters_Click">
+                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Filter16}" />
+                            </Button>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+
+                <!-- Status bar, as br-statusbar and as in Explorer. On the left the archive, with how many items it has and what
+                     they take, or the operation under way; on the right the selection, the free space of the disk and the keys
+                     worth knowing. What an operation did, with Annulla and Mostra, comes in a toast instead. -->
+                <StatusBar DockPanel.Dock="Bottom">
+                    <StatusBar.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <DockPanel LastChildFill="False" />
+                        </ItemsPanelTemplate>
+                    </StatusBar.ItemsPanel>
+                    <StatusBarItem Visibility="{Binding IsBusy, Converter={StaticResource Hidden}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource Brace.StatusBar.Button}" ToolTip="{Binding ArchiveToolTip}" Click="StatusArchive_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.Database16}" />
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding ArchiveName}" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Text="{Binding ArchiveSummary}" />
+                            <!-- Files left loose in the root of the archive, which no topic shows: a click opens it in Explorer. -->
+                            <Button Margin="12,0,0,0" Style="{StaticResource Brace.StatusBar.Button}" Click="StatusArchive_Click"
+                                    ToolTip="Non stanno in nessun argomento: un clic apre la radice dell'archivio in Explorer. La ricerca li trova."
+                                    Visibility="{Binding RootFilesText, Converter={StaticResource NullToVisibility}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.Document16}" />
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding RootFilesText}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StatusBarItem>
+                    <!-- Moves, copies or deletions under way, in the background: the LEDs of br-activity, next to the last one
+                         started and how many more run or wait; the tooltip lists them all. -->
+                    <StatusBarItem Visibility="{Binding IsBusy, Converter={StaticResource Visible}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Control Style="{StaticResource Brace.Activity}" Margin="0,0,8,0" />
+                            <TextBlock MaxWidth="600" VerticalAlignment="Center" Text="{Binding Activity}" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding ActivityDetails}" />
+                        </StackPanel>
+                    </StatusBarItem>
+                    <!-- From the right edge inwards. -->
+                    <StatusBarItem DockPanel.Dock="Right">
+                        <Button x:Name="ShortcutsButton" Style="{StaticResource Brace.StatusBar.Button}" ToolTip="I tasti da sapere"
+                                AutomationProperties.Name="Scorciatoie da tastiera" Click="ShortcutsButton_Click">
+                            <Path Style="{StaticResource Brace.StatusIcon}" Margin="0" Data="{StaticResource Brace.Icon.QuestionCircle16}" />
+                        </Button>
+                    </StatusBarItem>
+                    <StatusBarItem DockPanel.Dock="Right" ToolTip="{Binding DiskToolTip}"
+                                   Visibility="{Binding DiskText, Converter={StaticResource NullToVisibility}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path>
+                                <Path.Style>
+                                    <Style TargetType="Path" BasedOn="{StaticResource Brace.StatusIcon}">
+                                        <Setter Property="Data" Value="{StaticResource Brace.Icon.HardDrive16}" />
+                                        <Style.Triggers>
+                                            <!-- Short of space: the icon in the color of warnings, and the text says it too. -->
+                                            <DataTrigger Binding="{Binding IsDiskLow}" Value="True">
+                                                <Setter Property="Fill" Value="{DynamicResource Brace.StatusBarWarning}" />
+                                                <Setter Property="Data" Value="{StaticResource Brace.Icon.Warning16}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                            <TextBlock VerticalAlignment="Center" Text="{Binding DiskText}" />
+                        </StackPanel>
+                    </StatusBarItem>
+                    <StatusBarItem DockPanel.Dock="Right" Margin="0,0,12,0"
+                                   Visibility="{Binding SelectionSummary, Converter={StaticResource NullToVisibility}}">
+                        <TextBlock Text="{Binding SelectionSummary}" />
+                    </StatusBarItem>
+                </StatusBar>
+
+                <!-- The keys worth knowing, from the «?» of the status bar, by what they act on. -->
+                <Popup x:Name="ShortcutsPopup" PlacementTarget="{Binding ElementName=ShortcutsButton}" Placement="Custom"
+                       StaysOpen="False" AllowsTransparency="True" PopupAnimation="None">
+                    <ContentControl Style="{StaticResource Brace.PopupFrame}">
+                        <ItemsControl Margin="12,6,12,8" Focusable="False" ItemsSource="{Binding Shortcuts}" Grid.IsSharedSizeScope="True">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type views:ShortcutGroup}">
+                                    <StackPanel Margin="0,6,0,0">
+                                        <TextBlock Margin="0,0,0,4" Style="{StaticResource Brace.Text.Label}" Foreground="{DynamicResource Brace.TextTertiary}"
+                                                   Text="{Binding Title}" />
+                                        <ItemsControl Focusable="False" ItemsSource="{Binding Hints}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type views:ShortcutHint}">
+                                                    <Grid Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="Keys" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <ItemsControl Margin="0,0,12,0" Focusable="False" ItemsSource="{Binding Keys}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <ContentControl Margin="0,0,4,0" Style="{StaticResource Brace.Kbd}" Content="{Binding}" />
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{DynamicResource Brace.TextSecondary}"
+                                                                   Text="{Binding Action}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ContentControl>
+                </Popup>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Sidebar: the topics. Closed, it takes no room. -->
+                    <Border x:Name="Sidebar" Width="264" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                            BorderThickness="0,0,1,0" Visibility="{Binding IsSidebarOpen, Converter={StaticResource Visible}}">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Height="40" Margin="16,4,8,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}" VerticalAlignment="Center"
+                                        ToolTip="Nuovo argomento" AutomationProperties.Name="Nuovo argomento" Click="NewTopic_Click">
+                                    <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Add16}" />
+                                </Button>
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource Brace.Text.Label}"
+                                           Foreground="{DynamicResource Brace.TextTertiary}" Text="Argomenti" />
+                            </DockPanel>
+                            <!-- Topics: chosen with a click, dragged above or below another to change place, or into the middle of
+                                 another to go inside it; a line or the row lit up shows where it will go. -->
+                            <TreeView x:Name="TopicTree" Padding="0,2" Background="Transparent" BorderThickness="0" ItemsSource="{Binding Topics}"
+                                      ItemContainerStyle="{StaticResource TopicItem}" AllowDrop="True"
+                                      SelectedItemChanged="TopicTree_SelectedItemChanged"
+                                      PreviewMouseLeftButtonDown="TopicTree_PreviewMouseLeftButtonDown" PreviewMouseMove="TopicTree_PreviewMouseMove"
+                                      DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                                <TreeView.ItemTemplate>
+                                    <HierarchicalDataTemplate DataType="{x:Type vm:TopicViewModel}" ItemsSource="{Binding Children}"
+                                                              ItemContainerStyle="{StaticResource TopicItem}">
+                                        <DockPanel Background="Transparent">
+                                            <Path x:Name="TopicIcon" DockPanel.Dock="Left" Margin="0,0,10,0" Style="{StaticResource Brace.Icon20}"
+                                                  Data="{StaticResource Brace.Icon.Folder20}" TextElement.Foreground="{DynamicResource Brace.TextSecondary}" />
+                                            <Grid>
+                                                <TextBlock x:Name="TopicName" VerticalAlignment="Center" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                           Visibility="{Binding IsEditing, Converter={StaticResource Hidden}}" />
+                                                <TextBox Style="{StaticResource EditBox}" Height="24" Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                                         Visibility="{Binding IsEditing, Converter={StaticResource Visible}}"
+                                                         IsVisibleChanged="EditBox_IsVisibleChanged" PreviewKeyDown="EditBox_PreviewKeyDown"
+                                                         LostKeyboardFocus="EditBox_LostKeyboardFocus" />
+                                            </Grid>
+                                        </DockPanel>
+                                        <HierarchicalDataTemplate.Triggers>
+                                            <!-- The topics of the first level stand out a little from those inside them. -->
+                                            <DataTrigger Binding="{Binding Parent}" Value="{x:Null}">
+                                                <Setter TargetName="TopicName" Property="FontWeight" Value="Medium" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter TargetName="TopicIcon" Property="Data" Value="{StaticResource Brace.Icon.FolderFilled20}" />
+                                                <Setter TargetName="TopicIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Accent}" />
+                                            </DataTrigger>
+                                            <!-- A topic with a color keeps it, chosen or not: the row lit up says which one is chosen. -->
+                                            <DataTrigger Binding="{Binding HasColor}" Value="True">
+                                                <Setter TargetName="TopicIcon" Property="TextElement.Foreground" Value="{Binding ColorBrush}" />
+                                            </DataTrigger>
+                                        </HierarchicalDataTemplate.Triggers>
+                                    </HierarchicalDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Board of the selected topic -->
+                    <Grid Grid.Column="1" Background="{DynamicResource Brace.SurfaceSunken}">
+                        <DockPanel Visibility="{Binding IsBoardVisible, Converter={StaticResource Visible}}">
+                            <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
+                                <Button DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Primary}"
+                                        ToolTip="Nuovo riquadro (Ctrl+Maiusc+N)" Click="NewTile_Click"
+                                        Visibility="{Binding SelectedTopic, Converter={StaticResource NullToVisibility}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Add16}" />
+                                        <TextBlock VerticalAlignment="Center" Text="Nuovo riquadro" />
+                                    </StackPanel>
+                                </Button>
+                                <ListBox DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
+                                         SelectedIndex="{Binding ViewIndex, Mode=TwoWay}" />
+                                <StackPanel VerticalAlignment="Bottom">
+                                    <TextBlock Style="{StaticResource Brace.Text.Caption}" Foreground="{DynamicResource Brace.TextTertiary}"
+                                               Text="{Binding BoardPath}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Style="{StaticResource Brace.Text.Title}" Text="{Binding BoardTitle}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <ItemsControl DockPanel.Dock="Top" Margin="20,0,20,6" Focusable="False" ItemsSource="{Binding SubTopics}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:TopicViewModel}">
+                                        <Button Margin="0,0,8,8" Style="{StaticResource Brace.Button.Small}"
+                                                Command="{Binding DataContext.SelectTopicCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Folder16}" />
+                                                <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Grid x:Name="BoardArea" Background="Transparent" ContextMenu="{StaticResource BoardMenu}"
+                                  Focusable="True" FocusVisualStyle="{x:Null}" KeyboardNavigation.IsTabStop="False"
+                                  AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop"
+                                  MouseLeftButtonDown="BoardArea_MouseLeftButtonDown" MouseMove="BoardArea_MouseMove"
+                                  MouseLeftButtonUp="BoardArea_MouseLeftButtonUp" LostMouseCapture="BoardArea_LostMouseCapture">
+                                <TextBlock Margin="20,4,20,0" VerticalAlignment="Top" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding EmptyMessage}" />
+                                <ScrollViewer x:Name="BoardScroller" Padding="20,0,20,20" Focusable="False"
+                                              HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl x:Name="TilesControl" Focusable="False" ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource TileTemplate}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <views:TileGridPanel MinColumnWidth="280" Spacing="16" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <!-- The columns each tile takes, from the size given to it with its corner. -->
+                                        <ItemsControl.ItemContainerStyle>
+                                            <Style TargetType="ContentPresenter">
+                                                <Setter Property="views:TileGridPanel.Columns" Value="{Binding Columns}" />
+                                            </Style>
+                                        </ItemsControl.ItemContainerStyle>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </DockPanel>
+
+                        <!-- The canvas: the whole archive at once, a zone for each topic, seen through a camera that zooms and moves. -->
+                        <DockPanel Visibility="{Binding IsCanvasVisible, Converter={StaticResource Visible}}">
+                            <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
+                                <ListBox DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
+                                         SelectedIndex="{Binding ViewIndex, Mode=TwoWay}" />
+                                <Button DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Ghost}"
+                                        Content="Mostra tutto" ToolTip="Tutto l'archivio in vista (Ctrl+0, o doppio clic sul vuoto)" Click="CanvasFitAll_Click" />
+                                <!-- The zoom, also from the mouse alone: the wheel zooms where it points, these around the middle. -->
+                                <StackPanel DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Orientation="Horizontal">
+                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Allontana (Ctrl+-)" AutomationProperties.Name="Allontana"
+                                            Click="CanvasZoomOut_Click">
+                                        <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ZoomOut16}" />
+                                    </Button>
+                                    <TextBlock MinWidth="48" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource Brace.TextSecondary}"
+                                               Text="{Binding Canvas.ZoomText}" ToolTip="La rotella zooma dove punti; trascina sul vuoto per spostarti" />
+                                    <Button Style="{StaticResource Brace.IconButton}" ToolTip="Avvicina (Ctrl++)" AutomationProperties.Name="Avvicina"
+                                            Click="CanvasZoomIn_Click">
+                                        <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.ZoomIn16}" />
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel VerticalAlignment="Bottom">
+                                    <TextBlock Style="{StaticResource Brace.Text.Caption}" Foreground="{DynamicResource Brace.TextTertiary}"
+                                               Text="Tutto l'archivio" />
+                                    <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Tela" />
+                                </StackPanel>
+                            </DockPanel>
+                            <views:CanvasSurface x:Name="CanvasSurface" BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="0,1,0,0"
+                                                 Background="{DynamicResource Brace.SurfaceSunken}" Camera="{Binding Canvas.Camera, Mode=TwoWay}"
+                                                 views:CanvasSurface.Level="{Binding Canvas.Level}" views:TileList.StartsAsleep="True"
+                                                 KeyboardNavigation.IsTabStop="False" SizeChanged="CanvasSurface_SizeChanged">
+                                <!-- Text in Ideal mode: scaled, it stays sharp. -->
+                                <ItemsControl x:Name="ZonesControl" Focusable="False" ItemsSource="{Binding Canvas.Zones}"
+                                              TextOptions.TextFormattingMode="Ideal">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <views:ZoneCanvasPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </views:CanvasSurface>
+                        </DockPanel>
+
+                        <!-- Search results -->
+                        <DockPanel Margin="20,16,20,10" Visibility="{Binding IsSearching, Converter={StaticResource Visible}}">
+                            <!-- The filters: where to look, and the kinds. They write "in:…" and "tipo:…" in the search box,
+                                 which can be typed there as well. -->
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <Button DockPanel.Dock="Left" Margin="0,0,12,6" VerticalAlignment="Top" Style="{StaticResource SearchPlaceFilter}"
+                                        ToolTip="Dove cercare: in tutto l'archivio, o in un argomento (in:…)" Click="SearchPlace_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" />
+                                        <TextBlock MaxWidth="260" VerticalAlignment="Center" Text="{Binding PlaceFilterText}" TextTrimming="CharacterEllipsis" />
+                                        <Path Margin="4,0,0,0" Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.ChevronDown16}" />
+                                    </StackPanel>
+                                </Button>
+                                <ItemsControl Focusable="False" ItemsSource="{Binding KindFilters}" AutomationProperties.Name="Filtri per tipo">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:SearchKindFilter}">
+                                            <Button Style="{StaticResource SearchKindFilter}" Content="{Binding Label}" ToolTip="{Binding ToolTip}"
+                                                    Click="SearchKind_Click" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Margin="0,0,0,10" Style="{StaticResource Brace.Text.Caption}"
+                                       Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding ResultsHeader}" />
+                            <ListBox x:Name="ResultsList" SelectionMode="Extended" ItemsSource="{Binding Results}" VirtualizingPanel.IsVirtualizing="False"
+                                     ItemContainerStyle="{StaticResource ItemContainer}"
+                                     SelectionChanged="ItemList_SelectionChanged"
+                                     PreviewMouseLeftButtonDown="ItemList_PreviewMouseLeftButtonDown"
+                                     PreviewMouseLeftButtonUp="ItemList_PreviewMouseLeftButtonUp"
+                                     PreviewMouseRightButtonDown="ItemList_PreviewMouseRightButtonDown"
+                                     PreviewMouseMove="ItemList_PreviewMouseMove"
+                                     MouseDoubleClick="ItemList_MouseDoubleClick" KeyDown="ItemList_KeyDown">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:SearchResultViewModel}">
+                                        <DockPanel Margin="0,3" Background="Transparent" ToolTip="{Binding ToolTip}">
+                                            <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,0,10,0" VerticalAlignment="Top">
+                                                <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                <Path Style="{StaticResource Kind}" Data="{Binding Glyph}" />
+                                            </Grid>
+                                            <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}"
+                                                       Text="{Binding DateText}" />
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Location}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+
+                        <!-- Toasts (br-toasts): what just happened, in the bottom right corner over the board, the canvas and the
+                             results; the newest at the bottom, at most three. -->
+                        <ItemsControl Width="360" Margin="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Focusable="False"
+                                      ItemsSource="{Binding Toasts}" AutomationProperties.Name="Notifiche">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ToastViewModel}">
+                                    <Border Margin="0,8,0,0" Padding="12,8,4,8" Background="{DynamicResource Brace.SurfaceOverlay}"
+                                            BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1" CornerRadius="{StaticResource Brace.RadiusMd}"
+                                            Effect="{StaticResource Brace.ShadowOverlay}" Loaded="Toast_Loaded">
+                                        <DockPanel>
+                                            <Path x:Name="ToastIcon" DockPanel.Dock="Left" Margin="0,2,8,0" VerticalAlignment="Top" Style="{StaticResource Brace.Icon}"
+                                                  Data="{StaticResource Brace.Icon.CheckmarkCircle16}" TextElement.Foreground="{DynamicResource Brace.Success}" />
+                                            <Button DockPanel.Dock="Right" Margin="8,-2,0,0" VerticalAlignment="Top" Style="{StaticResource Brace.IconButton.Small}"
+                                                    ToolTip="Chiudi" AutomationProperties.Name="Chiudi notifica" Click="ToastDismiss_Click">
+                                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Dismiss16}" />
+                                            </Button>
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource Brace.TextPrimary}" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                <TextBlock Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding Body}" TextWrapping="Wrap"
+                                                           Visibility="{Binding Body, Converter={StaticResource NullToVisibility}}" />
+                                                <StackPanel Margin="0,6,0,0" Orientation="Horizontal" Visibility="{Binding HasActions, Converter={StaticResource Visible}}">
+                                                    <Button Margin="0,0,4,0" Style="{StaticResource Brace.Button.Small}" Content="Annulla"
+                                                            ToolTip="Rimetti tutto com'era (Ctrl+Z)" Click="ToastUndo_Click"
+                                                            Visibility="{Binding CanUndo, Converter={StaticResource Visible}}" />
+                                                    <Button Style="{StaticResource Brace.Button.Small}" Content="Mostra" ToolTip="Vai dove sono finiti, con gli elementi selezionati"
+                                                            Click="ToastShow_Click" Visibility="{Binding CanShow, Converter={StaticResource Visible}}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Info">
+                                            <Setter TargetName="ToastIcon" Property="Data" Value="{StaticResource Brace.Icon.Info16}" />
+                                            <Setter TargetName="ToastIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Info}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Warning">
+                                            <Setter TargetName="ToastIcon" Property="Data" Value="{StaticResource Brace.Icon.Warning16}" />
+                                            <Setter TargetName="ToastIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Warning}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Danger">
+                                            <Setter TargetName="ToastIcon" Property="Data" Value="{StaticResource Brace.Icon.ErrorCircle16}" />
+                                            <Setter TargetName="ToastIcon" Property="TextElement.Foreground" Value="{DynamicResource Brace.Danger}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
+            </DockPanel>
+
+            <!-- Confirmations, over everything -->
+            <Grid Background="{DynamicResource Brace.Scrim}" Visibility="{Binding Prompt, Converter={StaticResource NullToVisibility}}">
+                <Border x:Name="PromptBox" Width="440" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                        BorderThickness="1" CornerRadius="6" Effect="{StaticResource Brace.ShadowOverlay}"
+                        DataContext="{Binding Prompt}" KeyboardNavigation.TabNavigation="Cycle">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,8" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}" TextWrapping="Wrap" />
+                        <TextBlock Margin="0,0,0,4" Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding Message}" TextWrapping="Wrap"
+                                   Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}" />
+                        <TextBox x:Name="PromptInput" Margin="0,8,0,0" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                 Visibility="{Binding HasInput, Converter={StaticResource Visible}}" />
+                        <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource Brace.Danger}" Text="{Binding Error}" TextWrapping="Wrap"
+                                   Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+                        <!-- In the order of Windows, as in Brace: the action first, then Annulla. -->
+                        <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button x:Name="PromptConfirm" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}" Content="{Binding ConfirmLabel}"
+                                    Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Hidden}}" />
+                            <Button x:Name="PromptConfirmDanger" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Danger}" Content="{Binding ConfirmLabel}"
+                                    Command="{Binding ConfirmCommand}" Visibility="{Binding IsDanger, Converter={StaticResource Visible}}" />
+                            <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- «Sposta in…»: where the chosen files go, the recent places first, narrowed down by what is typed -->
+            <Grid Background="{DynamicResource Brace.Scrim}" Visibility="{Binding Picker, Converter={StaticResource NullToVisibility}}">
+                <Border x:Name="PickerBox" Width="520" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                        BorderThickness="1" CornerRadius="6" Effect="{StaticResource Brace.ShadowOverlay}"
+                        DataContext="{Binding Picker}" KeyboardNavigation.TabNavigation="Cycle">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,10" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}" TextWrapping="Wrap" />
+                        <TextBox x:Name="PickerFilter" Tag="Scrivi il nome di un riquadro o di un argomento" AutomationProperties.Name="Destinazione"
+                                 Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" />
+                        <Grid Margin="0,8,0,0" MinHeight="60" MaxHeight="296">
+                            <TextBlock Margin="8,10" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding EmptyMessage}"
+                                       Visibility="{Binding HasCandidates, Converter={StaticResource Hidden}}" />
+                            <ListBox x:Name="PickerList" BorderThickness="0" Background="Transparent" ItemsSource="{Binding Candidates}"
+                                     SelectedItem="{Binding Selected, Mode=TwoWay}" VirtualizingPanel.IsVirtualizing="False"
+                                     MouseDoubleClick="PickerList_MouseDoubleClick"
+                                     Visibility="{Binding HasCandidates, Converter={StaticResource Visible}}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:DestinationViewModel}">
+                                        <DockPanel Margin="0,4" Background="Transparent" ToolTip="{Binding Destination.FullPath}">
+                                            <ContentControl DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.Badge.Plain}"
+                                                            Content="recente" Visibility="{Binding IsRecent, Converter={StaticResource Visible}}" />
+                                            <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,1,10,0" VerticalAlignment="Top">
+                                                <Path Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Folder16}"
+                                                      Visibility="{Binding IsTopic, Converter={StaticResource Hidden}}" />
+                                                <Path Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.FolderOpen16}"
+                                                      Visibility="{Binding IsTopic, Converter={StaticResource Visible}}" />
+                                            </Grid>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Detail}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                        <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource Brace.Danger}" Text="{Binding Error}" TextWrapping="Wrap"
+                                   Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+                        <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+                            <Button x:Name="PickerConfirm" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}" Content="{Binding ConfirmLabel}"
+                                    Command="{Binding ConfirmCommand}" />
+                            <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

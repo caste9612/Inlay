@@ -1,0 +1,180 @@
+<UserControl x:Class="Inlay.App.Views.ArchivesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:Inlay.App.Views"
+             xmlns:vm="clr-namespace:Inlay.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ArchivesViewModel}"
+             FontFamily="{StaticResource Brace.FontSans}"
+             FontSize="{DynamicResource Brace.TextSize}"
+             TextElement.Foreground="{DynamicResource Brace.TextPrimary}"
+             TextOptions.TextFormattingMode="Display"
+             UseLayoutRounding="True"
+             PreviewKeyDown="OnPreviewKeyDown">
+
+    <UserControl.Resources>
+        <views:NullToVisibilityConverter x:Key="NullToVisibility" />
+        <views:BoolToVisibilityConverter x:Key="Visible" />
+        <views:BoolToVisibilityConverter x:Key="Hidden" Invert="True" />
+
+        <Style x:Key="Kind" TargetType="Path" BasedOn="{StaticResource Brace.Icon}">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Brace.TextSecondary}" />
+        </Style>
+
+        <Style x:Key="Action" TargetType="Button" BasedOn="{StaticResource Brace.Button.Small}">
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource Brace.SurfaceBase}">
+        <DockPanel Margin="24,20,24,16">
+
+            <!-- What an archive is, in two lines; the first time, a welcome -->
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Benvenuto in Inlay"
+                           Visibility="{Binding IsWelcome, Converter={StaticResource Visible}}" />
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Archivi"
+                           Visibility="{Binding IsWelcome, Converter={StaticResource Hidden}}" />
+                <TextBlock Margin="0,6,0,0" MaxWidth="720" HorizontalAlignment="Left" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brace.TextSecondary}"
+                           Text="Inlay tiene le tue cose in un archivio: una cartella normale, che vedi anche in Explorer, con dentro argomenti e riquadri. Come i vault di Obsidian, puoi averne più di uno, passare dall'uno all'altro e spostarli dove vuoi." />
+                <TextBlock Margin="0,6,0,0" MaxWidth="720" HorizontalAlignment="Left" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brace.TextSecondary}" Visibility="{Binding IsWelcome, Converter={StaticResource Visible}}"
+                           Text="Inlay lavora sui file veri: quello che sposti o rinomini qui cambia anche in Explorer. Ciò che elimini va nel Cestino, e Ctrl+Z annulla l'ultima operazione." />
+            </StackPanel>
+
+            <!-- What is going on: the result of the last action, the progress of a check -->
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0" MinHeight="28">
+                <!-- While the shell copies, its own window shows the progress and stops the copy. -->
+                <Button DockPanel.Dock="Right" Style="{StaticResource Brace.Button.Small}" Content="Interrompi il controllo"
+                        Click="CancelCheck_Click" Visibility="{Binding IsChecking, Converter={StaticResource Visible}}" />
+                <ProgressBar DockPanel.Dock="Right" Width="160" Margin="12,0" VerticalAlignment="Center" Maximum="1"
+                             Value="{Binding Progress}" Visibility="{Binding IsChecking, Converter={StaticResource Visible}}" />
+                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
+                           Text="{Binding Status}" />
+            </DockPanel>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="340" />
+                </Grid.ColumnDefinitions>
+
+                <!-- The archives this PC knows -->
+                <GroupBox Style="{StaticResource Brace.Panel}" Padding="0">
+                    <GroupBox.Header>
+                        <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="I tuoi archivi" />
+                    </GroupBox.Header>
+                    <DockPanel>
+                        <WrapPanel DockPanel.Dock="Bottom" Margin="10,10,4,4" IsEnabled="{Binding IsIdle}"
+                                   Visibility="{Binding HasArchives, Converter={StaticResource Visible}}">
+                            <Button Style="{StaticResource Brace.Button.Primary.Small}" Margin="0,0,6,6" Content="Apri" Click="Open_Click" />
+                            <Button Style="{StaticResource Action}" Content="Mostra in Explorer" Click="Reveal_Click" />
+                            <Button Style="{StaticResource Action}" Content="Rinomina…" Click="Rename_Click" />
+                            <Button Style="{StaticResource Action}" Content="Sposta…" Click="Move_Click" />
+                            <Button Style="{StaticResource Action}" Content="Togli dall'elenco" Click="Forget_Click" />
+                        </WrapPanel>
+                        <Grid>
+                            <TextBlock Margin="14,12" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextTertiary}"
+                                       Text="Ancora nessun archivio. Creane uno qui a destra, oppure apri una cartella che hai già."
+                                       Visibility="{Binding HasArchives, Converter={StaticResource Hidden}}" />
+                            <ListBox x:Name="ArchiveList" BorderThickness="0" Background="Transparent" ItemsSource="{Binding Archives}"
+                                     SelectedItem="{Binding Selected}" MouseDoubleClick="ArchiveList_MouseDoubleClick"
+                                     Visibility="{Binding HasArchives, Converter={StaticResource Visible}}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:ArchiveEntryViewModel}">
+                                        <DockPanel Margin="0,5" Background="Transparent" ToolTip="{Binding Path}">
+                                            <ContentControl DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Brace.Badge.Accent}"
+                                                            Content="In uso" Visibility="{Binding IsCurrent, Converter={StaticResource Visible}}" />
+                                            <ContentControl DockPanel.Dock="Right" Margin="8,0,0,0" Style="{StaticResource Brace.Badge.Warning}"
+                                                            Content="Non trovato" Visibility="{Binding IsMissing, Converter={StaticResource Visible}}" />
+                                            <Path DockPanel.Dock="Left" Margin="0,1,10,0" VerticalAlignment="Top" Style="{StaticResource Kind}"
+                                                  Data="{StaticResource Brace.Icon.Folder16}" />
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Path}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <!-- How much it takes, and the room left on its disk: counted in the background. -->
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}" Text="{Binding Details}"
+                                                           TextTrimming="CharacterEllipsis" Visibility="{Binding Details, Converter={StaticResource NullToVisibility}}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </DockPanel>
+                </GroupBox>
+
+                <!-- A new archive, or a folder that becomes one -->
+                <StackPanel Grid.Column="2" IsEnabled="{Binding IsIdle}">
+                    <GroupBox Style="{StaticResource Brace.Panel}" Padding="0">
+                        <GroupBox.Header>
+                            <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="Crea un archivio nuovo" />
+                        </GroupBox.Header>
+                        <StackPanel Margin="14,12,14,14">
+                            <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Nome" />
+                            <TextBox x:Name="NewNameBox" Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="0,12,0,4" Style="{StaticResource Brace.FieldLabel}" Text="Dove" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Margin="6,0,0,0" Style="{StaticResource Brace.Button}" Content="Sfoglia…"
+                                        Click="BrowseParent_Click" />
+                                <TextBox Text="{Binding NewParent, UpdateSourceTrigger=PropertyChanged}" />
+                            </DockPanel>
+                            <TextBlock Style="{StaticResource Brace.FieldHint}"
+                                       Text="Meglio sullo stesso disco del Desktop: spostare lì i suoi file è istantaneo, senza copie." />
+                            <DockPanel Margin="0,14,0,0">
+                                <Button DockPanel.Dock="Left" Style="{StaticResource Brace.Button.Primary}" Content="Crea l'archivio"
+                                        Click="Create_Click" />
+                                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource Brace.TextTertiary}"
+                                           Text="{Binding NewPath}" TextTrimming="CharacterEllipsis" ToolTip="{Binding NewPath}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Margin="0,16,0,0" Style="{StaticResource Brace.Panel}" Padding="0">
+                        <GroupBox.Header>
+                            <TextBlock Style="{StaticResource Brace.PanelTitle}" Text="Apri una cartella come archivio" />
+                        </GroupBox.Header>
+                        <StackPanel Margin="14,12,14,14">
+                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
+                                       Text="Una cartella che hai già: le sue sottocartelle diventano argomenti, i file restano dove sono." />
+                            <Button Margin="0,14,0,0" HorizontalAlignment="Left" Style="{StaticResource Brace.Button}"
+                                    Content="Scegli la cartella…" Click="OpenFolder_Click" />
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </Grid>
+        </DockPanel>
+
+        <!-- Questions, over everything, as in the panel -->
+        <Grid Background="{DynamicResource Brace.Scrim}" Visibility="{Binding Prompt, Converter={StaticResource NullToVisibility}}">
+            <Border Width="460" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{DynamicResource Brace.SurfaceOverlay}" BorderBrush="{DynamicResource Brace.BorderDefault}"
+                    BorderThickness="1" CornerRadius="6" Effect="{StaticResource Brace.ShadowOverlay}"
+                    DataContext="{Binding Prompt}" KeyboardNavigation.TabNavigation="Cycle">
+                <StackPanel>
+                    <TextBlock Margin="0,0,0,8" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,0,0,4" Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding Message}" TextWrapping="Wrap"
+                               Visibility="{Binding Message, Converter={StaticResource NullToVisibility}}" />
+                    <TextBox x:Name="PromptInput" Margin="0,8,0,0" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding HasInput, Converter={StaticResource Visible}}" />
+                    <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource Brace.Danger}" Text="{Binding Error}" TextWrapping="Wrap"
+                               Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+                    <StackPanel Margin="0,16,0,0" HorizontalAlignment="Right" Orientation="Horizontal">
+                        <Button x:Name="PromptConfirm" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}"
+                                Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}"
+                                Visibility="{Binding IsDanger, Converter={StaticResource Hidden}}" />
+                        <Button x:Name="PromptConfirmDanger" Margin="0,0,8,0" Style="{StaticResource Brace.Button.Danger}"
+                                Content="{Binding ConfirmLabel}" Command="{Binding ConfirmCommand}"
+                                Visibility="{Binding IsDanger, Converter={StaticResource Visible}}" />
+                        <Button Style="{StaticResource Brace.Button}" Content="Annulla" Command="{Binding CancelCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

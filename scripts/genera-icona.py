@@ -1,9 +1,9 @@
-"""Draws the Quiver icon, the "board" (bacheca), and writes it as a multi-size .ico.
+"""Draws the Inlay icon, the "board" (bacheca), and writes it as a multi-size .ico.
 
 A tall tile and two square ones on a graphite rounded square; the amber one is the selected tile.
 Colors are Brace tokens: surface-raised, border-default, surface-active and accent.
 
-    python scripts/genera-icona.py src/Quiver.App/Assets/quiver.ico [preview.png]
+    python scripts/genera-icona.py src/Inlay.App/Assets/inlay.ico [preview.png]
 """
 import struct
 import sys

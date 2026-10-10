@@ -4,7 +4,7 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 
 ## Un'operazione nuova che si annulla
 
-1. **Il passo**, in `src/Quiver.Core/UndoHistory.cs`: un `sealed record XxxStep(…) : UndoStep` con tutto quello che serve per tornare indietro: i percorsi di prima e di dopo, i valori di prima, un `MetadataSnapshot` se delle cartelle escono dall'archivio.
+1. **Il passo**, in `src/Inlay.Core/UndoHistory.cs`: un `sealed record XxxStep(…) : UndoStep` con tutto quello che serve per tornare indietro: i percorsi di prima e di dopo, i valori di prima, un `MetadataSnapshot` se delle cartelle escono dall'archivio.
 2. **L'operazione**, in `MainViewModel`:
    - se tocca i file: `using var turn = await BeginFileWork("Faccio questo…", touches)`, con quello che l'operazione cambia (`FileTouches`, per sapere quali altre possono andare insieme), la shell con `RunShell(…)`, i metadati che seguono (`FollowFolder`, `ForgetFolder`), poi `Remember(step, turn)`, che mette il passo al posto dell'operazione nel registro, `Report(…)` per l'avviso con **Annulla** e **Mostra**, `SelectAfterReload(…)` e `ReloadUnlessEditing()`;
    - se tocca solo i metadati: `ChangeMetadata(m => m.SetXxx(…), new XxxStep(…))`.
@@ -50,14 +50,14 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 
 ## Un'opzione della riga di comando
 
-1. **`Services/CommandLine.cs`**: il campo in `CommandLineOptions` e il caso in `Parse`. Un comando per il Quiver già aperto va anche in `Commands` e in `App.Execute`.
+1. **`Services/CommandLine.cs`**: il campo in `CommandLineOptions` e il caso in `Parse`. Un comando per l'Inlay già aperto va anche in `Commands` e in `App.Execute`.
 2. Per un'anteprima: in `PreviewRenderer.Render`, lo stato da preparare prima di disegnare.
 3. **I test** in `CommandLineTests`; **i documenti**: **Riga di comando** nel README e la tabella in [windows.md](windows.md#la-riga-di-comando-commandlineoptions).
 
 ## Un'icona, o un tipo di file
 
 1. Cercarla prima tra le icone di Brace (`Brace/Brace.Icons.xaml`).
-2. Se manca, il posto giusto è Brace; intanto si può disegnare in `Themes/Quiver.xaml` come `Quiver.Icon.Xxx16`, monocromatica, da portare in Brace più avanti.
+2. Se manca, il posto giusto è Brace; intanto si può disegnare in `Themes/Inlay.xaml` come `Inlay.Icon.Xxx16`, monocromatica, da portare in Brace più avanti.
 3. Per un tipo di file nuovo: un valore in `FileKind`, le sue estensioni in `FileKinds`, la sua icona in `Views/FileGlyphs.cs`, e un caso in `FileKindTests`.
 
 ## Un cambiamento alla tela

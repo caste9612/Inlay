@@ -1,6 +1,6 @@
 # Le operazioni sui file
 
-Spostare, copiare, collegare, rinominare, creare, eliminare e annullare: come sono fatte, e cosa le rende sicure. Le regole di base (cosa succede trascinando, il Cestino, il registro dei passi) stanno in `Quiver.Core` e sono descritte in [archivio.md](archivio.md). Qui c'è come le usa l'app, quasi tutto in `MainViewModel`.
+Spostare, copiare, collegare, rinominare, creare, eliminare e annullare: come sono fatte, e cosa le rende sicure. Le regole di base (cosa succede trascinando, il Cestino, il registro dei passi) stanno in `Inlay.Core` e sono descritte in [archivio.md](archivio.md). Qui c'è come le usa l'app, quasi tutto in `MainViewModel`.
 
 I principi da rispettare sono quelli di [PROGETTO.md §3](../PROGETTO.md#3-principi): niente cancellazioni definitive, niente sovrascritture silenziose, ogni operazione si può annullare.
 
@@ -10,7 +10,7 @@ I principi da rispettare sono quelli di [PROGETTO.md §3](../PROGETTO.md#3-princ
 |---|---|
 | trascinare file su un riquadro o un argomento | `Transfer`, oppure `SaveDropped` per allegati e link ([più sotto](#trascinare)) |
 | `Ctrl+V`, «Incolla collegamento» | `PasteInto`, `PasteLinksInto` |
-| «Sposta in…», «Invia a Quiver» | `AskDestination` → `SendTo` → `Transfer` |
+| «Sposta in…», «Invia a Inlay» | `AskDestination` → `SendTo` → `Transfer` |
 | `Canc` | `AskRecycle` → `Recycle` |
 | `F2`, secondo clic lento | `BeginRename`, poi `CommitRename` o `CancelRename` |
 | nuovo riquadro, argomento, cartella, collegamento | `NewTile`, `NewTopic`, `NewFolder`, `AskNewLink` |
@@ -54,11 +54,11 @@ Il tipo di operazione (spostare, copiare o collegare) lo decide chi chiama: per 
 - **`PasteInto(folder)`**: rifiuta di incollare una cartella dentro se stessa. Dopo un taglio svuota subito gli appunti, perché un secondo `Ctrl+V` durante lo spostamento non provi a spostare di nuovo gli stessi file, e sposta; dopo una copia, copia.
 - **`PasteLinksInto(folder)`**: collegamenti ai file degli appunti, che restano dove sono.
 
-## «Sposta in…» e «Invia a Quiver»
+## «Sposta in…» e «Invia a Inlay»
 
 - **`AskDestination(paths)`** apre l'elenco dei posti (`DestinationPickerViewModel`) con le destinazioni di `ArchiveReader.ReadDestinations`, tolte quelle dove l'operazione non farebbe niente. Se tutti gli elementi hanno già un loro posto (programmi, cose in rete), l'elenco crea collegamenti invece di spostare.
 - **`SendTo`** ricorda la destinazione tra le recenti (`RecentDestinations`) e fa partire `Transfer` senza aspettarlo: l'elenco si chiude subito.
-- **«Invia a Quiver»** in Explorer lancia `Quiver.exe --sort <file>…`; l'istanza unica passa i file a quella aperta, che mostra la finestra e chiama `AskDestination` ([windows.md](windows.md#listanza-unica-singleinstance)).
+- **«Invia a Inlay»** in Explorer lancia `Inlay.exe --sort <file>…`; l'istanza unica passa i file a quella aperta, che mostra la finestra e chiama `AskDestination` ([windows.md](windows.md#listanza-unica-singleinstance)).
 - **`ShowNotice`** («Mostra» su un avviso): sulla bacheca apre l'argomento dove sono finiti gli elementi e li seleziona; sulla tela vola al riquadro (`ShowOnCanvasRequested`).
 
 ## Collegamenti
@@ -118,7 +118,7 @@ Allegati e messaggi di Outlook, link e immagini del browser non sono ancora file
 Le garanzie:
 
 - **Un annullamento non sovrascrive mai niente**: rimette le cose solo in posti liberi.
-- **Elimina per sempre solo una cartella vuota creata da Quiver** (`CreateStep`). Tutto il resto passa dal Cestino, e dove il Cestino non c'è l'annullamento non si fa.
+- **Elimina per sempre solo una cartella vuota creata da Inlay** (`CreateStep`). Tutto il resto passa dal Cestino, e dove il Cestino non c'è l'annullamento non si fa.
 - **Quello che è cambiato nel frattempo resta com'è**, e l'avviso dice quanti elementi sono stati lasciati stare.
 - **Il registro si svuota cambiando archivio** (`LoadArchive`). Vive solo in memoria, fino a 50 passi.
 
@@ -131,10 +131,10 @@ I trascinamenti sono gestiti in `Views/PanelView.xaml.cs`, che decide cosa fare 
 | Cosa | Dati del trascinamento | Effetti permessi |
 |---|---|---|
 | righe di un riquadro o dei risultati della ricerca (la selezione, o la riga sola se non era selezionata) | `FileDrop` con i percorsi: li capiscono anche Explorer, la posta e gli altri programmi | spostare, copiare, collegare |
-| un riquadro, preso per il titolo (solo se è una cartella sua) | `Quiver.Tile` con la cartella, più `FileDrop` con la cartella | spostare, copiare |
-| un argomento della barra laterale | `Quiver.Topic` con la chiave dei metadati: lo capisce solo Quiver, così un argomento non esce dall'archivio trascinandolo in Explorer | spostare |
+| un riquadro, preso per il titolo (solo se è una cartella sua) | `Inlay.Tile` con la cartella, più `FileDrop` con la cartella | spostare, copiare |
+| un argomento della barra laterale | `Inlay.Topic` con la chiave dei metadati: lo capisce solo Inlay, così un argomento non esce dall'archivio trascinandolo in Explorer | spostare |
 
-Mentre si trascina, `DragLabelAdorner` mostra accanto al puntatore il nome o «N elementi». Un trascinamento che finisce fuori da Quiver lo esegue il programma che lo riceve, per esempio Explorer: Quiver non registra niente, e il suo `Ctrl+Z` non lo annulla.
+Mentre si trascina, `DragLabelAdorner` mostra accanto al puntatore il nome o «N elementi». Un trascinamento che finisce fuori da Inlay lo esegue il programma che lo riceve, per esempio Explorer: Inlay non registra niente, e il suo `Ctrl+Z` non lo annulla.
 
 ### Dove si può lasciare, e cosa succede (`PlanDrop`)
 
@@ -151,4 +151,4 @@ Le destinazioni sono i riquadri, lo sfondo della bacheca (la cartella dell'argom
 
 - **`DragOver`** mostra l'effetto (spostare, copiare, collegare) e illumina la destinazione: il bordo del riquadro in `accent`, o la riga dell'argomento in `accent-subtle`. Per un riquadro, una riga o un argomento che cambia posto, `InsertionAdorner` disegna la linea dove andrà.
 - **Aprire restando sopra**: con un trascinamento di file sopra un argomento o un pulsante di sotto-argomento per 700 ms, la bacheca passa lì, come le cartelle di Explorer. Il conto parte quando si entra, e muoversi lì sopra non lo fa ripartire. Non succede trascinando un riquadro o un argomento.
-- **`Drop`** risponde sempre «nessun effetto» al programma da cui arrivano i file: lo spostamento o la copia li fa Quiver, e l'altro programma non deve cancellare niente. Il lavoro parte con `Dispatcher.BeginInvoke`, a trascinamento finito, così una copia lunga non tiene bloccato l'altro programma. L'unica eccezione è `SaveDropped`, che deve leggere il contenuto mentre il rilascio è ancora in corso.
+- **`Drop`** risponde sempre «nessun effetto» al programma da cui arrivano i file: lo spostamento o la copia li fa Inlay, e l'altro programma non deve cancellare niente. Il lavoro parte con `Dispatcher.BeginInvoke`, a trascinamento finito, così una copia lunga non tiene bloccato l'altro programma. L'unica eccezione è `SaveDropped`, che deve leggere il contenuto mentre il rilascio è ancora in corso.

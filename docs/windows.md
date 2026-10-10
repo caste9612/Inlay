@@ -1,13 +1,13 @@
 # L'app e Windows
 
-Come Quiver parte, vive nell'area di notifica, gestisce la sua finestra e parla con la shell di Windows. Il codice sta in `src/Quiver.App`: `Program.cs`, `App.xaml.cs`, `PanelWindow.xaml.cs`, `SettingsWindow.xaml.cs`, e le cartelle `Services` e `Interop`.
+Come Inlay parte, vive nell'area di notifica, gestisce la sua finestra e parla con la shell di Windows. Il codice sta in `src/Inlay.App`: `Program.cs`, `App.xaml.cs`, `PanelWindow.xaml.cs`, `SettingsWindow.xaml.cs`, e le cartelle `Services` e `Interop`.
 
 ## L'avvio (`Program`, `App`)
 
-`Program.Main` è il punto di partenza al posto di quello generato da WPF (`<StartupObject>` nel csproj), perché Velopack deve passare prima di tutto: quando Windows lancia Quiver per installarlo, aggiornarlo o toglierlo, Velopack fa la sua parte e chiude il processo prima di qualunque finestra.
+`Program.Main` è il punto di partenza al posto di quello generato da WPF (`<StartupObject>` nel csproj), perché Velopack deve passare prima di tutto: quando Windows lancia Inlay per installarlo, aggiornarlo o toglierlo, Velopack fa la sua parte e chiude il processo prima di qualunque finestra.
 
 - Dopo l'installazione: avvio con Windows e voce in «Invia a».
-- Dopo un aggiornamento: se la voce di «Invia a» c'è, viene riscritta, perché punti al `Quiver.exe` nuovo.
+- Dopo un aggiornamento: se la voce di «Invia a» c'è, viene riscritta, perché punti al `Inlay.exe` nuovo.
 - Prima della disinstallazione: toglie l'avvio con Windows e la voce di «Invia a».
 
 Poi `App.OnStartup`, in quest'ordine:
@@ -15,8 +15,8 @@ Poi `App.OnStartup`, in quest'ordine:
 1. Legge la riga di comando (`CommandLineOptions.Parse`, [più sotto](#la-riga-di-comando-commandlineoptions)).
 2. Con `--render-preview` disegna l'anteprima ed esce; con `--benchmark-canvas` misura la tela ([test.md](test.md#verificare-linterfaccia-senza-aprirla)). Nessuno dei due tocca l'istanza già aperta.
 3. Aggancia `DispatcherUnhandledException`: un errore imprevisto finisce nel log e in un messaggio, e l'app resta aperta.
-4. Istanza unica: se Quiver è già aperto gli passa il comando (di solito `toggle`, `sort` se ci sono file) ed esce. Se non è aperto e il comando è `--exit`, esce e basta.
-5. Carica le impostazioni. L'archivio è quello di `--archive`, che vale solo per quell'avvio, o quello delle impostazioni. Se non c'è, o non esiste più, apre la finestra Impostazioni come benvenuto; se l'utente non sceglie niente, esce.
+4. Istanza unica: se Inlay è già aperto gli passa il comando (di solito `toggle`, `sort` se ci sono file) ed esce. Se non è aperto e il comando è `--exit`, esce e basta.
+5. La prima volta prende le impostazioni e i posti recenti di Quiver, il nome di Inlay fino alla 0.3.2 (`FromQuiver.TakeOverSettings`: li copia da `%APPDATA%\Quiver` se `%APPDATA%\Inlay` non c'è ancora). Poi carica le impostazioni. L'archivio è quello di `--archive`, che vale solo per quell'avvio, o quello delle impostazioni. Se non c'è, o non esiste più, apre la finestra Impostazioni come benvenuto; se l'utente non sceglie niente, esce.
 6. Crea `MainViewModel` e `PanelWindow`, e chiama `Prepare()`: la finestra nasce e si dispone senza comparire, così la prima apertura è veloce come le altre.
 7. Crea l'icona nella tray e registra la scorciatoia; se la scorciatoia è occupata, lo dice con un avviso della tray.
 8. Comincia ad ascoltare i comandi delle altre istanze.
@@ -26,45 +26,45 @@ Poi `App.OnStartup`, in quest'ordine:
 
 ### L'uscita
 
-`ShutdownMode` è `OnExplicitShutdown`: chiudere una finestra non chiude Quiver. Si esce solo con **Esci** nel menu della tray o con `--exit` (`App.Quit`). Se un'operazione sui file è in corso, Quiver lo dice e aspetta che finisca (`MainViewModel.WhenIdle`), per non lasciare un file copiato a metà. Lo stesso per la copia di un archivio su un altro disco (`ArchivesViewModel.WhenCopied`), che lascerebbe mezzo archivio. Quando Windows si spegne (`OnSessionEnding`) la finestra si chiude subito, ricordando dov'era.
+`ShutdownMode` è `OnExplicitShutdown`: chiudere una finestra non chiude Inlay. Si esce solo con **Esci** nel menu della tray o con `--exit` (`App.Quit`). Se un'operazione sui file è in corso, Inlay lo dice e aspetta che finisca (`MainViewModel.WhenIdle`), per non lasciare un file copiato a metà. Lo stesso per la copia di un archivio su un altro disco (`ArchivesViewModel.WhenCopied`), che lascerebbe mezzo archivio. Quando Windows si spegne (`OnSessionEnding`) la finestra si chiude subito, ricordando dov'era.
 
 ## La finestra (`PanelWindow`)
 
-Una sola finestra, creata all'avvio e poi solo mostrata e nascosta. `OnClosing` annulla la chiusura e la nasconde (Alt+F4, il menu della barra delle applicazioni), tranne quando Quiver sta uscendo (`AllowClose`). La X della barra del titolo è un pulsante di Quiver, e chiama direttamente `HidePanel`.
+Una sola finestra, creata all'avvio e poi solo mostrata e nascosta. `OnClosing` annulla la chiusura e la nasconde (Alt+F4, il menu della barra delle applicazioni), tranne quando Inlay sta uscendo (`AllowClose`). La X della barra del titolo è un pulsante di Inlay, e chiama direttamente `HidePanel`.
 
 - **Cornice**: `WindowChrome` con `CaptionHeight` 32, bordi di 6 px per ridimensionare e niente vetro. La barra del titolo la disegna `PanelView`. Da ingrandita, Windows lascia la cornice invisibile fuori dallo schermo: il contenuto rientra di altrettanto (`HiddenFrame`, calcolato per i DPI del monitor) e la zona che trascina la finestra si allunga. `WindowCorners.MakeSmall` chiede gli angoli piccoli di Windows 11.
 - **La scorciatoia** (`Toggle`) segue `WindowToggle.Decide`: nascosta la mostra, ridotta la ripristina, dietro altre finestre la porta davanti, già davanti la rimette nella tray.
 - **Mostrare** (`ShowPanel`): ricorda la finestra che era davanti; la prima volta la mette dov'era l'ultima volta (`SetWindowPlacement`, che la sposta su uno schermo che c'è) o al centro del monitor in uso; poi `OnPanelShowing` rilegge l'archivio, la finestra compare, prende il focus, mette il cursore nella ricerca e anima il contenuto. Il tempo di apertura va nel log.
-- **Prendere il focus** (`BringToFront`): se Windows lo rifiuta, perché un altro programma lo tiene, Quiver condivide per un attimo l'input con il thread di quella finestra (`AttachThreadInput`) e riprova. Se non ci riesce, il log dice quale finestra era davanti.
+- **Prendere il focus** (`BringToFront`): se Windows lo rifiuta, perché un altro programma lo tiene, Inlay condivide per un attimo l'input con il thread di quella finestra (`AttachThreadInput`) e riprova. Se non ci riesce, il log dice quale finestra era davanti.
 - **Nascondere** (`HidePanel`): salva il posto, nasconde, avvisa il view model (`OnPanelHidden`) e ridà il focus alla finestra di prima, se c'è ancora, è visibile, non è ridotta a icona e non è nascosta da GlazeWM su un altro workspace (`DWMWA_CLOAKED`). Così Windows non sceglie una finestra a caso, che con GlazeWM potrebbe portare in primo piano un altro workspace.
 - **Tornando alla finestra** (dalla barra delle applicazioni, Alt+Tab o un clic) più di un secondo dopo averla mostrata, `OnWindowActivated` rilegge quello che è cambiato.
-- **Dopo un'operazione sui file**, le finestre della shell hanno preso il focus: la finestra se lo riprende, ma solo se davanti c'è ancora una finestra di Quiver o nessuna.
+- **Dopo un'operazione sui file**, le finestre della shell hanno preso il focus: la finestra se lo riprende, ma solo se davanti c'è ancora una finestra di Inlay o nessuna.
 - **Cosa ricorda**, nelle impostazioni: posizione e misura (in pixel, come le tiene Windows, e se era ingrandita), il pin «Sempre in primo piano» (`Topmost`), la vista (bacheca o tela) e la barra degli argomenti aperta o chiusa.
 
 ## La finestra Impostazioni (`SettingsWindow`)
 
-La prima volta si apre come finestra di benvenuto, con il titolo «Benvenuto in Quiver», e si chiude appena l'utente apre un archivio. Dopo, una alla volta, sulla pagina richiesta; aperta da un Quiver visibile gli appartiene e gli resta sopra. Chiudendola si fermano il controllo di una copia e il calcolo delle dimensioni degli archivi. Mentre la shell copia un archivio su un altro disco, invece, non si chiude (`ArchivesViewModel.TryClose`). Le pagine sono descritte in [interfaccia.md](interfaccia.md#le-impostazioni-settingsviewmodel-archivesviewmodel).
+La prima volta si apre come finestra di benvenuto, con il titolo «Benvenuto in Inlay», e si chiude appena l'utente apre un archivio. Dopo, una alla volta, sulla pagina richiesta; aperta da un Inlay visibile gli appartiene e gli resta sopra. Chiudendola si fermano il controllo di una copia e il calcolo delle dimensioni degli archivi. Mentre la shell copia un archivio su un altro disco, invece, non si chiude (`ArchivesViewModel.TryClose`). Le pagine sono descritte in [interfaccia.md](interfaccia.md#le-impostazioni-settingsviewmodel-archivesviewmodel).
 
 ## I file sul PC
 
 | Cosa | Dove | Chi |
 |---|---|---|
-| impostazioni | `%APPDATA%\Quiver\settings.json` | `AppSettings` |
-| destinazioni recenti di «Sposta in…» | `%APPDATA%\Quiver\recenti.json` | `RecentDestinations` |
-| log | `%LOCALAPPDATA%\Quiver\quiver.log` | `Log` |
-| avvio con Windows | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, valore `Quiver` | `Autostart` |
-| voce di «Invia a» | `Quiver.lnk` nella cartella SendTo dell'utente, con l'argomento `--sort` | `SendToShortcut` |
-| programma installato | `%LOCALAPPDATA%\Quiver` | Velopack ([rilascio.md](rilascio.md)) |
+| impostazioni | `%APPDATA%\Inlay\settings.json` | `AppSettings` |
+| destinazioni recenti di «Sposta in…» | `%APPDATA%\Inlay\recenti.json` | `RecentDestinations` |
+| log | `%LOCALAPPDATA%\Inlay\inlay.log` | `Log` |
+| avvio con Windows | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, valore `Inlay` | `Autostart` |
+| voce di «Invia a» | `Inlay.lnk` nella cartella SendTo dell'utente, con l'argomento `--sort` | `SendToShortcut` |
+| programma installato | `%LOCALAPPDATA%\Inlay` | Velopack ([rilascio.md](rilascio.md)) |
 
 - **`AppSettings`**: l'archivio in uso, l'elenco degli archivi (il più recente per primo), la scorciatoia (`Alt+E`, `DefaultHotkey`), il posto della finestra, il pin, la vista e la barra degli argomenti. Si salva scrivendo prima un `.tmp`, come i metadati dell'archivio. Un file che non è JSON valido fa partire con i valori predefiniti; com'era, viene copiato in `settings.json.corrupt`, come succede ad `archive.json`, e lo dice il log.
 - **`RecentDestinations`**: per ogni archivio, fino a 8 chiavi dei metadati, la più recente per prima. Sta fuori dall'archivio apposta: smistare un file non deve cambiare l'archivio.
 - **`Log`**: una riga per evento, con data e ora. Oltre 1 MB il file ricomincia da capo. I test lo mandano in un file loro.
-- **`Autostart`** e **`SendToShortcut`** dicono di essere attivi solo quando puntano proprio a questo `Quiver.exe`, non a una copia altrove. `WindowsIntegration` li offre alla finestra Impostazioni attraverso `IWindowsIntegration`, che nelle anteprime e nei test è finta.
+- **`Autostart`** e **`SendToShortcut`** dicono di essere attivi solo quando puntano proprio a questo `Inlay.exe`, non a una copia altrove. `WindowsIntegration` li offre alla finestra Impostazioni attraverso `IWindowsIntegration`, che nelle anteprime e nei test è finta.
 
 ## L'istanza unica (`SingleInstance`)
 
-- Un mutex `Local\Quiver.<utente>` dice se Quiver è già aperto.
-- Le altre istanze gli scrivono su una named pipe `Quiver.<utente>`, solo per lo stesso utente (`CurrentUserOnly`), aspettando al massimo 2 secondi.
+- Un mutex `Local\Inlay.<utente>` dice se Inlay è già aperto.
+- Le altre istanze gli scrivono su una named pipe `Inlay.<utente>`, solo per lo stesso utente (`CurrentUserOnly`), aspettando al massimo 2 secondi.
 - Il protocollo (`SingleInstance.Protocol`): una riga con il comando, poi una riga per ogni argomento. Un percorso può contenere spazi, mai un a capo.
 - I comandi sono `toggle`, `show`, `hide`, `exit` e `sort` (`Commands`). L'evento `CommandReceived` arriva su un thread in background e `App` lo passa al thread dell'interfaccia.
 
@@ -74,7 +74,7 @@ Una finestra solo per i messaggi (`HWND_MESSAGE`) riceve `WM_HOTKEY`. `TryRegist
 
 ## L'icona nella tray (`TrayIcon`)
 
-Con H.NotifyIcon. Un clic apre Quiver; il menu ha **Apri Quiver** (con la scorciatoia accanto), **Apri l'archivio in Explorer**, **Sempre in primo piano** (aggiornato a ogni apertura del menu, perché il pin si può cambiare anche dalla barra del titolo), **Archivi…**, **Impostazioni…** ed **Esci**. `ForceCreate(false)` evita che H.NotifyIcon metta il processo in «modalità efficienza», che rallenterebbe il pannello.
+Con H.NotifyIcon. Un clic apre Inlay; il menu ha **Apri Inlay** (con la scorciatoia accanto), **Apri l'archivio in Explorer**, **Sempre in primo piano** (aggiornato a ogni apertura del menu, perché il pin si può cambiare anche dalla barra del titolo), **Archivi…**, **Impostazioni…** ed **Esci**. `ForceCreate(false)` evita che H.NotifyIcon metta il processo in «modalità efficienza», che rallenterebbe il pannello.
 
 ## Cartelle di Windows (`WindowsFolders`)
 
@@ -92,7 +92,7 @@ Le chiamate alle API di Windows sono scritte a mano: quelle che servono in più 
 - **`ShellLinks`**: i collegamenti `.lnk`, con `IShellLinkW`. `CreateIn(folder, target)` copia un collegamento invece di farne uno che punta a un altro. Il nome viene da `NameFor`: per un programma la descrizione del file («Google Chrome» per `chrome.exe`), per un disco l'etichetta («Dati (D)»), per una condivisione «commesse su server», per il resto il nome del file con l'estensione; un nome che Windows non accetta diventa «Collegamento». La cartella di lavoro è quella del programma.
 - **`VirtualFiles`**: i file che esistono solo dentro un altro programma finché non vengono lasciati, come gli allegati e i messaggi di Outlook o i link e le immagini del browser. Arrivano come elenco di nomi (`FileGroupDescriptorW`) più il contenuto di ognuno (`FileContents`), da leggere durante il rilascio. `SaveTo` li scrive nella cartella: nomi resi sicuri (niente `..`, caratteri non validi sostituiti), nomi liberi come Explorer, data di modifica conservata. Un messaggio di Outlook arriva come `IStorage` e diventa un file `.msg`.
 - **`ShellNotify`**: avvisa Explorer dei cambiamenti fatti senza la shell, come un elemento rimesso a posto dal Cestino, e aggiorna l'icona del Cestino.
-- **`WindowCorners.MakeSmall`**: gli angoli piccoli di Windows 11 per le finestre disegnate da Quiver.
+- **`WindowCorners.MakeSmall`**: gli angoli piccoli di Windows 11 per le finestre disegnate da Inlay.
 - **`WindowInfo.Describe`**: processo, titolo e classe di una finestra, per il log.
 
 ## Gli altri servizi di Windows (`Services`)

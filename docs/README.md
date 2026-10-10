@@ -1,6 +1,6 @@
-# Quiver: la documentazione del codice
+# Inlay: la documentazione del codice
 
-Questi documenti spiegano com'è fatto il codice di Quiver e come ci si lavora. Cosa fa Quiver e come si usa è nel [README](../README.md); perché esiste, le sue regole e dove sta andando sono in [PROGETTO.md](../PROGETTO.md); cosa porta ogni versione è in [novita/](../novita).
+Questi documenti spiegano com'è fatto il codice di Inlay e come ci si lavora. Cosa fa Inlay e come si usa è nel [README](../README.md); perché esiste, le sue regole e dove sta andando sono in [PROGETTO.md](../PROGETTO.md); cosa porta ogni versione è in [novita/](../novita).
 
 Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2, poi controllati contro il codice e aggiornati con le correzioni fatte in quei giorni ([PROGETTO.md §10](../PROGETTO.md#10-prossimi-passi)).
 
@@ -9,7 +9,7 @@ Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2,
 | Documento | Cosa spiega |
 |---|---|
 | [architettura.md](architettura.md) | la soluzione, gli strati, dove sta ogni cosa, i thread, le scelte principali |
-| [archivio.md](archivio.md) | `Quiver.Core`: come si legge l'archivio, i metadati, le regole, il Cestino, la ricerca |
+| [archivio.md](archivio.md) | `Inlay.Core`: come si legge l'archivio, i metadati, le regole, il Cestino, la ricerca |
 | [operazioni-sui-file.md](operazioni-sui-file.md) | spostare, copiare, collegare, rinominare, eliminare, trascinare e annullare |
 | [interfaccia.md](interfaccia.md) | il pannello: view model, ricarica, ricerca, selezione, tastiera, menu, avvisi, impostazioni, Brace |
 | [tela.md](tela.md) | la tela: zone, camera, livelli, righe create quando servono, cosa manca |
@@ -24,14 +24,14 @@ Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2,
 Serve Windows 11 con l'SDK di .NET 10.
 
 ```powershell
-dotnet build Quiver.slnx
+dotnet build Inlay.slnx
 dotnet test
 .\scripts\New-DemoArchive.ps1 -Path D:\ArchivioDemo
-dotnet run --project src/Quiver.App -- --archive D:\ArchivioDemo
+dotnet run --project src/Inlay.App -- --archive D:\ArchivioDemo
 ```
 
 - `--archive` usa quell'archivio solo per questo avvio, senza cambiare quello delle impostazioni.
-- Se Quiver è già aperto (quello installato, per esempio), un secondo Quiver gli passa il comando e si chiude: per provare il codice nuovo bisogna prima uscire da quello aperto (**Esci** nel menu della tray). Le anteprime (`--render-preview`) e la misura della tela (`--benchmark-canvas`) invece funzionano anche con Quiver aperto.
+- Se Inlay è già aperto (quello installato, per esempio), un secondo Inlay gli passa il comando e si chiude: per provare il codice nuovo bisogna prima uscire da quello aperto (**Esci** nel menu della tray). Le anteprime (`--render-preview`) e la misura della tela (`--benchmark-canvas`) invece funzionano anche con Inlay aperto.
 - Per guardare un cambiamento dell'interfaccia senza aprire finestre: `--render-preview pannello.png` ([test.md](test.md#verificare-linterfaccia-senza-aprirla)).
 
 ## Glossario
@@ -40,7 +40,7 @@ L'interfaccia e i documenti parlano italiano, il codice inglese. Le parole sono 
 
 | Nell'interfaccia | Nel codice | Cos'è |
 |---|---|---|
-| archivio | archive, `Root` | la cartella che Quiver gestisce, segnata dalla cartella nascosta `.quiver` |
+| archivio | archive, `Root` | la cartella che Inlay gestisce, segnata dalla cartella nascosta `.inlay` |
 | argomento | `Topic`, `TopicViewModel` | una cartella nella barra laterale: quelle della radice, e quelle segnate `"kind": "topic"` |
 | sotto-argomento | `Topic.Children` | un argomento dentro un altro |
 | riquadro | `Tile`, `TileViewModel` | una sottocartella di un argomento, sulla sua bacheca |
@@ -57,13 +57,13 @@ L'interfaccia e i documenti parlano italiano, il codice inglese. Le parole sono 
 | collegamento | shortcut, `.lnk`, `.url`, `TransferKind.Link` | quello con cui entra ciò che ha già un suo posto |
 | «Sposta in…» | `DestinationPickerViewModel`, `Destination` | l'elenco dei posti dove mandare la selezione |
 | filtri della ricerca | `SearchQuery`, `SearchKind`, `tipo:`, `in:` | il tipo degli elementi e il posto dove cercarli, come pulsanti sopra i risultati o scritti nella casella |
-| «Invia a Quiver» | `SendToShortcut`, `--sort` | la voce nel menu «Invia a» di Explorer |
+| «Invia a Inlay» | `SendToShortcut`, `--sort` | la voce nel menu «Invia a» di Explorer |
 | annullare, passo | undo, `UndoStep`, `UndoHistory` | `Ctrl+Z` e quello che ricorda |
 | avviso | toast, `ToastViewModel` | il messaggio in basso a destra |
 | domanda | prompt, `PromptViewModel` | una conferma o un nome da scrivere, sopra la bacheca |
 | ordinamento, ordine a mano | `ItemSort`, `ByHand`, `Items` | come sono messi gli elementi di un riquadro |
 | misura | `TileSize` | le colonne e le righe di un riquadro |
 | promuovere, riportare a riquadro | promote, demote | far diventare una sottocartella un argomento, e viceversa |
-| scorciatoia | hotkey, `GlobalHotkey` | il tasto che porta Quiver davanti (`Alt+E`) |
-| area di notifica, tray | `TrayIcon` | dove Quiver aspetta |
-| finestra, pannello | `PanelWindow`, `PanelView` | la finestra di Quiver; «pannello» è il nome di quando compariva e spariva |
+| scorciatoia | hotkey, `GlobalHotkey` | il tasto che porta Inlay davanti (`Alt+E`) |
+| area di notifica, tray | `TrayIcon` | dove Inlay aspetta |
+| finestra, pannello | `PanelWindow`, `PanelView` | la finestra di Inlay; «pannello» è il nome di quando compariva e spariva |
