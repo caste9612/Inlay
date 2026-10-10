@@ -74,7 +74,7 @@ Una finestra solo per i messaggi (`HWND_MESSAGE`) riceve `WM_HOTKEY`. `TryRegist
 
 ## L'icona nella tray (`TrayIcon`)
 
-Con H.NotifyIcon. Un clic apre Inlay; il menu ha **Open Inlay** (con la scorciatoia accanto), **Open the vault in Explorer**, **Always on top** (aggiornato a ogni apertura del menu, perché il pin si può cambiare anche dalla barra del titolo), **Vaults…**, **Settings…**, **Restart to update to Inlay X** quando una versione nuova è pronta (`ShowUpdateReady`), **Check for updates** (solo per un Inlay installato) e **Quit**. `ForceCreate(false)` evita che H.NotifyIcon metta il processo in «modalità efficienza», che rallenterebbe il pannello.
+Con H.NotifyIcon. Un clic apre Inlay; il menu ha **Open Inlay** (con la scorciatoia accanto), **Open the vault in Explorer**, **Always on top** (aggiornato a ogni apertura del menu, perché il pin si può cambiare anche dalla barra del titolo), **Vaults…**, **Settings…**, **Restart to update to Inlay X** quando una versione nuova è pronta (`ShowUpdateReady`), **Check for updates** (solo per un Inlay installato: apre **Settings** › **About** e controlla) e **Quit**. Il tooltip dice la versione e la scorciatoia, «Inlay 0.3.5 (Alt+E)». `ForceCreate(false)` evita che H.NotifyIcon metta il processo in «modalità efficienza», che rallenterebbe il pannello.
 
 ## Cartelle di Windows (`WindowsFolders`)
 

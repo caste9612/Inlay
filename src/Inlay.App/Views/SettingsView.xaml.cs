@@ -1,7 +1,9 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Inlay.App.Services;
 using Inlay.App.ViewModels;
 
 namespace Inlay.App.Views;
@@ -26,6 +28,19 @@ public partial class SettingsView : UserControl
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Window.GetWindow(this)?.Close();
+
+    /// <summary>The releases on GitHub, with what each version brings, in the browser.</summary>
+    private void WhatsNew_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ShellLauncher.Open(UpdatesViewModel.ReleasesPage);
+        }
+        catch (Win32Exception exception)
+        {
+            Log.Write($"Could not open {UpdatesViewModel.ReleasesPage}: {exception.Message}");
+        }
+    }
 
     /// <summary>A combination was pressed: it is tried at once, and the field shows the one in use afterwards.</summary>
     private void HotkeyField_ShortcutCaptured(object? sender, string shortcut)

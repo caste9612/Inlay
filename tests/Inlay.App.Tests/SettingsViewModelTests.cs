@@ -93,7 +93,7 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     private SettingsViewModel Open(AppSettings settings, SettingsSection section = SettingsSection.Archives) =>
-        new(settings, _host, [], _windows, section);
+        new(settings, _host, [], _windows, new UpdatesViewModel("0.3.4", canUpdate: false, () => { }, () => { }), section);
 
     private AppSettings Settings() => AppSettings.Load(Path.Combine(_root, "settings.json"));
 

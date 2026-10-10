@@ -31,12 +31,13 @@ public enum SettingsSection
     Archives,
     Hotkey,
     Windows,
+    About,
 }
 
 /// <summary>
 /// The settings of this PC, each applied the moment it changes: the archives (as the vaults of Obsidian), the shortcut
-/// that opens the panel, and what Inlay sets in Windows. The first time, before any archive,
-/// the window greets and only the archives matter.
+/// that opens the panel, and what Inlay sets in Windows; and the page «About», with the version and its updates. The first
+/// time, before any archive, the window greets and only the archives matter.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
 {
@@ -65,12 +66,14 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _windowsProblem = "";
 
+    /// <param name="updates">The version and its updates, kept by the app, for the page «About».</param>
     internal SettingsViewModel(AppSettings settings, ISettingsHost host, IReadOnlyList<ReservedFolder> reserved, IWindowsIntegration windows,
-        SettingsSection section = SettingsSection.Archives)
+        UpdatesViewModel updates, SettingsSection section = SettingsSection.Archives)
     {
         _settings = settings;
         _host = host;
         _windows = windows;
+        Updates = updates;
         Archives = new ArchivesViewModel(settings, host, reserved);
         _section = section;
         _hotkey = settings.Hotkey;
@@ -79,6 +82,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     public ArchivesViewModel Archives { get; }
+
+    public UpdatesViewModel Updates { get; }
 
     /// <summary>The first time, before any archive: the window greets, and the other pages wait.</summary>
     public bool IsWelcome => Archives.IsWelcome;

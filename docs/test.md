@@ -17,7 +17,7 @@ dotnet test tests/Inlay.Tests
 dotnet test tests/Inlay.App.Tests --filter "FullyQualifiedName~MainViewModelTests"
 ```
 
-Il 10 ottobre 2026 passano tutti: 180 in `Inlay.Tests` (meno di un decimo di secondo) e 150 in `Inlay.App.Tests` (4-6 secondi), 330 in tutto, come dicono le note della 0.3.3 e della 0.3.4. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, se ne sono andati quelli di «Da smistare», tolto, e ne sono arrivati 10 con le righe di «Generale», 8 in più con le operazioni che vanno insieme, 10 con i filtri della ricerca, 8 con le correzioni della rilettura che ne è seguita, 5 con il passaggio da Quiver a Inlay e 2 con gli aggiornamenti. Ogni nota di versione riporta quanti sono i test e che passano tutti.
+Il 10 ottobre 2026 passano tutti: 180 in `Inlay.Tests` (meno di un decimo di secondo) e 153 in `Inlay.App.Tests` (4-6 secondi), 333 in tutto. Le note della 0.3.3 e della 0.3.4 ne dicono 330: dopo ne sono arrivati 3 con la pagina **About**. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, se ne sono andati quelli di «Da smistare», tolto, e ne sono arrivati 10 con le righe di «Generale», 8 in più con le operazioni che vanno insieme, 10 con i filtri della ricerca, 8 con le correzioni della rilettura che ne è seguita, 5 con il passaggio da Quiver a Inlay e 2 con gli aggiornamenti. Ogni nota di versione riporta quanti sono i test e che passano tutti.
 
 I test sono scritti con xUnit. I nomi dicono, come frasi, cosa deve succedere: `Undo_LeavesAloneWhatChangedSince`, `ATopicDroppedInsideAnother_TakesItsFolderThere_StillATopic_AndCtrlZBringsItBack`.
 
@@ -53,6 +53,7 @@ Vede le parti interne dell'app (`InternalsVisibleTo`). Gli archivi stanno in `%T
 | `ShellFileOperationsTests` | spostare, copiare e rinominare con la shell vera, senza finestre (`interactive: false`); eliminare no, perché riempirebbe il Cestino |
 | `ShellLinksTests`, `VirtualFilesTests`, `ShellIconsTests` | collegamenti, allegati e link trascinati, icone di Windows |
 | `ArchivesViewModelTests`, `SettingsViewModelTests`, `AppSettingsTests` | archivi (creare, aprire, rinominare, spostare anche su un altro disco, con la copia su un thread a parte), impostazioni, salvataggio, file delle impostazioni rovinato messo da parte, impostazioni di Quiver prese al primo avvio |
+| `UpdatesViewModelTests` | la pagina **About**: la versione, la frase sugli aggiornamenti a ogni passo, i pulsanti, un Inlay lanciato dal codice |
 | `DestinationPickerViewModelTests`, `RecentDestinationsTests` | l'elenco di «Move to…» e le destinazioni recenti |
 | `CanvasCameraTests`, `CanvasWakeTests`, `TileListTests` | la camera, e le righe dei riquadri che arrivano quando servono |
 | `CoverPanelTests` | la scheda vista da lontano non fa mai crescere il riquadro che copre |

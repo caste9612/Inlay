@@ -85,10 +85,11 @@ internal static class PreviewRenderer
         {
             "hotkey" => SettingsSection.Hotkey,
             "windows" => SettingsSection.Windows,
+            "about" => SettingsSection.About,
             _ => SettingsSection.Archives,
         };
         var viewModel = new SettingsViewModel(settings, new PreviewHost(welcome ? null : root), WindowsFolders.ReservedForArchives(),
-            new PreviewWindows(), page);
+            new PreviewWindows(), new UpdatesViewModel(UpdatesViewModel.VersionOfTheCode(), canUpdate: true, () => { }, () => { }) { LastCheck = DateTime.Now }, page);
         Save(new SettingsView { DataContext = viewModel }, SettingsSize, output);
     }
 

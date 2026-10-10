@@ -15,8 +15,8 @@ public partial class App : Application, ISettingsHost
     private readonly CancellationTokenSource _stopping = new();
     private readonly WindowsIntegration _windows = new();
     private readonly IUpdater _updater = new GitHubUpdater();
+    private readonly UpdatesViewModel _updates;
     private DispatcherTimer? _updateTimer;
-    private bool _checkingUpdates;
     // The version the tray has told about: a new one is told once, not at every check.
     private string? _toldVersion;
     private SingleInstance? _singleInstance;
@@ -30,6 +30,11 @@ public partial class App : Application, ISettingsHost
 
     /// <summary>The archive chosen the first time, before the panel exists.</summary>
     private string? _chosenRoot;
+
+    public App()
+    {
+        _updates = new UpdatesViewModel(_updater.CurrentVersion ?? UpdatesViewModel.VersionOfTheCode(), _updater.IsSupported, CheckForUpdates, RestartToUpdate);
+    }
 
     string? IArchiveHost.CurrentRoot => _viewModel?.Root ?? _chosenRoot;
 
@@ -88,10 +93,10 @@ public partial class App : Application, ISettingsHost
         panel.ArchivesRequested += (_, _) => ShowSettings(SettingsSection.Archives);
         panel.Prepare();
 
-        _tray = new TrayIcon(_settings.Hotkey, ShowPanelFromTray, OpenArchiveFolder,
+        _tray = new TrayIcon(_updates.Version, _settings.Hotkey, ShowPanelFromTray, OpenArchiveFolder,
             () => ShowSettings(SettingsSection.Archives), () => ShowSettings(SettingsSection.Hotkey),
             () => panel.Topmost, value => panel.Topmost = value,
-            _updater.IsSupported ? () => CheckForUpdates(asked: true) : null, RestartToUpdate, Quit);
+            _updater.IsSupported ? CheckForUpdatesFromTray : null, RestartToUpdate, Quit);
         _viewModel.RestartToUpdateRequested += (_, _) => RestartToUpdate();
         _hotkey = new GlobalHotkey();
         _hotkey.Pressed += (_, _) => _panel.Toggle();
@@ -217,35 +222,40 @@ public partial class App : Application, ISettingsHost
         _updateTimer.Tick += (_, _) =>
         {
             _updateTimer.Interval = TimeSpan.FromHours(6);
-            CheckForUpdates(asked: false);
+            CheckForUpdates();
         };
         _updateTimer.Start();
     }
 
-    /// <summary>
-    /// Looks for a new version and downloads it in the background; once ready, the status bar and the menu of the tray
-    /// offer to restart into it, and the tray tells about it once.
-    /// </summary>
-    /// <param name="asked">From «Check for updates»: the answer is told also when there is nothing new, or a problem.</param>
-    private async void CheckForUpdates(bool asked)
+    /// <summary>«Check for updates» in the menu of the tray: the page «About» opens, and says how the check goes.</summary>
+    private void CheckForUpdatesFromTray()
     {
-        if (_checkingUpdates || _quitting)
+        ShowSettings(SettingsSection.About);
+        CheckForUpdates();
+    }
+
+    /// <summary>
+    /// Looks for a new version and downloads it in the background; once ready, the status bar, the menu of the tray and the
+    /// page «About» offer to restart into it, and the tray tells about it once. The page says how each check went.
+    /// </summary>
+    private async void CheckForUpdates()
+    {
+        if (!_updater.IsSupported || _updates.IsChecking || _quitting)
             return;
-        _checkingUpdates = true;
+        _updates.IsChecking = true;
         try
         {
             var version = await _updater.PrepareAsync(_stopping.Token);
+            _updates.LastCheck = DateTime.Now;
+            _updates.LastCheckFailed = false;
             if (version is null)
-            {
-                if (asked)
-                    _tray?.ShowInfo($"Inlay is up to date: this is version {_updater.CurrentVersion}.");
                 return;
-            }
             Log.Write($"Update ready: {version}");
+            _updates.ReadyVersion = version;
             if (_viewModel is not null)
                 _viewModel.UpdateReady = version;
             _tray?.ShowUpdateReady(version);
-            if (asked || _toldVersion != version)
+            if (_toldVersion != version)
             {
                 _toldVersion = version;
                 _tray?.ShowInfo($"Inlay {version} is ready: it updates when you quit, or right away with “Restart to update” in the menu of the icon.");
@@ -259,12 +269,11 @@ public partial class App : Application, ISettingsHost
         catch (Exception e)
         {
             Log.Write($"Could not look for updates: {e}");
-            if (asked)
-                _tray?.ShowWarning("Couldn't check for updates: the connection may be down. Try again later.");
+            _updates.LastCheckFailed = true;
         }
         finally
         {
-            _checkingUpdates = false;
+            _updates.IsChecking = false;
         }
     }
 
@@ -327,7 +336,7 @@ public partial class App : Application, ISettingsHost
     }
 
     private SettingsViewModel NewSettingsViewModel(SettingsSection section) =>
-        new(_settings, this, WindowsFolders.ReservedForArchives(), _windows, section);
+        new(_settings, this, WindowsFolders.ReservedForArchives(), _windows, _updates, section);
 
     void IArchiveHost.Use(string root)
     {

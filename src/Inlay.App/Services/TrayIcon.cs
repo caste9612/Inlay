@@ -13,14 +13,20 @@ internal sealed class TrayIcon : IDisposable
     private readonly System.Drawing.Icon _icon;
     private readonly MenuItem _open;
     private readonly MenuItem _restartToUpdate;
+    private readonly string _version;
 
+    /// <param name="version">The version running, as "0.3.4": the tooltip says it.</param>
     /// <param name="isTopmost">Whether the window stays above the others now: the pin of its title bar.</param>
     /// <param name="setTopmost">Changes it, as the pin does.</param>
-    /// <param name="checkForUpdates">«Check for updates»; null for an Inlay that cannot update itself, as one run from the code.</param>
+    /// <param name="checkForUpdates">
+    /// «Check for updates», which opens the page «About» of the settings; null for an Inlay that cannot update itself, as one
+    /// run from the code.
+    /// </param>
     /// <param name="restartToUpdate">«Restart to update», shown once a new version is ready (<see cref="ShowUpdateReady"/>).</param>
-    public TrayIcon(string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action showSettings,
+    public TrayIcon(string version, string shortcut, Action showPanel, Action openArchiveFolder, Action showArchives, Action showSettings,
         Func<bool> isTopmost, Action<bool> setTopmost, Action? checkForUpdates, Action restartToUpdate, Action exit)
     {
+        _version = version;
         var menu = new ContextMenu();
         menu.Items.Add(_open = CreateItem("Open Inlay", showPanel, shortcut));
         menu.Items.Add(CreateItem("Open the vault in Explorer", openArchiveFolder));
@@ -44,7 +50,7 @@ internal sealed class TrayIcon : IDisposable
         _icon = LoadIcon();
         _taskbarIcon = new TaskbarIcon
         {
-            ToolTipText = $"Inlay ({shortcut})",
+            ToolTipText = ToolTipFor(shortcut),
             Icon = _icon,
             ContextMenu = menu,
             NoLeftClickDelay = true,
@@ -68,9 +74,12 @@ internal sealed class TrayIcon : IDisposable
     /// <summary>The shortcut changed in the settings: the tooltip and the menu say the new one.</summary>
     public void UpdateShortcut(string shortcut)
     {
-        _taskbarIcon.ToolTipText = $"Inlay ({shortcut})";
+        _taskbarIcon.ToolTipText = ToolTipFor(shortcut);
         _open.InputGestureText = shortcut;
     }
+
+    /// <summary>"Inlay 0.3.4 (Alt+E)".</summary>
+    private string ToolTipFor(string shortcut) => $"Inlay {_version} ({shortcut})";
 
     public void Dispose()
     {

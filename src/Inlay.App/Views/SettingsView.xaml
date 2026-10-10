@@ -84,6 +84,12 @@
                             <TextBlock VerticalAlignment="Center" Text="Startup &amp; Explorer" />
                         </DockPanel>
                     </ListBoxItem>
+                    <ListBoxItem Tag="{x:Static vm:SettingsSection.About}">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Info16}" />
+                            <TextBlock VerticalAlignment="Center" Text="About" />
+                        </DockPanel>
+                    </ListBoxItem>
                 </ListBox>
             </DockPanel>
         </Border>
@@ -122,6 +128,34 @@
                 <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
                            Text="Right-click one or more files, Send to, Inlay: Inlay asks which tile to put them in." />
                 <TextBlock Margin="0,14,0,0" Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding WindowsProblem}" />
+            </StackPanel>
+
+            <!-- About: the version of Inlay, and its updates. The app keeps them up to date as it checks. -->
+            <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=About}">
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="About" />
+                <StackPanel DataContext="{Binding Updates}">
+                    <DockPanel Margin="0,16,0,0">
+                        <Image DockPanel.Dock="Left" Width="40" Height="40" Margin="0,0,12,0" Source="{StaticResource Inlay.Logo}"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource Brace.Text.Heading}" Text="Inlay" />
+                            <TextBlock Foreground="{DynamicResource Brace.TextSecondary}" Text="{Binding VersionText}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Margin="0,24,0,4" Style="{StaticResource Brace.FieldLabel}" Text="Updates" />
+                    <TextBlock MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Text="{Binding StatusText}" />
+                    <StackPanel Margin="0,12,0,0" Orientation="Horizontal" Visibility="{Binding CanUpdate, Converter={StaticResource Visible}}">
+                        <Button Margin="0,0,8,0" Style="{StaticResource Brace.Button.Primary}" Content="Restart to update" Command="{Binding RestartCommand}"
+                                Visibility="{Binding IsReady, Converter={StaticResource Visible}}" />
+                        <Button Style="{StaticResource Brace.Button}" Content="Check for updates" Command="{Binding CheckCommand}" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
+                               Visibility="{Binding CanUpdate, Converter={StaticResource Visible}}"
+                               Text="Inlay looks for new versions on GitHub a minute after it starts and then every six hours, and downloads them in the background." />
+                    <TextBlock Margin="0,18,0,0">
+                        <Hyperlink Click="WhatsNew_Click">What's new in each version</Hyperlink>
+                    </TextBlock>
+                </StackPanel>
             </StackPanel>
         </Grid>
     </Grid>
