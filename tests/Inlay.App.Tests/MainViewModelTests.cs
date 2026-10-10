@@ -693,6 +693,21 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
+    public void ANewVersionReady_ShowsInTheStatusBar_AndItsButtonAsksToRestart() => StaThread.Run(() =>
+    {
+        using var viewModel = Open();
+        var asked = 0;
+        viewModel.RestartToUpdateRequested += (_, _) => asked++;
+        Assert.Null(viewModel.UpdateText);
+
+        viewModel.UpdateReady = "0.4.0";
+        viewModel.RestartToUpdate();
+
+        Assert.Equal("Inlay 0.4.0 è pronto", viewModel.UpdateText);
+        Assert.Equal(1, asked);
+    });
+
+    [Fact]
     public void TheKeysWorthKnowing_SayTheShortcutInUse() => StaThread.Run(() =>
     {
         using var viewModel = Open();

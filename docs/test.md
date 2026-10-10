@@ -17,7 +17,7 @@ dotnet test tests/Inlay.Tests
 dotnet test tests/Inlay.App.Tests --filter "FullyQualifiedName~MainViewModelTests"
 ```
 
-Il 10 ottobre 2026 passano tutti: 180 in `Inlay.Tests` (meno di un decimo di secondo) e 148 in `Inlay.App.Tests` (4-6 secondi), 328 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, se ne sono andati quelli di «Da smistare», tolto, e ne sono arrivati 10 con le righe di «Generale», 8 in più con le operazioni che vanno insieme, 10 con i filtri della ricerca, 8 con le correzioni della rilettura che ne è seguita e 5 con il passaggio da Quiver a Inlay. Ogni nota di versione riporta quanti sono i test e che passano tutti.
+Il 10 ottobre 2026 passano tutti: 180 in `Inlay.Tests` (meno di un decimo di secondo) e 150 in `Inlay.App.Tests` (4-6 secondi), 330 in tutto. Alla 0.3.2 erano 290, come dice la sua nota; poi ne sono arrivati 4 con le correzioni del 9 e 10 ottobre, se ne sono andati quelli di «Da smistare», tolto, e ne sono arrivati 10 con le righe di «Generale», 8 in più con le operazioni che vanno insieme, 10 con i filtri della ricerca, 8 con le correzioni della rilettura che ne è seguita, 5 con il passaggio da Quiver a Inlay e 2 con gli aggiornamenti. Ogni nota di versione riporta quanti sono i test e che passano tutti.
 
 I test sono scritti con xUnit. I nomi dicono, come frasi, cosa deve succedere: `Undo_LeavesAloneWhatChangedSince`, `ATopicDroppedInsideAnother_TakesItsFolderThere_StillATopic_AndCtrlZBringsItBack`.
 
@@ -46,9 +46,10 @@ Vede le parti interne dell'app (`InternalsVisibleTo`). Gli archivi stanno in `%T
 
 | File | Cosa controlla |
 |---|---|
-| `MainViewModelTests` (65 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, cartelle che diventano righe di «Generale» e tornano riquadri, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Sposta in…», i filtri della ricerca, avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
+| `MainViewModelTests` (66 test) | rinomina, selezione dopo le ricariche, nuovi riquadri e cartelle, cartelle che diventano righe di «Generale» e tornano riquadri, `Ctrl+Z` (per spostamenti, rinomine, creazioni, ordini, misure, ordinamenti, promozioni e colori: non per copie, collegamenti ed eliminazioni, che userebbero il Cestino vero), argomenti trascinati, «Sposta in…», i filtri della ricerca, avvisi, barra di stato e tasti da sapere, spazio su disco, colori, la tela |
 | `BackgroundOperationsTests` | le operazioni sui thread a parte, con un dispatcher come quello della finestra: la finestra resta libera; con le operazioni trattenute (`ShellRunner`), quelle su file diversi vanno insieme, le altre aspettano, `Ctrl+Z` aspetta tutte, e due copie che insieme non ci starebbero non partono insieme |
 | `ShellThreadTests` | ogni operazione su un thread STA suo, insieme alle altre |
+| `UpdaterTests` | un Inlay non installato non cerca aggiornamenti; l'aggiornamento vero si prova solo con un Inlay installato e una release nuova |
 | `ShellFileOperationsTests` | spostare, copiare e rinominare con la shell vera, senza finestre (`interactive: false`); eliminare no, perché riempirebbe il Cestino |
 | `ShellLinksTests`, `VirtualFilesTests`, `ShellIconsTests` | collegamenti, allegati e link trascinati, icone di Windows |
 | `ArchivesViewModelTests`, `SettingsViewModelTests`, `AppSettingsTests` | archivi (creare, aprire, rinominare, spostare anche su un altro disco, con la copia su un thread a parte), impostazioni, salvataggio, file delle impostazioni rovinato messo da parte, impostazioni di Quiver prese al primo avvio |

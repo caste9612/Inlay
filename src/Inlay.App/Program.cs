@@ -9,10 +9,15 @@ namespace Inlay.App;
 /// </summary>
 public static class Program
 {
+    /// <summary>The version Velopack has just updated to and started again, as "0.4.0": the tray says so. Null otherwise.</summary>
+    internal static string? UpdatedTo { get; private set; }
+
     [STAThread]
     public static void Main()
     {
         VelopackApp.Build()
+            // Started again after «Riavvia e aggiorna».
+            .OnRestarted(version => UpdatedTo = version.ToString())
             // Installed: Inlay starts with Windows, as an app of the tray should, and Explorer gets «Invia a Inlay».
             .OnAfterInstallFastCallback(_ =>
             {

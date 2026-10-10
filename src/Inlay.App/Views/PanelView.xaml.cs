@@ -1774,6 +1774,8 @@ public partial class PanelView : UserControl
     /// <summary>The archive in the status bar: its folder in Explorer.</summary>
     private void StatusArchive_Click(object sender, RoutedEventArgs e) => ViewModel.OpenFolder(ViewModel.Root);
 
+    private void RestartToUpdate_Click(object sender, RoutedEventArgs e) => ViewModel.RestartToUpdate();
+
     private void ShortcutsButton_Click(object sender, RoutedEventArgs e)
     {
         // A click on the «?» with the keys open closes them on its way down: on its way up it does not open them again.

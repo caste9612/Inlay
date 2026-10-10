@@ -12,7 +12,8 @@ Scarica **Inlay-win-Setup.exe** dalle [release](https://github.com/caste9612/Inl
 - Serve il runtime .NET 10 Desktop: se manca, l'installer lo scarica.
 - L'installer non è firmato, quindi Windows può avvisare: **Ulteriori informazioni**, poi **Esegui comunque**.
 - Si disinstalla da **Impostazioni > App**; l'archivio, con i tuoi file, resta dov'è.
-- **Se avevi Quiver**: installa Inlay, poi disinstalla Quiver da **Impostazioni > App**, perché non partano tutti e due con Windows. Al primo avvio Inlay prende le impostazioni di Quiver (archivi, scorciatoia, finestra) e i posti recenti; ogni archivio, la prima volta che Inlay lo apre, passa la sua cartella nascosta da `.quiver` a `.inlay`, con tutto quello che contiene. Se in GlazeWM hai regole o tasti con `Quiver.exe`, scrivi `Inlay.exe`.
+- **Aggiornamenti**: Inlay si aggiorna da solo dalle release di GitHub. Un minuto dopo l'avvio, e poi ogni sei ore, controlla se c'è una versione nuova e la scarica in sottofondo. Quando è pronta lo dicono un avviso della tray e la barra di stato, «Inlay X è pronto»: un clic riavvia Inlay aggiornato, dopo le operazioni sui file in corso; altrimenti si aggiorna quando esci. **Cerca aggiornamenti**, nel menu dell'icona, controlla subito. Le versioni segnate come da provare (pre-release) non arrivano da sole.
+- **Se avevi Quiver**: installa Inlay, poi disinstalla Quiver da **Impostazioni > App**, perché non partano tutti e due con Windows. Al primo avvio Inlay prende le impostazioni di Quiver (archivi, scorciatoia, finestra) e i posti recenti; ogni archivio, la prima volta che Inlay lo apre, passa la sua cartella nascosta da `.quiver` a `.inlay`, con tutto quello che contiene. Se in GlazeWM hai regole o tasti con `Quiver.exe`, scrivi `Inlay.exe`. Questo passaggio si fa a mano una volta sola: Quiver non sapeva aggiornarsi, Inlay sì.
 
 Al primo avvio Inlay dà il benvenuto e chiede l'archivio: creane uno nuovo o usa una cartella che hai già.
 

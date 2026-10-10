@@ -26,7 +26,7 @@ Poi `App.OnStartup`, in quest'ordine:
 
 ### L'uscita
 
-`ShutdownMode` è `OnExplicitShutdown`: chiudere una finestra non chiude Inlay. Si esce solo con **Esci** nel menu della tray o con `--exit` (`App.Quit`). Se un'operazione sui file è in corso, Inlay lo dice e aspetta che finisca (`MainViewModel.WhenIdle`), per non lasciare un file copiato a metà. Lo stesso per la copia di un archivio su un altro disco (`ArchivesViewModel.WhenCopied`), che lascerebbe mezzo archivio. Quando Windows si spegne (`OnSessionEnding`) la finestra si chiude subito, ricordando dov'era.
+`ShutdownMode` è `OnExplicitShutdown`: chiudere una finestra non chiude Inlay. Si esce solo con **Esci** nel menu della tray o con `--exit` (`App.Quit`), oppure con «Riavvia e aggiorna», che esce per applicare una versione nuova ([rilascio.md](rilascio.md#velopack-nellapp)): tutti e due passano da `BeginLeaving`. Se un'operazione sui file è in corso, Inlay lo dice e aspetta che finisca (`MainViewModel.WhenIdle`), per non lasciare un file copiato a metà. Lo stesso per la copia di un archivio su un altro disco (`ArchivesViewModel.WhenCopied`), che lascerebbe mezzo archivio. Quando Windows si spegne (`OnSessionEnding`) la finestra si chiude subito, ricordando dov'era.
 
 ## La finestra (`PanelWindow`)
 
@@ -74,7 +74,7 @@ Una finestra solo per i messaggi (`HWND_MESSAGE`) riceve `WM_HOTKEY`. `TryRegist
 
 ## L'icona nella tray (`TrayIcon`)
 
-Con H.NotifyIcon. Un clic apre Inlay; il menu ha **Apri Inlay** (con la scorciatoia accanto), **Apri l'archivio in Explorer**, **Sempre in primo piano** (aggiornato a ogni apertura del menu, perché il pin si può cambiare anche dalla barra del titolo), **Archivi…**, **Impostazioni…** ed **Esci**. `ForceCreate(false)` evita che H.NotifyIcon metta il processo in «modalità efficienza», che rallenterebbe il pannello.
+Con H.NotifyIcon. Un clic apre Inlay; il menu ha **Apri Inlay** (con la scorciatoia accanto), **Apri l'archivio in Explorer**, **Sempre in primo piano** (aggiornato a ogni apertura del menu, perché il pin si può cambiare anche dalla barra del titolo), **Archivi…**, **Impostazioni…**, **Riavvia e aggiorna a Inlay X** quando una versione nuova è pronta (`ShowUpdateReady`), **Cerca aggiornamenti** (solo per un Inlay installato) ed **Esci**. `ForceCreate(false)` evita che H.NotifyIcon metta il processo in «modalità efficienza», che rallenterebbe il pannello.
 
 ## Cartelle di Windows (`WindowsFolders`)
 

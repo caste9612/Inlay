@@ -127,6 +127,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string? _rootFilesText;
 
+    /// <summary>A new version of Inlay downloaded and ready, as "0.4.0": the status bar offers to restart into it. Null when none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UpdateText))]
+    private string? _updateReady;
+
     [ObservableProperty]
     private PromptViewModel? _prompt;
 
@@ -167,6 +172,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>«Mostra» on the canvas: the view flies to the tile of this folder, where the items are selected.</summary>
     public event EventHandler<string>? ShowOnCanvasRequested;
+
+    /// <summary>The button of the status bar: the app restarts into the new version, once the operations on the files end.</summary>
+    public event EventHandler? RestartToUpdateRequested;
 
     /// <summary>
     /// Raised after the topics and the board were read again. Their elements are new, so the view puts back the
@@ -210,6 +218,12 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     /// <summary>The archive in the status bar: where it is, and what a click on it does.</summary>
     public string ArchiveToolTip => $"{_root}: apri in Explorer";
+
+    /// <summary>"Inlay 0.4.0 è pronto", in the status bar; null when there is no new version.</summary>
+    public string? UpdateText => UpdateReady is { } version ? $"Inlay {version} è pronto" : null;
+
+    /// <summary>«Inlay X è pronto» in the status bar, clicked.</summary>
+    public void RestartToUpdate() => RestartToUpdateRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>The folder the board shows: files pasted or dropped on its background go there.</summary>
     public string? BoardFolder => _selectedTopic?.Topic.FullPath;

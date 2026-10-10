@@ -805,6 +805,16 @@
                             <Path Style="{StaticResource Brace.StatusIcon}" Margin="0" Data="{StaticResource Brace.Icon.QuestionCircle16}" />
                         </Button>
                     </StatusBarItem>
+                    <!-- A new version of Inlay, downloaded and ready: a click restarts into it; otherwise it applies on exit. -->
+                    <StatusBarItem DockPanel.Dock="Right" Margin="0,0,8,0" Visibility="{Binding UpdateText, Converter={StaticResource NullToVisibility}}">
+                        <Button Style="{StaticResource Brace.StatusBar.Button}" Click="RestartToUpdate_Click"
+                                ToolTip="Un clic riavvia Inlay aggiornato, appena finiscono le operazioni sui file in corso. Altrimenti si aggiorna quando esci.">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.ArrowDownload16}" />
+                                <TextBlock VerticalAlignment="Center" Text="{Binding UpdateText}" />
+                            </StackPanel>
+                        </Button>
+                    </StatusBarItem>
                     <StatusBarItem DockPanel.Dock="Right" ToolTip="{Binding DiskToolTip}"
                                    Visibility="{Binding DiskText, Converter={StaticResource NullToVisibility}}">
                         <StackPanel Orientation="Horizontal">
