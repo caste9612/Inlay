@@ -814,6 +814,8 @@ public partial class PanelView : UserControl
         var paths = selected.Select(row => row.Item.FullPath).ToArray();
         // A plain list of files: Explorer, mail and other programs understand it too.
         var data = new DataObject(DataFormats.FileDrop, paths.Length > 0 ? paths : [item.Item.FullPath]);
+        // Out of Inlay, on the Desktop or in a folder, a copy: the archive keeps its files.
+        FileClipboard.PreferCopy(data);
         ShowDragLabel(paths.Length > 1 ? $"{paths.Length} items" : item.Name);
         // Dropped in the same tile, the rows change place there: only those of that tile are in hand.
         _dragSourceTile = list.DataContext as TileViewModel;
@@ -1084,8 +1086,9 @@ public partial class PanelView : UserControl
             return;
         var data = new DataObject();
         data.SetData(TileFormat, tile.FolderPath);
-        // As a folder too: dropped on a topic it moves there, dropped on Explorer it moves out of the archive.
+        // As a folder too: dropped on a topic it moves there; dropped on Explorer it is copied out of the archive.
         data.SetFileDropList([tile.FolderPath]);
+        FileClipboard.PreferCopy(data);
         ShowDragLabel(tile.Title);
         try
         {

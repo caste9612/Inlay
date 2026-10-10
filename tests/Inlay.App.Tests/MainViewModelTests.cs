@@ -704,7 +704,7 @@ public sealed class MainViewModelTests : IDisposable
     });
 
     [Fact]
-    public void ANewVersionReady_ShowsInTheStatusBar_AndItsButtonAsksToRestart() => StaThread.Run(() =>
+    public void ANewVersionReady_ShowsInTheTitleBar_AndItsButtonAsksToRestart() => StaThread.Run(() =>
     {
         using var viewModel = Open();
         var asked = 0;
@@ -714,7 +714,8 @@ public sealed class MainViewModelTests : IDisposable
         viewModel.UpdateReady = "0.4.0";
         viewModel.RestartToUpdate();
 
-        Assert.Equal("Inlay 0.4.0 is ready", viewModel.UpdateText);
+        Assert.Equal("Update to 0.4.0", viewModel.UpdateText);
+        Assert.StartsWith("Inlay 0.4.0 is ready", viewModel.UpdateToolTip);
         Assert.Equal(1, asked);
     });
 

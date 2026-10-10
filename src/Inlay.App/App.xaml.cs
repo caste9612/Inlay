@@ -258,7 +258,7 @@ public partial class App : Application, ISettingsHost
             if (_toldVersion != version)
             {
                 _toldVersion = version;
-                _tray?.ShowInfo($"Inlay {version} is ready: it updates when you quit, or right away with “Restart to update” in the menu of the icon.");
+                _tray?.ShowInfo($"Inlay {version} is ready: it updates when you quit, or right away with “Update to {version}” at the top of Inlay.");
             }
         }
         catch (OperationCanceledException)

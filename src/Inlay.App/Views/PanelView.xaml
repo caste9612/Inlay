@@ -745,6 +745,18 @@
                                 <TextBlock MaxWidth="200" VerticalAlignment="Center" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                         </Button>
+                        <!-- A new version of Inlay, downloaded and ready, in the accent: here it is seen also when the notice of the tray
+                             went by. A click restarts into it, as soon as the file operations under way finish; otherwise it applies
+                             on exit. -->
+                        <Button DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center" Style="{StaticResource Brace.Button.Primary.Small}"
+                                WindowChrome.IsHitTestVisibleInChrome="True" Click="RestartToUpdate_Click"
+                                Visibility="{Binding UpdateText, Converter={StaticResource NullToVisibility}}"
+                                ToolTip="{Binding UpdateToolTip}" AutomationProperties.Name="{Binding UpdateText}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.ArrowDownload16}" />
+                                <TextBlock VerticalAlignment="Center" Text="{Binding UpdateText}" />
+                            </StackPanel>
+                        </Button>
                         <!-- The search in the middle of the bar, 280 wide and control-sm tall as in br-titlebar; narrower when the
                              window is. Either side of it the bar is free to drag the window by. -->
                         <Grid Margin="16,0">
@@ -774,7 +786,8 @@
 
                 <!-- Status bar, as br-statusbar and as in Explorer. On the left how many items the archive has and what they
                      take, or the operation under way; on the right the selection, the free space of the disk and the keys worth
-                     knowing. What an operation did, with Undo and Show, comes in a toast instead. -->
+                     knowing. What an operation did, with Undo and Show, comes in a toast instead, and a new version in the title
+                     bar. -->
                 <StatusBar DockPanel.Dock="Bottom">
                     <StatusBar.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -816,17 +829,6 @@
                         <Button x:Name="ShortcutsButton" Style="{StaticResource Brace.StatusBar.Button}" ToolTip="Keyboard shortcuts"
                                 AutomationProperties.Name="Keyboard shortcuts" Click="ShortcutsButton_Click">
                             <Path Style="{StaticResource Brace.StatusIcon}" Margin="0" Data="{StaticResource Brace.Icon.QuestionCircle16}" />
-                        </Button>
-                    </StatusBarItem>
-                    <!-- A new version of Inlay, downloaded and ready: a click restarts into it; otherwise it applies on exit. -->
-                    <StatusBarItem DockPanel.Dock="Right" Margin="0,0,8,0" Visibility="{Binding UpdateText, Converter={StaticResource NullToVisibility}}">
-                        <Button Style="{StaticResource Brace.StatusBar.Button}" Click="RestartToUpdate_Click"
-                                AutomationProperties.Name="{Binding UpdateText}"
-                                ToolTip="Click to restart Inlay on the new version, as soon as the file operations under way finish. Otherwise it updates when you quit.">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Style="{StaticResource Brace.StatusIcon}" Data="{StaticResource Brace.Icon.ArrowDownload16}" />
-                                <TextBlock VerticalAlignment="Center" Text="{Binding UpdateText}" />
-                            </StackPanel>
                         </Button>
                     </StatusBarItem>
                     <StatusBarItem DockPanel.Dock="Right" ToolTip="{Binding DiskToolTip}"

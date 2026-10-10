@@ -129,9 +129,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string? _rootFilesText;
 
-    /// <summary>A new version of Inlay downloaded and ready, as "0.4.0": the status bar offers to restart into it. Null when none.</summary>
+    /// <summary>A new version of Inlay downloaded and ready, as "0.4.0": the title bar offers to restart into it. Null when none.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UpdateText))]
+    [NotifyPropertyChangedFor(nameof(UpdateText), nameof(UpdateToolTip))]
     private string? _updateReady;
 
     [ObservableProperty]
@@ -221,10 +221,14 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>The archive in the status bar, which does not say its name: where it is, and what a click on it does.</summary>
     public string ArchiveToolTip => $"{_root}: click to open it in Explorer";
 
-    /// <summary>"Inlay 0.4.0 is ready", in the status bar; null when there is no new version.</summary>
-    public string? UpdateText => UpdateReady is { } version ? $"Inlay {version} is ready" : null;
+    /// <summary>"Update to 0.4.0", the button of the title bar; null when there is no new version.</summary>
+    public string? UpdateText => UpdateReady is { } version ? $"Update to {version}" : null;
 
-    /// <summary>«Inlay X is ready» in the status bar, clicked.</summary>
+    public string? UpdateToolTip => UpdateReady is { } version
+        ? $"Inlay {version} is ready: click to restart on it, as soon as the file operations under way finish. Otherwise it updates when you quit."
+        : null;
+
+    /// <summary>«Update to X» in the title bar, clicked.</summary>
     public void RestartToUpdate() => RestartToUpdateRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>The folder the board shows: files pasted or dropped on its background go there.</summary>

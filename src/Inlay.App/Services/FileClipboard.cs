@@ -30,6 +30,13 @@ internal static class FileClipboard
         }
     }
 
+    /// <summary>
+    /// Files dragged out of Inlay are copied, whatever the drives: Explorer takes the effect the data prefers as the one it
+    /// does without keys, and Shift still moves. Inside Inlay its own rules decide.
+    /// </summary>
+    public static void PreferCopy(DataObject data) =>
+        data.SetData(DropEffectFormat, new MemoryStream(BitConverter.GetBytes(DropEffectCopy)));
+
     /// <returns>False when another program is holding the clipboard.</returns>
     public static bool Put(IReadOnlyList<string> paths, bool cut)
     {

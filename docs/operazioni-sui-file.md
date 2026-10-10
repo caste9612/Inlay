@@ -134,7 +134,7 @@ I trascinamenti sono gestiti in `Views/PanelView.xaml.cs`, che decide cosa fare 
 | un riquadro, preso per il titolo (solo se è una cartella sua) | `Inlay.Tile` con la cartella, più `FileDrop` con la cartella | spostare, copiare |
 | un argomento della barra laterale | `Inlay.Topic` con la chiave dei metadati: lo capisce solo Inlay, così un argomento non esce dall'archivio trascinandolo in Explorer | spostare |
 
-Mentre si trascina, `DragLabelAdorner` mostra accanto al puntatore il nome o «N items». Un trascinamento che finisce fuori da Inlay lo esegue il programma che lo riceve, per esempio Explorer: Inlay non registra niente, e il suo `Ctrl+Z` non lo annulla.
+Mentre si trascina, `DragLabelAdorner` mostra accanto al puntatore il nome o «N items». Un trascinamento che finisce fuori da Inlay lo esegue il programma che lo riceve, per esempio Explorer: Inlay non registra niente, e il suo `Ctrl+Z` non lo annulla. I dati portano «Preferred DropEffect» con la copia (`FileClipboard.PreferCopy`), e Explorer, senza tasti, fa quella invece di spostare sullo stesso disco: fuori da Inlay si copia sempre, e con `Shift` si sposta. Provato su una cartella di Explorer chiedendole l'effetto con `IDropTarget.DragEnter`: sullo stesso disco spostava, con la preferenza copia, e con `Shift` sposta.
 
 ### Dove si può lasciare, e cosa succede (`PlanDrop`)
 
