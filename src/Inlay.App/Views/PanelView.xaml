@@ -517,8 +517,10 @@
                 <Border Style="{StaticResource NearOnly}">
                     <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource TileTemplate}" views:CanvasSurface.Level="Near" />
                 </Border>
+                <!-- From afar files dropped on the card go into the tile, as close up. -->
                 <Border CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource Brace.BorderDefault}" Background="{DynamicResource Brace.SurfaceRaised}"
-                        Style="{StaticResource AfarOnly}" ToolTip="Double-click to zoom in" MouseLeftButtonDown="TileSummary_MouseLeftButtonDown">
+                        Style="{StaticResource AfarOnly}" ToolTip="Double-click to zoom in" MouseLeftButtonDown="TileSummary_MouseLeftButtonDown"
+                        AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
                     <Grid>
                         <!-- The color of the tile, along its left edge. -->
                         <Border Width="8" HorizontalAlignment="Left" CornerRadius="6,0,0,6" Background="{Binding ColorBrush}"
@@ -542,8 +544,10 @@
              Its tiles are laid out as on a board, in the columns of the zone. Its name has the menu of its topic. -->
         <DataTemplate DataType="{x:Type vm:ZoneViewModel}">
             <Grid>
+                <!-- Files dropped on the zone, outside its tiles, go into its topic, among its loose ones: also into an empty zone. -->
                 <Border x:Name="ZoneFrame" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
-                        BorderThickness="1" CornerRadius="10" Padding="16,12,16,16">
+                        BorderThickness="1" CornerRadius="10" Padding="16,12,16,16"
+                        AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
                     <StackPanel>
                         <!-- The name of the zone, as the title of a board. A double click shows the zone whole. From afar the zones of
                              the root have their name above them instead; those inside keep this one until the farthest level. -->

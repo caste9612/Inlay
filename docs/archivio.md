@@ -86,7 +86,7 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 
 ## Spostare, copiare o collegare (`TransferRules`)
 
-`Choose(sources, destination, …)` decide cosa fa un trascinamento, come Explorer. La usa anche «Move to…», per scartare i posti dove non farebbe niente; gli appunti no: quello che è stato tagliato si sposta, quello che è stato copiato si copia ([operazioni-sui-file.md](operazioni-sui-file.md#gli-appunti)).
+`Choose(sources, destination, …)` decide cosa fa un trascinamento, come Explorer, con un'eccezione: con `archiveRoot`, quello che entra nell'archivio da fuori si sposta anche da un altro disco. La usa anche «Move to…», per scartare i posti dove non farebbe niente; gli appunti no: quello che è stato tagliato si sposta, quello che è stato copiato si copia ([operazioni-sui-file.md](operazioni-sui-file.md#gli-appunti)).
 
 | Condizione | Risultato |
 |---|---|
@@ -95,7 +95,7 @@ Il formato del file, con un esempio, è in [PROGETTO.md §4, Metadati](../PROGET
 | `Ctrl` | copia (`Copy`) |
 | `Shift` | spostamento (`Move`) |
 | `preferLink`: gli elementi hanno già un loro posto | collegamento |
-| nessuna delle precedenti | spostamento sullo stesso disco, copia tra dischi diversi |
+| nessuna delle precedenti | spostamento sullo stesso disco; tra dischi diversi spostamento se entra nell'archivio da fuori (`archiveRoot`) e non viene da un disco rimovibile, altrimenti copia |
 
 - `HasItsOwnPlace(path, root)`: fuori dall'archivio, ed è un `.exe` o sta in rete (percorso `\\…` o disco di rete). È il principio 5 di PROGETTO.md: entra come collegamento.
 - `IsSameOrInside(path, folder)` è il confronto di percorsi usato un po' dappertutto, anche dall'app.

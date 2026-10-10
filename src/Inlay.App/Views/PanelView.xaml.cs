@@ -1404,6 +1404,8 @@ public partial class PanelView : UserControl
             {
                 TileViewModel tile => tile.FolderPath,
                 TopicViewModel topic => topic.Topic.FullPath,
+                // On the mosaic, the frame of a zone takes files for its topic, as the topic in the sidebar does.
+                ZoneViewModel zone => zone.Topic.Topic.FullPath,
                 _ => null,
             };
         if (destination is null)
@@ -1418,7 +1420,7 @@ public partial class PanelView : UserControl
             forceCopy: e.KeyStates.HasFlag(DragDropKeyStates.ControlKey),
             forceMove: e.KeyStates.HasFlag(DragDropKeyStates.ShiftKey),
             forceLink: e.KeyStates.HasFlag(DragDropKeyStates.AltKey),
-            preferLink: paths.All(path => TransferRules.HasItsOwnPlace(path, ViewModel.Root)));
+            preferLink: paths.All(path => TransferRules.HasItsOwnPlace(path, ViewModel.Root)), archiveRoot: ViewModel.Root);
         // Some sources only allow copying, others only moving.
         if (kind == TransferKind.Link && !e.AllowedEffects.HasFlag(DragDropEffects.Link))
             kind = e.AllowedEffects.HasFlag(DragDropEffects.Copy) ? TransferKind.Copy : TransferKind.None;
@@ -1500,6 +1502,13 @@ public partial class PanelView : UserControl
                     control.BorderBrush = (Brush)FindResource("Brace.Accent");
                 else
                     control.ClearValue(BorderBrushProperty);
+                break;
+            // The frame of a zone, and the card of a tile from afar, on the mosaic.
+            case Border border:
+                if (on)
+                    border.BorderBrush = (Brush)FindResource("Brace.Accent");
+                else
+                    border.ClearValue(Border.BorderBrushProperty);
                 break;
         }
     }

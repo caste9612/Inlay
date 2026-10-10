@@ -10,15 +10,23 @@ public enum TransferKind
     Link,
 }
 
-/// <summary>What dropping files onto a folder does, following the same rules as Explorer.</summary>
+/// <summary>
+/// What dropping files onto a folder does, following the same rules as Explorer, but one: what comes into the archive from
+/// outside is put away, moved even from another drive.
+/// </summary>
 public static class TransferRules
 {
     /// <param name="forceCopy">Ctrl held down.</param>
     /// <param name="forceMove">Shift held down.</param>
     /// <param name="forceLink">Alt held down. Ctrl and Shift together ask for a shortcut too, as in Explorer.</param>
     /// <param name="preferLink">Without keys, a shortcut: the items have a place of their own (see <see cref="HasItsOwnPlace"/>).</param>
+    /// <param name="archiveRoot">
+    /// The archive. Without keys, what comes into it from outside is moved even from another drive, as «Move to…» and «Send
+    /// to › Inlay» do: putting it away is the point, and a copy would leave it on the Desktop as well. From a removable
+    /// drive, as a USB stick, it is copied, as in Explorer. Null for the rule of Explorer alone.
+    /// </param>
     public static TransferKind Choose(IReadOnlyList<string> sources, string destination, bool forceCopy, bool forceMove,
-        bool forceLink = false, bool preferLink = false)
+        bool forceLink = false, bool preferLink = false, string? archiveRoot = null)
     {
         if (sources.Count == 0)
             return TransferKind.None;
@@ -40,7 +48,12 @@ public static class TransferRules
             return TransferKind.Move;
         if (preferLink)
             return TransferKind.Link;
-        return normalizedSources.All(source => IsSameVolume(source, destination)) ? TransferKind.Move : TransferKind.Copy;
+        if (normalizedSources.All(source => IsSameVolume(source, destination)))
+            return TransferKind.Move;
+        if (archiveRoot is not null && Normalize(archiveRoot) is var root && IsSameOrInside(destination, root) &&
+            normalizedSources.All(source => !IsSameOrInside(source, root) && !IsOnRemovableDrive(source)))
+            return TransferKind.Move;
+        return TransferKind.Copy;
     }
 
     /// <summary>
@@ -73,6 +86,18 @@ public static class TransferRules
         try
         {
             return Path.GetPathRoot(path) is { Length: > 0 } root && new DriveInfo(root).DriveType == DriveType.Network;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsOnRemovableDrive(string path)
+    {
+        try
+        {
+            return Path.GetPathRoot(path) is { Length: > 0 } root && new DriveInfo(root).DriveType is DriveType.Removable or DriveType.CDRom;
         }
         catch (ArgumentException)
         {

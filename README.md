@@ -60,7 +60,8 @@ L'interfaccia è in inglese, con parole sue: l'archivio è il **vault**, gli arg
 - **Copiare e spostare con gli appunti**: `Ctrl+C`, `Ctrl+X` e `Ctrl+V` funzionano anche da e verso Explorer. Si incolla nel riquadro o nell'argomento su cui hai cliccato, altrimenti nella bacheca; anche appena aperto il pannello, con la ricerca vuota. **Paste shortcut**, dal tasto destro, crea collegamenti ai file copiati, che restano dove sono.
 - **Tasto destro**: **Open with…**, **Move to…**, **Copy path**, **Properties** (anche con `Alt+Enter`) e le altre azioni.
 - **Trascinare**:
-  - un file su un riquadro o su un argomento lo sposta lì. Come in Explorer, tra dischi diversi viene copiato; con `Ctrl` copi, con `Shift` sposti, con `Alt` (o `Ctrl+Shift`) crei un collegamento;
+  - un file su un riquadro o su un argomento lo sposta lì. Quello che entra nell'archivio da fuori, per esempio dal Desktop, viene spostato anche da un altro disco, come con **Move to…**: altrimenti resterebbe anche sul Desktop. Da una chiavetta o da un altro disco rimovibile viene copiato, come in Explorer. Con `Ctrl` copi, con `Shift` sposti, con `Alt` (o `Ctrl+Shift`) crei un collegamento;
+  - sul mosaico, un file lasciato sulla cornice di una zona, fuori dai suoi riquadri, va nel suo argomento, tra i file di **General**: anche in una zona vuota. Da lontano, sulla scheda di un riquadro, va in quel riquadro;
   - una cartella lasciata su un argomento diventa una riga del suo **General**, invece di un riquadro con tutto il suo contenuto; vale anche incollandola o con **Move to…**. Lasciata su un riquadro, è un elemento di quel riquadro, come sempre;
   - se tieni fermo quello che trascini sopra un argomento, dopo un attimo la bacheca passa lì e lo lasci nel riquadro giusto, come con le cartelle di Explorer;
   - quello che ha già un suo posto entra come collegamento, come chiede il progetto: i programmi (`.exe`, come fa Explorer) e le cartelle e i file in rete;

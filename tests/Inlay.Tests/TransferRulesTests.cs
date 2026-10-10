@@ -13,6 +13,16 @@ public sealed class TransferRulesTests
         Assert.Equal(TransferKind.Copy, TransferRules.Choose([@"C:\Users\me\Downloads\file.txt"], @"D:\Archivio\B", false, false));
 
     [Fact]
+    public void IntoTheArchive_FromOutside_ItemsAreMoved_EvenFromAnotherDrive_ButCtrlStillCopies()
+    {
+        // From the Desktop on C: to an archive on D:, as «Move to…» does: otherwise the file stays on the Desktop too.
+        Assert.Equal(TransferKind.Move, TransferRules.Choose([@"C:\Users\me\Desktop\file.txt"], @"D:\Archivio\B", false, false, archiveRoot: @"D:\Archivio"));
+        Assert.Equal(TransferKind.Copy, TransferRules.Choose([@"C:\Users\me\Desktop\file.txt"], @"D:\Archivio\B", forceCopy: true, forceMove: false, archiveRoot: @"D:\Archivio"));
+        // Out of the archive, to another drive, Explorer's rule stays.
+        Assert.Equal(TransferKind.Copy, TransferRules.Choose([@"D:\Archivio\B\file.txt"], @"C:\Users\me\Desktop", false, false, archiveRoot: @"D:\Archivio"));
+    }
+
+    [Fact]
     public void CtrlCopies_AndShiftMoves()
     {
         Assert.Equal(TransferKind.Copy, TransferRules.Choose([@"D:\Archivio\A\file.txt"], @"D:\Archivio\B", forceCopy: true, forceMove: false));
