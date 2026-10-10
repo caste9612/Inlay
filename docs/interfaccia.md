@@ -137,7 +137,7 @@ Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che rest
 
 Disegnata da Inlay come `br-titlebar` di Brace, perché Brace per WPF non ne ha ancora una: logo e nome, il pulsante della barra laterale, la ricerca al centro (al massimo 280 punti, «Search the vault»), il badge dell'archivio in uso, il pin (legato a `Window.Topmost`), riduci, ingrandisci o ripristina, chiudi (che nasconde). Gli elementi che devono ricevere i clic dentro la zona della cornice hanno `WindowChrome.IsHitTestVisibleInChrome`.
 
-Il badge (`Inlay.ProjectBadge`) ha l'icona dell'archivio (`Brace.Icon.Database16`, la stessa della barra di stato e della pagina **Vaults**) e il nome dell'archivio, che compare solo qui: l'icona dice cos'è, e il tooltip anche («The vault in use: click to switch, create, rename or move vaults»). Un clic apre **Settings** › **Vaults**.
+Il badge (`Inlay.ProjectBadge`) è in due parti: «Vault», in `Brace.InfoSubtle` con il testo in `Brace.Info`, e il nome dell'archivio, che compare solo qui. Così si legge per quello che è, e il tooltip lo ripete («The vault in use: click to switch, create, rename or move vaults»). Un clic apre **Settings** › **Vaults**. Fino alla 0.3.5 c'era l'icona dell'archivio, `Brace.Icon.Database16`, che resta nella barra di stato e nella pagina **Vaults**.
 
 ## Colori
 

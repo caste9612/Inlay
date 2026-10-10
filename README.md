@@ -80,10 +80,11 @@ L'interfaccia è in inglese, con parole sue: l'archivio è il **vault**, gli arg
   - La rotella zooma attorno al puntatore, dal 10 % al 200 %; sopra un riquadro che scorre lo fa scorrere, e con `Ctrl` zooma sempre. Anche `Ctrl++` e `Ctrl+-`, o i pulsanti accanto alla percentuale.
   - Trascinando sul vuoto, o con la rotella premuta dovunque, si sposta la vista. Il doppio clic sul vuoto, **Show all** o `Ctrl+0` mettono in vista tutto l'archivio.
   - Da lontano le zone mostrano il nome e i riquadri sono blocchi, con la striscia del loro colore se ne hanno uno; a metà strada i riquadri hanno titolo, numero di elementi e i nomi dei primi, quanti ne entrano; da vicino, dal 70 % circa, sono i riquadri della bacheca, con gli stessi gesti. Le righe dei riquadri arrivano appena la vista si ferma, così spostarsi e zoomare restano fluidi anche con archivi grandi.
+  - Il tasto destro sul nome di una zona apre il menu del suo argomento, come nella barra laterale: **New tile**, **New space inside**, **Rename**, **Color**…
   - Un clic su un argomento nella barra laterale vola alla sua zona; il doppio clic sul nome di una zona la inquadra, quello su un riquadro visto da lontano ci vola sopra. Un clic su un risultato della ricerca vola al suo riquadro, con l'elemento selezionato.
 - **Creare**:
-  - un argomento: il pulsante + accanto a **Spaces**; dentro un altro argomento, tasto destro su quello (**New space inside**);
-  - un riquadro: **New tile**, `Ctrl+Shift+N` o tasto destro sulla bacheca;
+  - un argomento: il pulsante + accanto a **Spaces**, o **New space** in alto a destra sul mosaico; dentro un altro argomento, tasto destro su quello, o sul nome della sua zona (**New space inside**). Il nome si scrive nella barra degli argomenti, che si apre se era chiusa, e il mosaico vola sulla zona nuova;
+  - un riquadro: **New tile**, `Ctrl+Shift+N` o tasto destro sulla bacheca; sul mosaico, tasto destro sul nome di una zona, e la vista vola sul riquadro nuovo, abbastanza vicino da scriverne il nome;
   - una cartella in un riquadro: **New folder**, dal tasto destro sul riquadro o dal pulsante … accanto al titolo; in **General** è una delle sue righe;
   - un collegamento: **New shortcut…** dal tasto destro sul riquadro o sulla bacheca. Si scrive l'indirizzo di un sito, anche solo `rossi.it`, oppure il percorso di un programma, di un file o di una cartella.
 
@@ -97,7 +98,7 @@ L'interfaccia è in inglese, con parole sue: l'archivio è il **vault**, gli arg
 - **Copie lunghe**: mentre Windows sposta o copia, Inlay resta usabile e la barra di stato dice cosa sta facendo. Più operazioni su file diversi vanno avanti insieme, ognuna con la sua finestra di avanzamento; quelle sugli stessi file, o nella stessa cartella, aspettano il loro turno. La barra di stato dice quante sono in corso e quante in attesa, e passandoci sopra le elenca. `Ctrl+Z` aspetta che finiscano tutte e annulla l'ultima che hai chiesto, anche se una più vecchia finisce dopo; **Undo** su un avviso annulla proprio quella. **Quit** aspetta che finiscano tutte.
 - **Spazio su disco**: prima di copiare nell'archivio, o di spostarci file da un altro disco, Inlay conta quanto occupano; se non ci stanno lo dice e non comincia, invece di lasciare la copia a metà. Lo stesso vale per **Move…** di un archivio su un altro disco.
 - **Barra di stato**: a sinistra, con l'icona dell'archivio, quanti elementi contiene e quanto occupano (un clic lo apre in Explorer) e, se ce ne sono, i file sciolti nella radice; oppure l'operazione in corso; a destra, come in Explorer, quanti elementi sono selezionati e quanto pesano, lo spazio libero sul disco dell'archivio, in giallo quando resta meno del 10 % o meno di 5 GB, e **?**, con i tasti da sapere.
-- **Vaults**, gli archivi, come i vault di Obsidian: si aprono dal nome dell'archivio in uso, in alto a destra con l'icona dell'archivio, o da **Vaults…** nel menu della tray.
+- **Vaults**, gli archivi, come i vault di Obsidian: si aprono dal badge **Vault** in alto a destra, accanto al nome dell'archivio in uso, o da **Vaults…** nel menu della tray.
   - Ogni archivio è una cartella normale; la cartella nascosta `.inlay` lo segna come archivio e ne tiene la disposizione.
   - Puoi crearne uno nuovo, usare come archivio una cartella che hai già, passare dall'uno all'altro, rinominarli e toglierli dall'elenco. Togliere dall'elenco non tocca i file.
   - Sotto il nome di ogni archivio, quanto occupa, tutto compreso, e lo spazio libero sul suo disco. Lo conta in sottofondo, aprendo la pagina.

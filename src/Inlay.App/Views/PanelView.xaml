@@ -539,7 +539,7 @@
         </DataTemplate>
 
         <!-- A zone of the canvas: a topic with its tiles and, side by side below them, the zones of the topics inside it.
-             Its tiles are laid out as on a board, in the columns of the zone. -->
+             Its tiles are laid out as on a board, in the columns of the zone. Its name has the menu of its topic. -->
         <DataTemplate DataType="{x:Type vm:ZoneViewModel}">
             <Grid>
                 <Border x:Name="ZoneFrame" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
@@ -547,7 +547,8 @@
                     <StackPanel>
                         <!-- The name of the zone, as the title of a board. A double click shows the zone whole. From afar the zones of
                              the root have their name above them instead; those inside keep this one until the farthest level. -->
-                        <DockPanel Margin="2,0,2,12" Background="Transparent" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
+                        <DockPanel Margin="2,0,2,12" Background="Transparent" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown"
+                                   ContextMenu="{DynamicResource TopicMenu}" ContextMenuOpening="Zone_ContextMenuOpening">
                             <DockPanel.Style>
                                 <Style TargetType="DockPanel">
                                     <Style.Triggers>
@@ -644,7 +645,8 @@
                     <Border x:Name="ZoneLabel" Canvas.Left="0" Canvas.Bottom="8" Padding="10,5" CornerRadius="6" Background="{DynamicResource Brace.SurfaceOverlay}"
                             BorderBrush="{DynamicResource Brace.BorderDefault}" BorderThickness="1" RenderTransformOrigin="0,1"
                             RenderTransform="{Binding (views:CanvasSurface.LabelScale), RelativeSource={RelativeSource Self}}"
-                            ToolTip="Double-click to see the whole space" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown">
+                            ToolTip="Double-click to see the whole space" MouseLeftButtonDown="ZoneHeader_MouseLeftButtonDown"
+                            ContextMenu="{DynamicResource TopicMenu}" ContextMenuOpening="Zone_ContextMenuOpening">
                         <Border.MaxWidth>
                             <MultiBinding Converter="{StaticResource Quotient}">
                                 <Binding ElementName="ZoneFrame" Path="ActualWidth" />
@@ -727,14 +729,16 @@
                                       IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
                             <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Pin16}" />
                         </ToggleButton>
-                        <!-- The archive in use, the vault as in Obsidian: its icon, the same as in the status bar, says what the
-                             name is. A click opens the window of the vaults. -->
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Inlay.ProjectBadge}"
+                        <!-- The archive in use, the vault as in Obsidian: a badge in two parts, «Vault» and its name, so that it reads
+                             as what it is. A click opens the page of the vaults in the settings. -->
+                        <Button DockPanel.Dock="Right" Padding="0" Style="{StaticResource Inlay.ProjectBadge}"
                                 ToolTip="The vault in use: click to switch, create, rename or move vaults" AutomationProperties.Name="Vault"
                                 Click="Archives_Click">
                             <StackPanel Orientation="Horizontal">
-                                <Path Margin="-2,0,4,0" Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Database16}" />
-                                <TextBlock MaxWidth="200" VerticalAlignment="Center" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
+                                <Border Padding="6,0" CornerRadius="2,0,0,2" Background="{DynamicResource Brace.InfoSubtle}">
+                                    <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource Brace.Info}" Text="Vault" />
+                                </Border>
+                                <TextBlock Margin="6,0" MaxWidth="200" VerticalAlignment="Center" Text="{Binding ArchiveName}" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                         </Button>
                         <!-- The search in the middle of the bar, 280 wide and control-sm tall as in br-titlebar; narrower when the
@@ -1021,7 +1025,15 @@
                         <!-- The canvas: the whole archive at once, a zone for each topic, seen through a camera that zooms and moves. -->
                         <DockPanel Visibility="{Binding IsCanvasVisible, Converter={StaticResource Visible}}">
                             <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
-                                <ListBox DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
+                                <!-- Where the board has «New tile»: on the mosaic, made of spaces, a new space, which becomes a zone. -->
+                                <Button DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Primary}"
+                                        ToolTip="New space, in the vault" Click="NewTopic_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Add16}" />
+                                        <TextBlock VerticalAlignment="Center" Text="New space" />
+                                    </StackPanel>
+                                </Button>
+                                <ListBox DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
                                          SelectedIndex="{Binding ViewIndex, Mode=TwoWay}" />
                                 <Button DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Ghost}"
                                         Content="Show all" ToolTip="The whole vault in view (Ctrl+0, or double-click an empty spot)" Click="CanvasFitAll_Click" />

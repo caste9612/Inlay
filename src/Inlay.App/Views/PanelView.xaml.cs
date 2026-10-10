@@ -197,7 +197,7 @@ public partial class PanelView : UserControl
         var modifiers = Keyboard.Modifiers;
         if (key == Key.N && modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
         {
-            ViewModel.NewTile();
+            NewTile();
             e.Handled = true;
             return;
         }
@@ -502,6 +502,13 @@ public partial class PanelView : UserControl
     private void CanvasZoomIn_Click(object sender, RoutedEventArgs e) => CanvasSurface.ZoomBy(1.25);
 
     private void CanvasZoomOut_Click(object sender, RoutedEventArgs e) => CanvasSurface.ZoomBy(0.8);
+
+    /// <summary>The name of a zone has the menu of its topic, as in the sidebar: the menu works on the topic, not on the zone.</summary>
+    private void Zone_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ZoneViewModel zone, ContextMenu: { } menu })
+            menu.DataContext = zone.Topic;
+    }
 
     /// <summary>A double click on the name of a zone, close up or from afar, shows the zone whole.</summary>
     private void ZoneHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -1746,9 +1753,42 @@ public partial class PanelView : UserControl
 
     private void Archives_Click(object sender, RoutedEventArgs e) => ArchivesRequested?.Invoke(this, EventArgs.Empty);
 
-    private void NewTopic_Click(object sender, RoutedEventArgs e) => ViewModel.NewTopic(null);
+    private void NewTopic_Click(object sender, RoutedEventArgs e) => NewTopic(parent: null);
 
-    private void NewTile_Click(object sender, RoutedEventArgs e) => ViewModel.NewTile();
+    private void NewTile_Click(object sender, RoutedEventArgs e) => NewTile();
+
+    /// <summary>
+    /// A new topic, with its name ready to type in the sidebar, which opens if it was closed: on the mosaic it is the only
+    /// place to type it. On the mosaic the view also flies to the new zone.
+    /// </summary>
+    /// <param name="parent">Null for a topic in the root.</param>
+    private void NewTopic(TopicViewModel? parent)
+    {
+        ViewModel.IsSidebarOpen = true;
+        ViewModel.NewTopic(parent);
+        if (ViewModel.IsCanvasVisible)
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (ViewModel.SelectedTopic is { } topic && ViewModel.Canvas.ZoneOf(topic) is { } zone)
+                    ShowZone(zone);
+            }, DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
+    /// A new tile, with its name ready to type. On the mosaic the view flies to it, close enough for its field to show: from
+    /// afar a tile is only a card.
+    /// </summary>
+    /// <param name="topic">Null for the topic of the board.</param>
+    private void NewTile(TopicViewModel? topic = null)
+    {
+        ViewModel.NewTile(topic);
+        if (ViewModel.IsCanvasVisible)
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (ViewModel.Canvas.AllTiles().FirstOrDefault(tile => tile.IsEditing) is { } tile)
+                    ShowTile(tile);
+            }, DispatcherPriority.Loaded);
+    }
 
     private void Undo_Click(object sender, RoutedEventArgs e) => Observe(ViewModel.Undo());
 
@@ -2022,19 +2062,22 @@ public partial class PanelView : UserControl
     private void TopicNewTile_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<TopicViewModel>(sender) is { } topic)
-            ViewModel.NewTile(topic);
+            NewTile(topic);
     }
 
     private void TopicNewTopic_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<TopicViewModel>(sender) is { } topic)
-            ViewModel.NewTopic(topic);
+            NewTopic(topic);
     }
 
     private void TopicRename_Click(object sender, RoutedEventArgs e)
     {
-        if (DataContextOf<TopicViewModel>(sender) is { } topic)
-            ViewModel.BeginRename(topic);
+        if (DataContextOf<TopicViewModel>(sender) is not { } topic)
+            return;
+        // The name of a topic is typed in the sidebar, also from the name of its zone on the mosaic.
+        ViewModel.IsSidebarOpen = true;
+        ViewModel.BeginRename(topic);
     }
 
     private void TopicDemote_Click(object sender, RoutedEventArgs e)

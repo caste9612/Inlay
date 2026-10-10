@@ -81,6 +81,8 @@ Creare tutte le righe di tutti i riquadri di un archivio grande costava secondi 
 
 - Scegliere un argomento nella barra laterale vola alla sua zona (`ShowZone`); un clic su quello già scelto no.
 - Il doppio clic sul nome di una zona la inquadra; quello sulla scheda di un riquadro ci vola sopra (`ShowTile`).
+- Il tasto destro sul nome di una zona, l'intestazione da vicino o l'etichetta da lontano, apre `TopicMenu`, il menu dell'argomento: `Zone_ContextMenuOpening` gli dà come `DataContext` l'argomento della zona, e i gestori sono quelli della barra laterale.
+- **New space**, al posto di **New tile** della bacheca, crea un argomento nella radice. Il nome di un argomento si scrive nella barra laterale: `NewTopic` e **Rename** la aprono se è chiusa. Dopo un argomento nuovo la vista vola sulla sua zona; dopo un riquadro nuovo (dal menu di una zona o con `Ctrl+Shift+N`) vola sul riquadro, perché il campo del nome si vede solo da vicino.
 - Un clic su un risultato della ricerca, appena è chiaro che non è un doppio clic, chiude la ricerca, seleziona l'elemento e vola al suo riquadro; un file dentro una cartella di un riquadro si mostra come quella cartella. Il doppio clic invece apre.
 - **Show** su un avviso vola al riquadro dove sono finiti gli elementi.
 - `Ctrl+0` (o **Show all**), `Ctrl++`, `Ctrl+-` e i pulsanti accanto alla percentuale.

@@ -129,7 +129,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ ▣ Inlay   [ Search the vault           ]              ⛁ Archivio  ✕ │
+│ ▣ Inlay   [ Search the vault           ]        [Vault│Archivio]  ✕ │
 ├────────────────┬────────────────────────────────────────────────────┤
 │ Spaces       + │ Lavoro › Clienti                                   │
 │ ▾ Lavoro       │ Rossi              [ Board | Mosaic ] [+ New tile] │
@@ -148,7 +148,7 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 ```
 
 - **Lingua**: dalla 0.3.4 l'interfaccia è in inglese, con parole sue legate all'intarsio: l'archivio è il **vault**, gli argomenti gli **spaces**, i riquadri i **tiles**, «Generale» è **General**, la bacheca **Board** e la tela **Mosaic**; gli otto colori hanno i nomi delle pietre di un intarsio (Amber, Lapis, Amethyst, Rose, Jade, Citrine, Coral, Pearl). Questo documento usa le parole italiane, e scrive le voci dell'interfaccia come le mostra Inlay.
-- **In alto**: il logo, la ricerca su tutto l'archivio, il nome dell'archivio in uso con l'icona dell'archivio, perché si capisca cos'è (apre **Settings** sulla pagina **Vaults**), e il pulsante per chiudere.
+- **In alto**: il logo, la ricerca su tutto l'archivio, il badge **Vault** con il nome dell'archivio in uso, perché si capisca cos'è (apre **Settings** sulla pagina **Vaults**), e il pulsante per chiudere.
 - **Ricerca**: scrivendo, in qualunque punto del pannello, i risultati prendono il posto della bacheca. Cerca nei nomi di file e cartelle e in quelli delle cartelle che li contengono, senza maiuscole né accenti; ogni parola deve esserci, e i nomi che cominciano così vengono prima. Sopra i risultati, i filtri: dove cercare (ovunque, o in un argomento) e i tipi, che scrivono nella casella `in:Lavoro` e `type:pdf`; si possono anche scrivere a mano, `type:` anche con un'estensione, come `type:dwg`. Con i soli filtri l'elenco è dei più recenti. Il pulsante a imbuto nella casella offre gli stessi filtri prima di scrivere, e il **?** della barra di stato ricorda come si scrivono.
 - **Barra laterale**: l'albero degli argomenti, con + per crearne uno. È la navigazione principale, non un albero di file: righe da 32 px, nomi da 14 px (quelli del primo livello un po' più marcati) e le icone da 20 px che Brace dà alla navigazione. Quello scelto ha lo sfondo `accent-subtle` e la sua icona piena in `accent`, perché Brace tiene le icone piene per la selezione della navigazione principale. Si chiude e si riapre con il pulsante accanto al nome di Inlay, nella barra del titolo, o con `Ctrl+B`: chiusa non occupa spazio, e Inlay ricorda com'era (dalla 0.3.1).
 - **Bacheca**: il percorso e il nome dell'argomento, l'interruttore **Board | Mosaic**, il pulsante **New tile**, i sotto-argomenti come pulsanti e i riquadri in colonne, larghe almeno 280 px. Ogni riquadro ha il titolo, il numero di elementi e il menu …; ogni elemento ha la sua icona e la data di modifica. Un riquadro può occupare fino a tre colonne: se non ci sta in quello che resta della riga, va a capo.
@@ -161,10 +161,10 @@ Le impostazioni del singolo PC (archivio in uso ed elenco degli archivi, scorcia
 - **Icone dei file**: cartelle e tipi comuni hanno l'icona di Brace del loro concetto, dal suo dizionario «un concetto, un'icona». Ci sono PDF, Word, fogli di calcolo, presentazioni, immagini, video, audio, archivi compressi, codice, posta, pagine web e modelli 3D. Le icone sono monocromatiche come tutte quelle di Brace; quelle che mancavano sono state aggiunte a Brace stesso. I file che nessun programma del PC apre hanno il documento di Brace. I programmi, i collegamenti e i file dei programmi installati tengono l'icona di Windows, che per loro è un logo.
 - **Icona**: una bacheca con tre riquadri, uno dei quali ambra come un riquadro selezionato. È disegnata in `scripts/genera-icona.py`; il logo nella barra del titolo è lo stesso disegno, in `Themes/Inlay.xaml`.
 - **Barra del titolo** (dalla 0.2.2): la disegna Inlay, come `br-titlebar` dell'AppShell di Brace, perché Brace per WPF non ha ancora la sua.
-  - Alta `titlebar-height` (32 px), su `surface-base`: il logo e il nome, il pulsante della barra degli argomenti, la ricerca al centro (280 × 24), l'archivio come badge con la sua icona, il pin, poi riduci, ingrandisci e chiudi, larghi 46 px e alti quanto la barra. Chiudi diventa `danger` al passaggio, con l'icona in `text-on-accent`.
+  - Alta `titlebar-height` (32 px), su `surface-base`: il logo e il nome, il pulsante della barra degli argomenti, la ricerca al centro (280 × 24), l'archivio come badge in due parti, «Vault» e il nome, il pin, poi riduci, ingrandisci e chiudi, larghi 46 px e alti quanto la barra. Chiudi diventa `danger` al passaggio, con l'icona in `text-on-accent`.
   - Si trascina dove non ci sono controlli, e il doppio clic ingrandisce, come chiede Brace.
   - Il pin è quello di Pulse su Brace: un `Brace.IconButton` da 24 px che, attivo, ha l'icona in `accent` su `accent-subtle`, con l'icona `Pin16` normale in tutti e due gli stati. Dice «Always on top: on» o «off». C'è anche nel menu della tray, come in Hive e Pulse.
-  - Il badge dell'archivio è neutro, perché la barra tiene il suo unico ambra per il pin attivo.
+  - Il badge dell'archivio ha la parte «Vault» in `info-subtle`, non in ambra: la barra tiene il suo unico ambra per il pin attivo.
   - L'icona per ripristinare una finestra ingrandita manca in Brace: è disegnata in `Themes/Inlay.xaml` e va portata in Brace, insieme a una barra del titolo per WPF.
   - La finestra **Settings** ha la stessa barra, con il solo pulsante chiudi.
 
@@ -390,7 +390,7 @@ Le zone stanno dove le mette l'utente, e i posti restano nell'archivio: non salt
 
 ### Come si usa
 
-- **Board | Mosaic**: un interruttore in alto a destra, accanto a «New tile». Inlay ricorda l'ultima vista usata. La barra degli argomenti resta: un clic su un argomento vola sulla sua zona.
+- **Board | Mosaic**: un interruttore in alto a destra, accanto a «New tile» sulla bacheca e a «New space» sul mosaico. Inlay ricorda l'ultima vista usata. La barra degli argomenti resta: un clic su un argomento vola sulla sua zona.
 - **Zoom**: la rotella zooma attorno al puntatore, dal 10 % al 200 % (al 100 % un riquadro è grande come sulla bacheca). Al livello vicino, sopra un riquadro che scorre la rotella lo fa scorrere; con `Ctrl` zooma sempre. `Ctrl+0` mostra tutto, `+` e `-` zoomano.
 - **Spostare la vista**: trascinando sul vuoto, oppure con la rotella premuta, dovunque. Doppio clic sul vuoto: tutto in vista; sul titolo di una zona: la zona inquadrata.
 - **Tre livelli**, secondo lo zoom:
