@@ -75,6 +75,8 @@ Con la variabile d'ambiente `INLAY_UPDATES` Inlay cerca le versioni nuove in una
 
 Il 10 ottobre 2026 la prova, con le versioni da 0.9.0 a 0.9.3 e un archivio fatto da Quiver, ha dato: `.quiver` diventa `.inlay` alla prima apertura; ogni versione nuova arriva un minuto dopo l'avvio, anche come delta; si applica all'uscita e con il pulsante della barra di stato (riavvio in 3 secondi); un secondo `Inlay.exe --toggle` con una versione scaricata la lascia stare; archivio, metadati, impostazioni e posti recenti restano identici da una versione all'altra.
 
+Dal vero, da GitHub, la prima volta con la 0.3.4: l'Inlay 0.3.3 installato sul PC, riavviato, l'ha trovata 58 secondi dopo l'avvio e l'ha scaricata (`Inlay-0.3.4-full.nupkg`, 5,4 MB, in `%LOCALAPPDATA%\Inlay\packages`); all'uscita (`Inlay.exe --exit`, come **Esci** nel menu della 0.3.3) si è applicata in un secondo, e Inlay è ripartito come 0.3.4. Nessuno dei 21.063 file dell'archivio è cambiato, e nemmeno `archive.json` e le impostazioni; l'avvio con Windows punta a `current\Inlay.exe`, e la voce di «Invia a» è stata riscritta per la versione nuova.
+
 ## Compatibilità dei dati
 
 - `archive.json` non ha migrazioni: i campi nuovi si aggiungono solo quando servono, e una versione vecchia che non li conosce li perde al primo salvataggio, tenendo tutto il resto ([archivio.md](archivio.md#i-metadati-archivemetadata-metadatastore)). I file non si toccano mai.
