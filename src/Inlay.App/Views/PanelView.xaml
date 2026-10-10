@@ -1025,14 +1025,12 @@
                         <!-- The canvas: the whole archive at once, a zone for each topic, seen through a camera that zooms and moves. -->
                         <DockPanel Visibility="{Binding IsCanvasVisible, Converter={StaticResource Visible}}">
                             <DockPanel DockPanel.Dock="Top" Margin="20,16,20,12">
-                                <!-- «New tile», as on the board and in the same place: in the topic chosen in the sidebar, which the
-                                     tooltip names, and the view flies to it. -->
+                                <!-- Where the board has «New tile»: on the mosaic, made of spaces, a new space, which becomes a zone. -->
                                 <Button DockPanel.Dock="Right" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button.Primary}"
-                                        ToolTip="{Binding NewTileToolTip}" Click="NewTile_Click"
-                                        Visibility="{Binding SelectedTopic, Converter={StaticResource NullToVisibility}}">
+                                        ToolTip="New space, in the vault" Click="NewTopic_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Add16}" />
-                                        <TextBlock VerticalAlignment="Center" Text="New tile" />
+                                        <TextBlock VerticalAlignment="Center" Text="New space" />
                                     </StackPanel>
                                 </Button>
                                 <ListBox DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"

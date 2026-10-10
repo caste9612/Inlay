@@ -118,7 +118,7 @@ Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che rest
 - **`TileList`**, la lista di un riquadro: con `Rows` è alta esattamente quelle righe, misurate sullo schermo (`RowPitch`: al 125 % Windows arrotonda una riga da 22 a 22,4 punti); senza, segue i suoi elementi fino a 268 punti (`TileViewModel.UsualListHeight`), poco meno di dodici righe. Prende gli elementi da `Source` invece che da `ItemsSource`, perché sulla tela nasce addormentata ([tela.md](tela.md#le-righe-create-quando-servono)).
 - **L'angolo** (`ResizeGrip_*`): in larghezza scatta alle colonne della bacheca (al massimo 3, e non più di quelle che ci sono), in altezza a righe, ma solo se il trascinamento si è mosso di almeno mezza riga o il riquadro aveva già un'altezza. Alla fine `ResizeTile`; se il trascinamento viene interrotto, il riquadro torna com'era. Il doppio clic torna alla misura automatica.
 - **`TileGridPanel`** dispone i riquadri in colonne di almeno 280 punti, con 16 punti tra l'una e l'altra.
-- Sopra i riquadri, i sotto-argomenti come pulsanti; sopra ancora, il percorso, il titolo, l'interruttore «Board | Mosaic» e **New tile**, che c'è anche sul mosaico: il tooltip (`NewTileToolTip`) dice in quale argomento va, «New tile in “Lavoro” (Ctrl+Shift+N)».
+- Sopra i riquadri, i sotto-argomenti come pulsanti; sopra ancora, il percorso, il titolo, l'interruttore «Board | Mosaic» e **New tile**, il cui tooltip (`NewTileToolTip`) dice in quale argomento va, «New tile in “Lavoro” (Ctrl+Shift+N)»; sul mosaico, nello stesso posto, **New space**.
 
 ### Le icone degli elementi
 
