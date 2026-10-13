@@ -84,6 +84,12 @@
                             <TextBlock VerticalAlignment="Center" Text="Startup &amp; Explorer" />
                         </DockPanel>
                     </ListBoxItem>
+                    <ListBoxItem Tag="{x:Static vm:SettingsSection.Claude}">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Inlay.Icon.Claude16}" />
+                            <TextBlock VerticalAlignment="Center" Text="Claude" />
+                        </DockPanel>
+                    </ListBoxItem>
                     <ListBoxItem Tag="{x:Static vm:SettingsSection.About}">
                         <DockPanel>
                             <Path DockPanel.Dock="Left" Margin="0,0,8,0" Style="{StaticResource Kind}" Data="{StaticResource Brace.Icon.Info16}" />
@@ -128,6 +134,21 @@
                 <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
                            Text="Right-click one or more files, Send to, Inlay: Inlay asks which tile to put them in." />
                 <TextBlock Margin="0,14,0,0" Style="{StaticResource Brace.FieldError}" MaxWidth="560" HorizontalAlignment="Left" Text="{Binding WindowsProblem}" />
+            </StackPanel>
+
+            <!-- Claude: the prompt the chats of Claude Code start with, when asked about a folder of the vault. -->
+            <StackPanel Style="{StaticResource Page}" Visibility="{Binding Section, Converter={StaticResource SectionIs}, ConverterParameter=Claude}">
+                <TextBlock Style="{StaticResource Brace.Text.Title}" Text="Claude" />
+                <TextBlock Margin="0,6,0,18" MaxWidth="560" HorizontalAlignment="Left" TextWrapping="Wrap" Foreground="{DynamicResource Brace.TextSecondary}"
+                           Text="Right-click a space, a tile or a folder: Ask Claude about this folder opens Claude Code there, in Windows Terminal, and starts the chat with this prompt; Open Claude here starts it empty. The Claude buttons of the board and the mosaic use the prompt too." />
+                <TextBlock Style="{StaticResource Brace.FieldLabel}" Text="Prompt" />
+                <TextBox Width="560" HorizontalAlignment="Left" MinHeight="88" Padding="8,6" VerticalContentAlignment="Top"
+                         TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Prompt"
+                         Text="{Binding ClaudePrompt}" />
+                <TextBlock Style="{StaticResource Brace.FieldHint}" MaxWidth="560" HorizontalAlignment="Left"
+                           Text="Leave it empty to start every chat empty and write the request by hand. Claude Code must be installed: Inlay starts it with the claude command." />
+                <Button Margin="0,14,0,0" HorizontalAlignment="Left" Style="{StaticResource Brace.Button}" Content="Use the prompt of Inlay"
+                        Click="ResetClaudePrompt_Click" />
             </StackPanel>
 
             <!-- About: the version of Inlay, and its updates. The app keeps them up to date as it checks. -->

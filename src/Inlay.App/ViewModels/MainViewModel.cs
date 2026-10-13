@@ -399,6 +399,23 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
     public void OpenFolder(string path) => TryShell(() => ShellLauncher.Open(path), Path.GetFileName(path));
 
+    /// <summary>The prompt of the settings, read at each request: it changes while Inlay is open.</summary>
+    public Func<string?> ClaudePrompt { get; set; } = () => AppSettings.DefaultClaudePrompt;
+
+    /// <summary>
+    /// A chat of Claude Code in a folder of the vault: with the prompt of the settings, or empty to write the request by hand.
+    /// Claude itself asks, the first time, whether to trust the folder.
+    /// </summary>
+    public void AskClaude(string folder, bool withPrompt)
+    {
+        if (!ClaudeLauncher.IsInstalled())
+        {
+            Tell(ToastKind.Danger, "Claude Code isn't installed", "Inlay starts it with the claude command, which it can't find.");
+            return;
+        }
+        TryShell(() => ClaudeLauncher.Start(folder, withPrompt ? ClaudePrompt() : null), Path.GetFileName(folder.TrimEnd('\\', '/')));
+    }
+
     public void OpenWith(ItemViewModel item) => TryShell(() => ShellLauncher.OpenWith(item.Item.FullPath), item.Name);
 
     public void ShowProperties(string path) => TryShell(() => ShellLauncher.ShowProperties(path), Path.GetFileName(path));

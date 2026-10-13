@@ -38,6 +38,17 @@ internal sealed class AppSettings
     /// <summary>The topics on the left were closed last time.</summary>
     public bool SidebarClosed { get; set; }
 
+    /// <summary>The prompt Claude starts with when asked about a folder, until the user writes another one.</summary>
+    public const string DefaultClaudePrompt =
+        "Leggi i file di questa cartella e delle sottocartelle senza modificare niente, e dimmi in breve cosa contiene: " +
+        "di cosa tratta ogni parte, come si collegano e cosa sembra vecchio o mancante.";
+
+    /// <summary>
+    /// The first message of a chat opened with «Ask Claude about this folder» and with the Claude buttons; empty for a
+    /// chat that starts empty, to write the request by hand.
+    /// </summary>
+    public string ClaudePrompt { get; set; } = DefaultClaudePrompt;
+
     /// <summary>Where these settings are saved; another file only in tests.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public string SavePath { get; set; } = FilePath;

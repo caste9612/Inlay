@@ -2059,6 +2059,64 @@ public partial class PanelView : UserControl
             ViewModel.OpenFolder(topic.Topic.FullPath);
     }
 
+    // Claude Code in a folder: «Ask Claude…» and the Claude buttons with the prompt of the settings, «Open Claude here» empty.
+
+    private void TopicAskClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<TopicViewModel>(sender) is { } topic)
+            ViewModel.AskClaude(topic.Topic.FullPath, withPrompt: true);
+    }
+
+    private void TopicOpenClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<TopicViewModel>(sender) is { } topic)
+            ViewModel.AskClaude(topic.Topic.FullPath, withPrompt: false);
+    }
+
+    private void TileAskClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<TileViewModel>(sender) is { } tile)
+            ViewModel.AskClaude(tile.FolderPath, withPrompt: true);
+    }
+
+    private void TileOpenClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<TileViewModel>(sender) is { } tile)
+            ViewModel.AskClaude(tile.FolderPath, withPrompt: false);
+    }
+
+    private void ItemAskClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<ItemViewModel>(sender) is { Item.IsFolder: true } item)
+            ViewModel.AskClaude(item.Item.FullPath, withPrompt: true);
+    }
+
+    private void ItemOpenClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContextOf<ItemViewModel>(sender) is { Item.IsFolder: true } item)
+            ViewModel.AskClaude(item.Item.FullPath, withPrompt: false);
+    }
+
+    /// <summary>The button of the board, beside New tile: Claude in the space on screen.</summary>
+    private void BoardAskClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedTopic is { } topic)
+            ViewModel.AskClaude(topic.Topic.FullPath, withPrompt: true);
+    }
+
+    /// <summary>The buttons in the header of a zone of the mosaic, for its topic.</summary>
+    private void ZoneAskClaude_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ZoneViewModel zone })
+            ViewModel.AskClaude(zone.Topic.Topic.FullPath, withPrompt: true);
+    }
+
+    private void ZoneNewTile_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ZoneViewModel zone })
+            NewTile(zone.Topic);
+    }
+
     private void TopicPaste_Click(object sender, RoutedEventArgs e)
     {
         if (DataContextOf<TopicViewModel>(sender) is { } topic)

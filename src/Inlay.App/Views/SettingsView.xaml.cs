@@ -29,6 +29,8 @@ public partial class SettingsView : UserControl
 
     private void Close_Click(object sender, RoutedEventArgs e) => Window.GetWindow(this)?.Close();
 
+    private void ResetClaudePrompt_Click(object sender, RoutedEventArgs e) => ViewModel.ResetClaudePrompt();
+
     /// <summary>The releases on GitHub, with what each version brings, in the browser.</summary>
     private void WhatsNew_Click(object sender, RoutedEventArgs e)
     {

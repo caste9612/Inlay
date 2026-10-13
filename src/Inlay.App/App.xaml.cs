@@ -88,7 +88,7 @@ public partial class App : Application, ISettingsHost
             }
         }
 
-        _viewModel = new MainViewModel(root) { Hotkey = _settings.Hotkey };
+        _viewModel = new MainViewModel(root) { Hotkey = _settings.Hotkey, ClaudePrompt = () => _settings.ClaudePrompt };
         var panel = _panel = new PanelWindow(_viewModel, _settings);
         panel.ArchivesRequested += (_, _) => ShowSettings(SettingsSection.Archives);
         panel.Prepare();

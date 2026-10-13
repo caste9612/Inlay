@@ -105,12 +105,14 @@ Sono risorse di `PanelView.xaml` con `x:Shared="False"`. `ItemMenu`, `TileMenu` 
 
 | Menu | Voci |
 |---|---|
-| `ItemMenu`, elemento | Open, Open with…, Show in Explorer, Move to…, Cut, Copy, Copy path, Rename, Unfold as tile (solo per le cartelle di «General», `CanBecomeTile`), Properties, Move to Recycle Bin |
-| `TileMenu`, riquadro | Paste, Paste shortcut, New folder, New shortcut…, Open in Explorer, Rename tile, Make it a space, Fold into General, Color, Sort by, Auto size, Move tile to Recycle Bin |
-| `TopicMenu`, argomento | Open in Explorer, Paste here, Paste shortcut here, New tile, New space inside, Rename, Back to tile, Color (con Auto e None), Move to Recycle Bin |
+| `ItemMenu`, elemento | Open, Open with…, Show in Explorer, Ask Claude about this folder e Open Claude here (solo per le cartelle, `Item.IsFolder`), Move to…, Cut, Copy, Copy path, Rename, Unfold as tile (solo per le cartelle di «General», `CanBecomeTile`), Properties, Move to Recycle Bin |
+| `TileMenu`, riquadro | Paste, Paste shortcut, New folder, New shortcut…, Open in Explorer, Ask Claude about this folder, Open Claude here, Rename tile, Make it a space, Fold into General, Color, Sort by, Auto size, Move tile to Recycle Bin |
+| `TopicMenu`, argomento | Open in Explorer, Ask Claude about this folder, Open Claude here, Paste here, Paste shortcut here, New tile, New space inside, Rename, Back to tile, Color (con Auto e None), Move to Recycle Bin |
 | `BoardMenu`, bacheca | Undo (con l'etichetta di `UndoLabel`, come «Undo move»), New tile, New shortcut…, Paste, Paste shortcut, Open in Explorer |
 
 Il menu completo di Windows (7-Zip e simili) non c'è ancora: è quello che resta della v0.2.
+
+**Claude** (dalla 0.3.9): **Ask Claude about this folder** e i pulsanti con la scintilla (`Inlay.Icon.Claude16`, in `Themes/Inlay.xaml`) chiamano `MainViewModel.AskClaude(cartella, withPrompt: true)`, **Open Claude here** lo stesso con `withPrompt: false`. I pulsanti sono **Ask Claude** accanto a **New tile** nell'intestazione della bacheca (`BoardAskClaude_Click`, per l'argomento scelto), la scintilla nel titolo di un riquadro, che compare con la maniglia al passaggio del mouse (`TileClaude`), e quella nell'intestazione di una zona del mosaico ([tela.md](tela.md)). `AskClaude` legge il prompt da `ClaudePrompt`, che `App` collega a `AppSettings.ClaudePrompt`, così vale subito quello scritto nelle impostazioni; se Claude Code non c'è lo dice un avviso. Come si apre la finestra è in [windows.md](windows.md).
 
 ## I riquadri sulla bacheca
 
@@ -155,10 +157,11 @@ Il badge (`Inlay.ProjectBadge`) è quello neutro di Brace, con «Vault» in `Bra
 
 ## Le impostazioni (`SettingsViewModel`, `ArchivesViewModel`)
 
-`SettingsView` ha le pagine a sinistra (`SettingsSection`: **Vaults**, **Hotkey**, **Startup & Explorer**, **About**) e la pagina scelta a destra. Ogni cambiamento vale subito. La prima volta (`IsWelcome`) c'è solo la pagina degli archivi, sotto il titolo «Welcome to Inlay».
+`SettingsView` ha le pagine a sinistra (`SettingsSection`: **Vaults**, **Hotkey**, **Startup & Explorer**, **Claude**, **About**) e la pagina scelta a destra. Ogni cambiamento vale subito. La prima volta (`IsWelcome`) c'è solo la pagina degli archivi, sotto il titolo «Welcome to Inlay».
 
 - **Hotkey**: `HotkeyBox` registra la combinazione premuta (con `Ctrl`, `Alt` o `Win`; `Shift` da solo no; `Esc` lascia quella di prima). `UseHotkey` la prova subito tramite `ISettingsHost.TryUseHotkey` e la salva solo se Windows la dà a Inlay; se no, sotto il campo compare il motivo.
 - **Startup & Explorer**: avvio con Windows (**Start Inlay with Windows**) e voce di «Invia a» (**“Inlay” in the Send to menu of Explorer**), tramite `IWindowsIntegration`. Se Windows rifiuta, l'interruttore torna com'era e un messaggio lo dice.
+- **Claude** (dalla 0.3.9): il prompt delle chat di Claude (`ClaudePrompt`, salvato in `AppSettings.ClaudePrompt` quando il campo perde il fuoco, senza spazi ai bordi). Vuoto, le chat partono vuote. Quello di partenza, in italiano, è `AppSettings.DefaultClaudePrompt`, e **Use the prompt of Inlay** lo rimette (`ResetClaudePrompt`).
 - **About** (`UpdatesViewModel`, lo stesso per tutta la vita di Inlay, che `App` tiene aggiornato a ogni controllo): il logo, «Version 0.3.5» (quella di Velopack, o per un Inlay lanciato dal codice quella del progetto, `VersionOfTheCode`), e sotto **Updates** una frase (`StatusText`) che dice com'è andato l'ultimo controllo: «Checking for updates…», «Inlay is up to date: checked today at 14:56.», un controllo senza risposta, o la versione pronta. **Check for updates** (`CheckCommand`, spento durante un controllo) chiama `App.CheckForUpdates`; **Restart to update** compare con una versione pronta. «What's new in each version» apre le release su GitHub (`UpdatesViewModel.ReleasesPage`). Un Inlay lanciato dal codice dice che non si aggiorna, e non ha i pulsanti.
 - **Vaults** (`ArchivesViewModel`):
   - l'elenco viene dalle impostazioni, il più recente per primo, con «In use» o «Not found» e l'icona dell'archivio, come nella barra del titolo; sotto ogni archivio, contato in background, quanto occupa e quanto spazio ha il suo disco;

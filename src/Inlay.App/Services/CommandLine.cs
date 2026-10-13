@@ -18,7 +18,7 @@ internal static class Commands
 /// <param name="PreviewSettings">Diagnostics: draw the window of the settings; with <paramref name="PreviewWelcome"/>, as the first time.</param>
 /// <param name="PreviewPicker">Diagnostics: draw the panel asking where the first item of the board goes.</param>
 /// <param name="PreviewNotice">Diagnostics: draw the toasts as after a move, with «Undo» and «Show», and after an error.</param>
-/// <param name="PreviewSection">Diagnostics: the page of the settings to draw: archives, hotkey or windows.</param>
+/// <param name="PreviewSection">Diagnostics: the page of the settings to draw: archives, hotkey, windows, claude or about.</param>
 internal sealed record CommandLineOptions(
     string? Command, string? ArchiveRoot, string? PreviewOutput, string? PreviewTopic, string? PreviewQuery, bool PreviewPrompt,
     bool PreviewLinkPrompt, bool PreviewSettings = false, bool PreviewWelcome = false,

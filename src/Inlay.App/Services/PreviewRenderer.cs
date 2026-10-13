@@ -85,6 +85,7 @@ internal static class PreviewRenderer
         {
             "hotkey" => SettingsSection.Hotkey,
             "windows" => SettingsSection.Windows,
+            "claude" => SettingsSection.Claude,
             "about" => SettingsSection.About,
             _ => SettingsSection.Archives,
         };

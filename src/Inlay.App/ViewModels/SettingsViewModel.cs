@@ -31,12 +31,14 @@ public enum SettingsSection
     Archives,
     Hotkey,
     Windows,
+    Claude,
     About,
 }
 
 /// <summary>
 /// The settings of this PC, each applied the moment it changes: the archives (as the vaults of Obsidian), the shortcut
-/// that opens the panel, and what Inlay sets in Windows; and the page «About», with the version and its updates. The first
+/// that opens the panel, what Inlay sets in Windows and the prompt of the chats of Claude; and the page «About», with the
+/// version and its updates. The first
 /// time, before any archive, the window greets and only the archives matter.
 /// </summary>
 public sealed partial class SettingsViewModel : ObservableObject
@@ -63,6 +65,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _sendTo;
 
+    /// <summary>The first message of the chats of Claude asked about a folder; empty for a chat that starts empty.</summary>
+    [ObservableProperty]
+    private string _claudePrompt;
+
     [ObservableProperty]
     private string _windowsProblem = "";
 
@@ -79,7 +85,17 @@ public sealed partial class SettingsViewModel : ObservableObject
         _hotkey = settings.Hotkey;
         _autostart = windows.AutostartEnabled;
         _sendTo = windows.SendToInstalled;
+        _claudePrompt = settings.ClaudePrompt ?? "";
     }
+
+    partial void OnClaudePromptChanged(string value)
+    {
+        _settings.ClaudePrompt = value.Trim();
+        Save();
+    }
+
+    /// <summary>The prompt Inlay comes with, in place of the one written in the field.</summary>
+    public void ResetClaudePrompt() => ClaudePrompt = AppSettings.DefaultClaudePrompt;
 
     public ArchivesViewModel Archives { get; }
 

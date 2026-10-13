@@ -108,12 +108,25 @@
             </Style.Triggers>
         </Style>
 
+        <!-- The focus ring of a topic: the one of Brace's tree, with the height and the margins of the row below. Brace's own is
+             as tall as the rows of its tree, shorter than these, and cut through the row. -->
+        <Style x:Key="TopicFocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Border VerticalAlignment="Top" Height="{StaticResource NavRowHeight}" Margin="6,1" BorderThickness="2" CornerRadius="4"
+                                BorderBrush="{DynamicResource Brace.FocusRing}" SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- A topic of the sidebar: the row of Brace's tree (indent of 16 px for each level, the arrow to open it), at the size
              of the navigation. -->
         <Style x:Key="TopicItem" TargetType="TreeViewItem">
             <Setter Property="Foreground" Value="{DynamicResource Brace.TextPrimary}" />
             <Setter Property="FontSize" Value="{StaticResource NavTextSize}" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource Brace.FocusVisual.TreeItem}" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource TopicFocusVisual}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
@@ -176,6 +189,11 @@
             <MenuItem Header="Show in Explorer" InputGestureText="Ctrl+Enter" Click="ItemReveal_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
+            <!-- A folder, as a tile or a topic: Claude Code inside it. -->
+            <MenuItem Header="Ask Claude about this folder" Click="ItemAskClaude_Click" Visibility="{Binding Item.IsFolder, Converter={StaticResource Visible}}">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Inlay.Icon.Claude16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Open Claude here" Click="ItemOpenClaude_Click" Visibility="{Binding Item.IsFolder, Converter={StaticResource Visible}}" />
             <Separator />
             <!-- Where the selection goes: a tile or a topic, chosen by name, the recent ones first. -->
             <MenuItem Header="Move to…" Click="ItemMoveTo_Click">
@@ -217,6 +235,10 @@
             <MenuItem Header="Open in Explorer" Click="TileOpenFolder_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
+            <MenuItem Header="Ask Claude about this folder" Click="TileAskClaude_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Inlay.Icon.Claude16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Open Claude here" Click="TileOpenClaude_Click" />
             <Separator />
             <MenuItem Header="Rename tile" Click="TileRename_Click" IsEnabled="{Binding IsOwnFolder}">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Edit16}" /></MenuItem.Icon>
@@ -315,6 +337,11 @@
             <MenuItem Header="Open in Explorer" Click="TopicOpenFolder_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.FolderOpen16}" /></MenuItem.Icon>
             </MenuItem>
+            <!-- Claude Code in the folder of the topic: with the prompt of the settings, or an empty chat. -->
+            <MenuItem Header="Ask Claude about this folder" Click="TopicAskClaude_Click">
+                <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Inlay.Icon.Claude16}" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Open Claude here" Click="TopicOpenClaude_Click" />
             <MenuItem Header="Paste here" InputGestureText="Ctrl+V" Tag="paste" Click="TopicPaste_Click" />
             <MenuItem Header="Paste shortcut here" Tag="paste" Click="TopicPasteLink_Click">
                 <MenuItem.Icon><Path Style="{StaticResource Brace.MenuIcon}" Data="{StaticResource Brace.Icon.Link16}" /></MenuItem.Icon>
@@ -454,6 +481,11 @@
                                     ToolTip="Tile actions" AutomationProperties.Name="Tile actions" Click="TileActions_Click">
                                 <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.MoreHorizontal16}" />
                             </Button>
+                            <!-- Claude Code in the folder of the tile: shown with the handle, while the pointer is on the tile. -->
+                            <Button x:Name="TileClaude" DockPanel.Dock="Right" Style="{StaticResource Brace.IconButton.Small}" Visibility="Hidden"
+                                    ToolTip="Ask Claude about this tile" AutomationProperties.Name="Ask Claude about this tile" Click="TileAskClaude_Click">
+                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Inlay.Icon.Claude16}" />
+                            </Button>
                             <ContentControl DockPanel.Dock="Right" Margin="6,0" VerticalAlignment="Center"
                                             Style="{StaticResource Brace.TabCount}" Content="{Binding Count}" />
                             <Grid>
@@ -502,6 +534,7 @@
                 </MultiDataTrigger>
                 <DataTrigger Binding="{Binding IsMouseOver, ElementName=TileRoot}" Value="True">
                     <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="TileClaude" Property="Visibility" Value="Visible" />
                 </DataTrigger>
                 <Trigger SourceName="ResizeGrip" Property="IsDragging" Value="True">
                     <Setter TargetName="ResizeGrip" Property="Visibility" Value="Visible" />
@@ -544,10 +577,12 @@
              Its tiles are laid out as on a board, in the columns of the zone. Its name has the menu of its topic. -->
         <DataTemplate DataType="{x:Type vm:ZoneViewModel}">
             <Grid>
-                <!-- Files dropped on the zone, outside its tiles, go into its topic, among its loose ones: also into an empty zone. -->
+                <!-- Files dropped on the zone, outside its tiles, go into its topic, among its loose ones: also into an empty zone.
+                     A right-click on it, outside its tiles, has the menu of its topic, as its name has. -->
                 <Border x:Name="ZoneFrame" Background="{DynamicResource Brace.SurfaceBase}" BorderBrush="{DynamicResource Brace.BorderDefault}"
                         BorderThickness="1" CornerRadius="10" Padding="16,12,16,16"
-                        AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop">
+                        AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="DropTarget_Drop"
+                        ContextMenu="{DynamicResource TopicMenu}" ContextMenuOpening="Zone_ContextMenuOpening">
                     <StackPanel>
                         <!-- The name of the zone, as the title of a board. A double click shows the zone whole. From afar the zones of
                              the root have their name above them instead; those inside keep this one until the farthest level. -->
@@ -571,6 +606,15 @@
                             </DockPanel.Style>
                             <Path x:Name="ZoneIcon" DockPanel.Dock="Left" Margin="0,0,10,0" Style="{StaticResource Brace.Icon20}"
                                   Data="{StaticResource Brace.Icon.Folder20}" TextElement.Foreground="{DynamicResource Brace.TextSecondary}" />
+                            <!-- What the board has in its header, for the space of the zone: Claude, and a new tile. -->
+                            <Button DockPanel.Dock="Right" Margin="4,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.IconButton.Small}"
+                                    ToolTip="New tile in this space" AutomationProperties.Name="New tile in this space" Click="ZoneNewTile_Click">
+                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Brace.Icon.Add16}" />
+                            </Button>
+                            <Button DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource Brace.IconButton.Small}"
+                                    ToolTip="Ask Claude about this space" AutomationProperties.Name="Ask Claude about this space" Click="ZoneAskClaude_Click">
+                                <Path Style="{StaticResource Brace.Icon}" Data="{StaticResource Inlay.Icon.Claude16}" />
+                            </Button>
                             <TextBlock DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Brace.TextTertiary}"
                                        Text="{Binding Summary}" />
                             <TextBlock x:Name="ZoneTitle" VerticalAlignment="Center" Style="{StaticResource Brace.Text.Title}" Text="{Binding Title}"
@@ -970,6 +1014,15 @@
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Brace.Icon.Add16}" />
                                         <TextBlock VerticalAlignment="Center" Text="New tile" />
+                                    </StackPanel>
+                                </Button>
+                                <!-- Claude Code in the folder of the space, next to the other action of the board. -->
+                                <Button DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Bottom" Style="{StaticResource Brace.Button}"
+                                        ToolTip="Claude Code in this space, with the prompt of the settings" Click="BoardAskClaude_Click"
+                                        Visibility="{Binding SelectedTopic, Converter={StaticResource NullToVisibility}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Brace.ButtonIcon}" Data="{StaticResource Inlay.Icon.Claude16}" />
+                                        <TextBlock VerticalAlignment="Center" Text="Ask Claude" />
                                     </StackPanel>
                                 </Button>
                                 <ListBox DockPanel.Dock="Right" Margin="0,0,12,0" VerticalAlignment="Bottom" Style="{StaticResource ViewSwitch}"
