@@ -1,6 +1,6 @@
 # Test e verifiche
 
-Come si controlla che Inlay funzioni: i test automatici, le anteprime da riga di comando, la misura della tela, l'archivio di prova e il log. Cosa coprono i test, visto da chi usa Inlay, è anche nel [README](../README.md#test-e-diagnostica).
+Come si controlla che Inlay funzioni: i test automatici, le anteprime da riga di comando, la misura della tela, l'archivio di prova e il log. Cosa coprono i test, visto da chi usa Inlay, è anche in [uso.md](uso.md#test-e-diagnostica).
 
 ## I test automatici
 

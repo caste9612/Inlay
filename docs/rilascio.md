@@ -21,7 +21,7 @@ Come si numera una versione, come si scrive la nota e come si pubblica l'install
 
 Dalla storia del repository:
 
-- Un commit con le modifiche, con un messaggio in italiano che dice cosa cambia per chi usa Inlay: «Colori degli argomenti, barra di stato come in Explorer, avvisi, spazio su disco». README e PROGETTO si aggiornano nello stesso commit.
+- Un commit con le modifiche, con un messaggio in italiano che dice cosa cambia per chi usa Inlay: «Colori degli argomenti, barra di stato come in Explorer, avvisi, spazio su disco». La guida ([uso.md](uso.md)), PROGETTO e, se cambia quello che Inlay fa, il README si aggiornano nello stesso commit.
 - Poi un commit «Versione X.Y.Z» che alza `<Version>` e aggiunge `novita/X.Y.Z.md`.
 - Poi la pubblicazione, che crea il tag.
 
@@ -30,7 +30,7 @@ Dalla storia del repository:
 1. `dotnet test`: passano tutti, e il numero va nella nota ([test.md](test.md)).
 2. Le anteprime delle parti dell'interfaccia toccate (`--render-preview`).
 3. L'archivio vero si legge come con la versione prima, in sola lettura ([test.md](test.md#prima-di-pubblicare)).
-4. README e PROGETTO dicono com'è adesso: i gesti nuovi nel README, lo stato e i prossimi passi in PROGETTO (§10).
+4. La guida e PROGETTO dicono com'è adesso: i gesti nuovi in [uso.md](uso.md), lo stato e i prossimi passi in PROGETTO (§10); il README, in inglese, se cambia quello che Inlay fa.
 5. Versione alzata, nota scritta, commit «Versione X.Y.Z», `git push`.
 6. `.\scripts\New-Installer.ps1 -Publish`.
 

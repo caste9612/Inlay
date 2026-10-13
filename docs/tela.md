@@ -1,6 +1,6 @@
 # La tela
 
-Tutto l'archivio su una superficie da spostare e zoomare, con una zona per argomento: nell'interfaccia è **Mosaic** (fino alla 0.3.3 «Tela»). Come si usa è nel [README](../README.md#uso) (voce **Mosaico**); l'idea, le scelte e il piano a fasi sono in [PROGETTO.md §11](../PROGETTO.md#11-piano-la-tela). Qui c'è com'è fatta.
+Tutto l'archivio su una superficie da spostare e zoomare, con una zona per argomento: nell'interfaccia è **Mosaic** (fino alla 0.3.3 «Tela»). Come si usa è in [uso.md](uso.md#uso) (voce **Mosaico**); l'idea, le scelte e il piano a fasi sono in [PROGETTO.md §11](../PROGETTO.md#11-piano-la-tela). Qui c'è com'è fatta.
 
 ## A che punto è
 

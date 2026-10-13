@@ -13,7 +13,7 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
    - un metodo `UndoXxx` che restituisce un `Outcome`: `Refused` se nel frattempo qualcosa è cambiato, `Failed` (con `KeepForRetry(step)`) se non è riuscito, `Done` se è fatto. Mai sovrascrivere, mai eliminare per sempre: si passa dal Cestino;
    - l'etichetta in `UndoLabel`, per il menu della bacheca.
 4. **I test** in `MainViewModelTests`: fare, controllare, annullare, controllare; e il caso in cui qualcosa è cambiato prima dell'annullamento.
-5. **I documenti**: la voce **Annullare** del README, e PROGETTO se cambia cosa vede l'utente.
+5. **I documenti**: la voce **Annullare** di [uso.md](uso.md), e PROGETTO se cambia cosa vede l'utente.
 
 ## Un campo nuovo nei metadati
 
@@ -31,13 +31,13 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 2. **In `Views/PanelView.xaml.cs`**, il gestore: `DataContextOf<T>(sender)` dà l'elemento, il riquadro o l'argomento; per gli elementi si agisce su `TargetsOf(item)`, cioè sulla selezione se l'elemento ne fa parte. Il gestore chiama un metodo di `MainViewModel`; se restituisce un `Task`, con `Observe(…)`.
 3. **La logica** va in `MainViewModel`, dove si può provare con i test, non nel gestore.
 4. `PanelMenusTests` costruisce già tutti i menu con i loro dati e ne prepara le voci: un binding che non si può attaccare fa fallire il test, invece di bloccare il tasto destro com'è successo con **Colore** nella 0.3.0.
-5. **I documenti**: la voce **Tasto destro** del README.
+5. **I documenti**: la voce **Tasto destro** di [uso.md](uso.md).
 
 ## Un tasto
 
 1. **In `PanelView.OnPreviewKeyDown`**, rispettando l'ordine che c'è: prima le domande aperte, poi il campo di una rinomina (che gestisce i suoi tasti), poi la ricerca.
 2. **In `Views/ShortcutHints.cs`** (`ShortcutGroup.For`), se è un tasto da sapere: compare sotto **?** nella barra di stato, attraverso `MainViewModel.Shortcuts`. E nel tooltip del pulsante che fa la stessa cosa, se c'è.
-3. **I documenti**: la parte **Uso** del README e la tabella dei tasti di PROGETTO.md §5.
+3. **I documenti**: la parte **Uso** di [uso.md](uso.md) e la tabella dei tasti di PROGETTO.md §5.
 4. Attenzione ai tasti di GlazeWM: nel config attuale `Alt+Enter` è suo (PROGETTO.md §7).
 
 ## Un'impostazione
@@ -46,13 +46,13 @@ Ricette per i cambiamenti più comuni: quali file toccare, in che ordine, e cosa
 2. **`ViewModels/SettingsViewModel.cs`**: un `[ObservableProperty]` e il suo `partial void OnXxxChanged`, che scrive nelle impostazioni e chiama `Save()`. Se l'app deve reagire, un metodo nuovo in `ISettingsHost`, da fare in `App`, nel `PreviewHost` di `PreviewRenderer` e nei finti dei test. Se deve saperlo il pannello, `App` lo passa a `MainViewModel` all'avvio e quando cambia, come fa con la scorciatoia (`Hotkey`).
 3. **`Views/SettingsView.xaml`**: nella pagina giusta. Per una pagina nuova: un valore in `SettingsSection`, la sua riga nella barra a sinistra, la pagina con `SectionVisibilityConverter` e il nome della sezione, e il nome in `PreviewRenderer` per `--section`.
 4. **I test** in `SettingsViewModelTests`, e l'anteprima con `--settings --section …`.
-5. **I documenti**: **Settings** nel README, e le impostazioni del PC in PROGETTO.md §4.
+5. **I documenti**: **Settings** in [uso.md](uso.md), e le impostazioni del PC in PROGETTO.md §4.
 
 ## Un'opzione della riga di comando
 
 1. **`Services/CommandLine.cs`**: il campo in `CommandLineOptions` e il caso in `Parse`. Un comando per l'Inlay già aperto va anche in `Commands` e in `App.Execute`.
 2. Per un'anteprima: in `PreviewRenderer.Render`, lo stato da preparare prima di disegnare.
-3. **I test** in `CommandLineTests`; **i documenti**: **Riga di comando** nel README e la tabella in [windows.md](windows.md#la-riga-di-comando-commandlineoptions).
+3. **I test** in `CommandLineTests`; **i documenti**: **Riga di comando** in [uso.md](uso.md) e la tabella in [windows.md](windows.md#la-riga-di-comando-commandlineoptions).
 
 ## Un'icona, o un tipo di file
 

@@ -107,7 +107,7 @@ Le chiamate alle API di Windows sono scritte a mano: quelle che servono in più 
 
 ## La riga di comando (`CommandLineOptions`)
 
-Quelle per l'utente sono descritte nel [README](../README.md#riga-di-comando). Tutte quelle che `Parse` riconosce:
+Quelle per l'utente sono descritte in [uso.md](uso.md#riga-di-comando). Tutte quelle che `Parse` riconosce:
 
 | Opzione | Cosa fa |
 |---|---|

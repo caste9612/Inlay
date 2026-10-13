@@ -1,6 +1,6 @@
 # Inlay: la documentazione del codice
 
-Questi documenti spiegano com'è fatto il codice di Inlay e come ci si lavora. Cosa fa Inlay e come si usa è nel [README](../README.md); perché esiste, le sue regole e dove sta andando sono in [PROGETTO.md](../PROGETTO.md); cosa porta ogni versione è in [novita/](../novita).
+Questi documenti spiegano com'è fatto il codice di Inlay e come ci si lavora. Cosa fa Inlay e come si usa è in [uso.md](uso.md), e in breve, in inglese, nel [README](../README.md); perché esiste, le sue regole e dove sta andando sono in [PROGETTO.md](../PROGETTO.md); cosa porta ogni versione è in [novita/](../novita).
 
 Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2, poi controllati contro il codice e aggiornati con le correzioni e le novità di quei giorni, uscite con la 0.3.3, e con l'interfaccia in inglese della 0.3.4 ([PROGETTO.md §10](../PROGETTO.md#10-prossimi-passi)).
 
@@ -8,6 +8,7 @@ Scritti il 9 e il 10 ottobre 2026 leggendo tutto il codice della versione 0.3.2,
 
 | Documento | Cosa spiega |
 |---|---|
+| [uso.md](uso.md) | come si usa Inlay: la guida completa per chi lo usa, gesto per gesto |
 | [architettura.md](architettura.md) | la soluzione, gli strati, dove sta ogni cosa, i thread, le scelte principali |
 | [archivio.md](archivio.md) | `Inlay.Core`: come si legge l'archivio, i metadati, le regole, il Cestino, la ricerca |
 | [operazioni-sui-file.md](operazioni-sui-file.md) | spostare, copiare, collegare, rinominare, eliminare, trascinare e annullare |

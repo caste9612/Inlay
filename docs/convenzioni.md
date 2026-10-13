@@ -5,7 +5,7 @@ Le regole, scritte e non, che il codice di Inlay segue. Chi ci lavora le rispett
 ## Le lingue
 
 - **Inglese**: codice, nomi, commenti, nomi dei test e, dalla 0.3.4, tutto quello che legge chi usa Inlay dentro il programma (testi dell'interfaccia, avvisi, errori). Fino alla 0.3.3 l'interfaccia era in italiano.
-- **Italiano**: i documenti, i messaggi dei commit e le note di versione.
+- **Italiano**: i documenti, i messaggi dei commit e le note di versione. Fa eccezione il README, la pagina del repository su GitHub, che è in inglese e presenta Inlay in breve; la guida completa è [uso.md](uso.md).
 - I testi dell'interfaccia sono scritti direttamente nel XAML e nel codice: se servirà più di una lingua, andranno spostati in file di risorse (PROGETTO.md §8).
 
 ### Come sono scritti i commenti
@@ -72,7 +72,8 @@ Vengono da [PROGETTO.md §3](../PROGETTO.md#3-principi), e il codice li tiene in
 
 | Documento | Per chi | Cosa contiene |
 |---|---|---|
-| [README.md](../README.md) | chi usa Inlay | installazione, uso, riga di comando, test e diagnostica |
+| [README.md](../README.md) | chi arriva su GitHub | in inglese: cos'è, le schermate, come si scarica, cosa fa in breve, come si compila |
+| [docs/uso.md](uso.md) | chi usa Inlay | installazione, uso, riga di comando, test e diagnostica |
 | [PROGETTO.md](../PROGETTO.md) | chi decide dove va Inlay | il problema, l'idea, i principi, le regole dell'archivio, l'interfaccia, le versioni, GlazeWM, l'architettura, i rischi, i prossimi passi, i piani |
 | [novita/](../novita) | chi aggiorna Inlay | le note di ogni versione |
 | [docs/](README.md) | chi lavora sul codice | com'è fatto il codice e come si lavora |
